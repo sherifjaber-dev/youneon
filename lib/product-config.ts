@@ -59,6 +59,8 @@ export const PRODUCT_CONFIG = {
   PRODUCT_69e4617d66c511d037cd5de9: "69e4617d66c511d037cd5de9",
 } as const;
 
+export const NEON_PACK_METADATA_TYPE = "neon_pack" as const;
+
 export const NEON_PACKAGES = [
   {
     id: "neon_small",
@@ -90,4 +92,31 @@ export const NEON_PACKAGES = [
     price: 30,
     badge: "Top Deal",
   },
+  {
+    id: "neon_ultimate",
+    neon: 10000,
+    price: 55,
+    badge: "Ultimate",
+  },
 ] as const;
+
+export type NeonPackageId = (typeof NEON_PACKAGES)[number]["id"];
+export type NeonPackage = (typeof NEON_PACKAGES)[number];
+
+export function getNeonPackageById(packageId: string): NeonPackage | null {
+  return NEON_PACKAGES.find((pkg) => pkg.id === packageId) ?? null;
+}
+
+export function getNeonPackPaymentData(packageId: string) {
+  const pkg = getNeonPackageById(packageId);
+  if (!pkg) return null;
+  return {
+    amount: pkg.price,
+    memo: `YouNeon Neon Pack · ${pkg.neon.toLocaleString()} Neon`,
+    metadata: {
+      type: NEON_PACK_METADATA_TYPE,
+      packageId: pkg.id,
+      neon: pkg.neon,
+    },
+  };
+}

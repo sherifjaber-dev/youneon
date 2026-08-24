@@ -1,6 +1,6 @@
 "use client";
 
-import { getSubscriptionPaymentData } from "@/lib/product-config";
+import { getNeonPackPaymentData, getSubscriptionPaymentData } from "@/lib/product-config";
 import { PI_NETWORK_CONFIG } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk } from "@/lib/pi-client-session";
 import type {
@@ -410,4 +410,12 @@ export async function createPiPayment(
 
 export async function subscribeWithPi(): Promise<CreatePiPaymentResult> {
   return createPiPayment(getSubscriptionPaymentData());
+}
+
+export async function purchaseNeonPackWithPi(packageId: string): Promise<CreatePiPaymentResult> {
+  const paymentData = getNeonPackPaymentData(packageId);
+  if (!paymentData) {
+    throw new Error("Unknown Neon pack");
+  }
+  return createPiPayment(paymentData);
 }

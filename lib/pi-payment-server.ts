@@ -3,7 +3,13 @@ import {
   getPiAccessTokenFromCookie,
   parseVerifiedPiUser,
 } from "@/lib/pi-session";
-import { grantPremiumIfNeeded, type PremiumGrantResult } from "@/lib/pi-entitlements";
+import {
+  grantNeonPackIfNeeded,
+  grantPremiumIfNeeded,
+  isNeonPackPayment,
+  isSubscriptionPayment,
+  type PremiumGrantResult,
+} from "@/lib/pi-entitlements";
 import {
   approvePiPayment,
   completePiPayment,
@@ -43,7 +49,13 @@ async function grantFromPayment(payment: PiPaymentDTO | null): Promise<PremiumGr
   if (!payment) return undefined;
   try {
     const username = await sessionUsername();
-    return await grantPremiumIfNeeded(payment, username);
+    if (isSubscriptionPayment(payment)) {
+      return await grantPremiumIfNeeded(payment, username);
+    }
+    if (isNeonPackPayment(payment)) {
+      return await grantNeonPackIfNeeded(payment, username);
+    }
+    return undefined;
   } catch (error) {
     console.warn("[Pi] entitlement grant failed", error);
     return undefined;
