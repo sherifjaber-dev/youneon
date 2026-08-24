@@ -2,6 +2,7 @@
 
 import React from "react";
 import { applyPiSigninNativeAttrs, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
+import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -49,31 +50,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error("YouNeon error boundary:", error, info.componentStack);
   }
 
-  handleSignIn = (e?: { preventDefault?: () => void }) => {
-    try {
-      e?.preventDefault?.();
-    } catch {
-      /* ignore */
-    }
-    try {
-      const P = window.Pi;
-      if (!P) {
-        console.log("[Pi] error: no window.Pi");
-      } else {
-        console.log("[Pi] authenticate start");
-        if (P.init) P.init({ version: "2.0", sandbox: true });
-        try {
-          P.authenticate({ scopes: ["username"] });
-        } catch {
-          P.authenticate(["username"], function () {});
-        }
-      }
-    } catch (err) {
-      console.log("[Pi] error: " + err);
-    }
-    if (typeof window.__youneonPiAuth === "function") {
-      void window.__youneonPiAuth(true);
-    }
+  handleSignIn = () => {
+    tapPiAuthenticate();
   };
 
   render() {

@@ -3,6 +3,7 @@
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useState, useEffect } from "react";
 import { applyPiSigninNativeAttrs, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
+import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 const LOGIN_FALLBACK_MS = 2000;
 
@@ -20,31 +21,8 @@ export function AuthLoadingScreen() {
     return () => clearTimeout(t);
   }, []);
 
-  const handleSignIn = (e?: { preventDefault?: () => void }) => {
-    try {
-      e?.preventDefault?.();
-    } catch {
-      /* ignore */
-    }
-    try {
-      const P = window.Pi;
-      if (P) {
-        console.log("[Pi] authenticate start");
-        if (P.init) P.init({ version: "2.0", sandbox: true });
-        try {
-          P.authenticate({ scopes: ["username"] });
-        } catch {
-          P.authenticate(["username"], function () {});
-        }
-      } else {
-        console.log("[Pi] error: no window.Pi");
-      }
-    } catch (err) {
-      console.log("[Pi] error: " + err);
-    }
-    if (typeof window.__youneonPiAuth === "function") {
-      void window.__youneonPiAuth(true);
-    }
+  const handleSignIn = () => {
+    tapPiAuthenticate();
     void login();
   };
 

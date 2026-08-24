@@ -1,7 +1,7 @@
 "use client";
 
 import { PI_NETWORK_CONFIG } from "@/lib/system-config";
-import type { PiAuthResult, PiPaymentDTO, PiScope } from "@/lib/pi-types";
+import type { PiAuthResult, PiPaymentDTO, PiScope, PiSDK } from "@/lib/pi-types";
 
 export const PI_SDK_UNAVAILABLE = "PI_SDK_UNAVAILABLE";
 /** Username only — App Studio verification must not be blocked by payments scope. */
@@ -28,20 +28,54 @@ function logError(error: unknown): void {
 }
 
 function logSdkLoaded(): void {
-  if (typeof window === "undefined" || !window.Pi || window.__YOUNEON_PI_SDK_LOGGED__) return;
+  if (typeof window === "undefined" || !resolvePiSdk() || window.__YOUNEON_PI_SDK_LOGGED__) return;
   window.__YOUNEON_PI_SDK_LOGGED__ = true;
   console.log("[Pi] SDK loaded");
 }
 
+function tryReadPi(frame: Window | null | undefined): PiSDK | undefined {
+  if (!frame) return undefined;
+  try {
+    return frame.Pi;
+  } catch (error) {
+    console.log("[Pi] error: " + errorMessage(error));
+    return undefined;
+  }
+}
+
+/** Search this frame, parent, and top for Pi. Never replace window.Pi if it already exists. */
+export function resolvePiSdk(): PiSDK | undefined {
+  if (typeof window === "undefined") return undefined;
+  const found = tryReadPi(window) || tryReadPi(window.parent) || tryReadPi(window.top);
+  if (found && !window.Pi) {
+    try {
+      window.Pi = found;
+    } catch (error) {
+      console.log("[Pi] error: " + errorMessage(error));
+    }
+  }
+  return window.Pi || found;
+}
+
+function setPiStatusLast(last: string, piPresent: boolean): void {
+  if (typeof window === "undefined") return;
+  window.__YOUNEON_PI_LAST__ = last;
+  const text = "Pi SDK: " + (piPresent ? "yes" : "no") + "  ·  " + last;
+  const nodes = document.querySelectorAll("[data-youneon-pi-status], #youneon-pi-status");
+  for (let i = 0; i < nodes.length; i++) {
+    nodes[i].textContent = text;
+  }
+}
+
 export function isPiAvailable(): boolean {
-  return typeof window !== "undefined" && typeof window.Pi !== "undefined";
+  return typeof resolvePiSdk() !== "undefined";
 }
 
 export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean> {
   if (typeof window === "undefined") {
     return false;
   }
-  if (window.Pi) {
+  if (resolvePiSdk()) {
     logSdkLoaded();
     return true;
   }
@@ -49,13 +83,13 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     await new Promise((resolve) => setTimeout(resolve, 200));
-    if (window.Pi) {
+    if (resolvePiSdk()) {
       logSdkLoaded();
       return true;
     }
   }
 
-  return !!window.Pi;
+  return !!resolvePiSdk();
 }
 
 export function resetPiSdkInit(): void {
@@ -83,18 +117,19 @@ export async function initPiSdk(): Promise<void> {
     return;
   }
 
-  if (initSucceeded && window.Pi) return;
+  if (initSucceeded && resolvePiSdk()) return;
 
   if (!initPromise) {
     initPromise = (async () => {
       const available = await waitForPiSdk();
-      if (!available || !window.Pi) {
+      const Pi = resolvePiSdk();
+      if (!available || !Pi) {
         throw new Error(PI_SDK_UNAVAILABLE);
       }
 
       logSdkLoaded();
       console.log("[Pi] init start");
-      await Promise.resolve(window.Pi.init({ version: "2.0", sandbox: PI_NETWORK_CONFIG.SANDBOX }));
+      await Promise.resolve(Pi.init({ version: "2.0", sandbox: PI_NETWORK_CONFIG.SANDBOX }));
       initSucceeded = true;
       console.log("[Pi] init success");
     })().catch((error) => {
@@ -122,8 +157,8 @@ export async function handleIncompletePayment(payment: PiPaymentDTO): Promise<vo
         payment,
       }),
     });
-  } catch {
-    /* auth can continue */
+  } catch (error) {
+    logError(error);
   }
 }
 
@@ -132,35 +167,58 @@ function onIncompletePaymentFound(payment: PiPaymentDTO): void {
 }
 
 /**
- * Call window.Pi.authenticate directly.
- * App Studio looks for Pi.authenticate({ scopes: ['username'] }).
- * Fall back to the classic array + callback signature if the object form throws.
- * Never skip this call — Studio detects the invocation, not success.
+ * Call the real Pi.authenticate. Classic array+callback FIRST (App Studio wraps that),
+ * then also try the object form. Never skip this call — Studio detects the invocation.
  */
 function callWindowPiAuthenticate(): Promise<PiAuthResult> {
-  if (!window.Pi) {
+  const Pi = resolvePiSdk();
+  if (!Pi || typeof Pi.authenticate !== "function") {
+    setPiStatusLast("Last: window.Pi missing", false);
+    logError("no window.Pi");
     throw new Error(PI_SDK_UNAVAILABLE);
   }
 
-  const Pi = window.Pi;
   console.log("[Pi] authenticate start");
+  setPiStatusLast("Last: authenticate called", true);
+
+  let classicResult: Promise<PiAuthResult> | PiAuthResult | undefined;
+  try {
+    classicResult = Pi.authenticate(["username"], onIncompletePaymentFound);
+  } catch (classicErr) {
+    logError(classicErr);
+    setPiStatusLast("Last: " + errorMessage(classicErr), true);
+  }
 
   try {
-    const result = Pi.authenticate({ scopes: ["username"] });
-    return Promise.resolve(result).then((authResult) => {
+    const objectResult = Pi.authenticate({ scopes: ["username"] });
+    return Promise.resolve(objectResult).then((authResult) => {
       console.log("[Pi] authenticate success");
       return authResult;
     });
-  } catch {
-    try {
-      const result = Pi.authenticate(["username"], onIncompletePaymentFound);
-      return Promise.resolve(result).then((authResult) => {
+  } catch (objectErr) {
+    logError(objectErr);
+    if (classicResult != null) {
+      return Promise.resolve(classicResult).then((authResult) => {
         console.log("[Pi] authenticate success");
         return authResult;
       });
-    } catch (arrayFormError) {
-      logError(arrayFormError);
-      throw arrayFormError;
+    }
+    throw objectErr;
+  }
+}
+
+/** Synchronous tap path — classic authenticate in the same user-gesture turn. */
+export function tapPiAuthenticate(): void {
+  try {
+    void callWindowPiAuthenticate();
+  } catch (error) {
+    logError(error);
+  }
+  if (typeof window.__youneonPiAuth === "function") {
+    try {
+      window.__youneonPiAuth(true);
+    } catch (error) {
+      logError(error);
     }
   }
 }
@@ -170,7 +228,7 @@ function callWindowPiAuthenticate(): Promise<PiAuthResult> {
  * required for Pi App Studio. Does not skip for cookies, guest mode, in-flight
  * init, or missing payments scope.
  *
- * Official docs say await init first. If init takes >1s we still authenticate
+ * Official docs say await init first. If init hangs >500ms we still authenticate
  * so Studio can detect the call.
  */
 export async function authenticatePi(
@@ -179,22 +237,30 @@ export async function authenticatePi(
   _force = false
 ): Promise<PiAuthResult> {
   if (typeof window !== "undefined" && typeof window.__youneonPiAuth === "function") {
-    const vanilla = window.__youneonPiAuth(true);
-    if (vanilla && typeof (vanilla as Promise<PiAuthResult>).then === "function") {
-      return vanilla as Promise<PiAuthResult>;
+    try {
+      const vanilla = window.__youneonPiAuth(true);
+      if (vanilla && typeof (vanilla as Promise<PiAuthResult>).then === "function") {
+        return vanilla as Promise<PiAuthResult>;
+      }
+    } catch (error) {
+      logError(error);
     }
     return callWindowPiAuthenticate();
   }
 
   const available = await waitForPiSdk();
-  if (!available || !window.Pi) {
+  if (!available || !resolvePiSdk()) {
     logError(PI_SDK_UNAVAILABLE);
+    setPiStatusLast("Last: window.Pi missing", false);
     throw new Error(PI_SDK_UNAVAILABLE);
   }
 
-  const initWait = initPiSdk().then(() => "init" as const, () => "init-error" as const);
+  const initWait = initPiSdk().then(() => "init" as const, (error) => {
+    logError(error);
+    return "init-error" as const;
+  });
   const timeout = new Promise<"timeout">((resolve) => {
-    setTimeout(() => resolve("timeout"), 1000);
+    setTimeout(() => resolve("timeout"), 500);
   });
   await Promise.race([initWait, timeout]);
 

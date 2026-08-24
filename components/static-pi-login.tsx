@@ -2,6 +2,7 @@ import {
   PI_SIGNIN_NATIVE_ATTRS,
   escapePiSigninAttr,
   piSigninControlsHtml,
+  piSigninStatusHtml,
 } from "@/lib/pi-signin-onclick";
 
 /**
@@ -42,6 +43,7 @@ export function StaticPiLogin({
     '<p style="' +
     HINT_STYLE +
     '">Tap anywhere to sign in</p>' +
+    piSigninStatusHtml() +
     "</div>";
 
   return (

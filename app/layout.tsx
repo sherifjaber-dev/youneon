@@ -17,37 +17,48 @@ const CRITICAL_CSS =
 /**
  * Vanilla ES5 boot script. No async/await, no arrow functions, no template
  * literals in the output — old Pi App Studio webviews throw on those.
- * Polls for window.Pi every 200ms, then calls Pi.authenticate so App Studio
- * can detect the call (it does not require login success).
+ * Never loads sdk.minepi.com if App Studio already injected window.Pi.
+ * Classic Pi.authenticate(scopesArray, cb) runs FIRST so Studio can hook it.
  */
 const PI_BOOT_SCRIPT =
-  "(function youneonPiBoot() {" +
+  "(function youneonPiEarly() {" +
   "function errMsg(e) {" +
   "if (!e) return 'unknown';" +
   "if (typeof e === 'string') return e;" +
   "if (e.message) return e.message;" +
   "try { return JSON.stringify(e); } catch (x) { return String(e); }" +
   "}" +
-  "function logSdkLoaded() {" +
-  "if (window.__YOUNEON_PI_SDK_LOGGED__ || !window.Pi) return;" +
-  "window.__YOUNEON_PI_SDK_LOGGED__ = true;" +
-  "console.log('[Pi] SDK loaded');" +
+  "function findPi() {" +
+  "var found = null;" +
+  "try { if (window.Pi) found = window.Pi; } catch (w) {}" +
+  "if (!found) { try { if (window.parent && window.parent.Pi) found = window.parent.Pi; } catch (p) {} }" +
+  "if (!found) { try { if (window.top && window.top.Pi) found = window.top.Pi; } catch (t) {} }" +
+  "if (found && !window.Pi) { try { window.Pi = found; } catch (cp) { console.log('[Pi] error: ' + errMsg(cp)); } }" +
+  "try { return window.Pi || found; } catch (r) { return found; }" +
   "}" +
+  "function renderStatus() {" +
+  "var nodes = document.querySelectorAll('[data-youneon-pi-status], #youneon-pi-status');" +
+  "if (!nodes.length) return;" +
+  "var P = findPi();" +
+  "var last = window.__YOUNEON_PI_LAST__ || '';" +
+  "var text = 'Pi SDK: ' + (P ? 'yes' : 'no') + (last ? '  ·  ' + last : '');" +
+  "for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;" +
+  "}" +
+  "function setLast(text) { window.__YOUNEON_PI_LAST__ = text; renderStatus(); }" +
   "function callAuthenticate() {" +
+  "var P = findPi();" +
+  "if (!P || typeof P.authenticate !== 'function') { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
   "console.log('[Pi] authenticate start');" +
-  "var P = window.Pi;" +
-  "if (!P) { console.log('[Pi] error: no window.Pi'); return; }" +
-  "try { return P.authenticate({ scopes: ['username'] }); }" +
-  "catch (objectFormError) {" +
-  "try { return P.authenticate(['username'], function () {}); }" +
-  "catch (arrayFormError) { console.log('[Pi] error: ' + errMsg(arrayFormError)); }" +
+  "setLast('Last: authenticate called');" +
+  "try { P.authenticate(['username'], function (payment) {}); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
+  "try { P.authenticate({ scopes: ['username'] }); } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); }" +
   "}" +
-  "}" +
+  "window.__youneonFindPi = findPi;" +
   "window.__youneonCallPiAuthenticate = callAuthenticate;" +
   "window.__youneonPiAuth = function () {" +
-  "var P = window.Pi;" +
-  "if (!P) { console.log('[Pi] error: no window.Pi'); return; }" +
-  "try { if (P.init) P.init({ version: '2.0', sandbox: true }); } catch (ie) {}" +
+  "var P = findPi();" +
+  "if (!P) { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
+  "try { if (P.init) P.init({ version: '2.0', sandbox: true }); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); }" +
   "return callAuthenticate();" +
   "};" +
   "function isLoginTarget(t) {" +
@@ -58,26 +69,21 @@ const PI_BOOT_SCRIPT =
   "}" +
   "function onLoginHit(ev) {" +
   "if (!isLoginTarget(ev && ev.target)) return;" +
-  "try { if (ev.preventDefault) ev.preventDefault(); } catch (x) {}" +
   "if (typeof window.__youneonPiAuth === 'function') window.__youneonPiAuth(); else callAuthenticate();" +
   "}" +
   "if (!window.__YOUNEON_LOGIN_HIT_BOUND__) {" +
   "window.__YOUNEON_LOGIN_HIT_BOUND__ = true;" +
   "var hitEv = ['pointerdown', 'mousedown', 'touchstart', 'click'];" +
-  "for (var hi = 0; hi < hitEv.length; hi++) { try { document.addEventListener(hitEv[hi], onLoginHit, true); } catch (he) {} }" +
+  "for (var hi = 0; hi < hitEv.length; hi++) { try { document.addEventListener(hitEv[hi], onLoginHit, true); } catch (he) { console.log('[Pi] error: ' + errMsg(he)); } }" +
   "}" +
   "function runInitThenAuth() {" +
   "if (window.__YOUNEON_PI_AUTO_AUTH_STARTED__) return;" +
   "window.__YOUNEON_PI_AUTO_AUTH_STARTED__ = true;" +
-  "var P = window.Pi;" +
-  "if (!P) { console.log('[Pi] error: no window.Pi'); return; }" +
-  "logSdkLoaded();" +
+  "var P = findPi();" +
+  "if (!P) { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
+  "if (!window.__YOUNEON_PI_SDK_LOGGED__) { window.__YOUNEON_PI_SDK_LOGGED__ = true; console.log('[Pi] SDK loaded'); }" +
   "var authCalled = false;" +
-  "function doAuth() {" +
-  "if (authCalled) return;" +
-  "authCalled = true;" +
-  "callAuthenticate();" +
-  "}" +
+  "function doAuth() { if (authCalled) return; authCalled = true; callAuthenticate(); }" +
   "try {" +
   "if (P.init) {" +
   "console.log('[Pi] init start');" +
@@ -87,14 +93,26 @@ const PI_BOOT_SCRIPT =
   "} else { console.log('[Pi] init success'); doAuth(); }" +
   "} else { doAuth(); }" +
   "} catch (e) { console.log('[Pi] error: ' + errMsg(e)); doAuth(); }" +
-  "setTimeout(function () { doAuth(); }, 1000);" +
+  "setTimeout(function () { doAuth(); }, 500);" +
   "}" +
-  "var piPoll = setInterval(function () {" +
-  "if (!window.Pi) return;" +
-  "clearInterval(piPoll);" +
-  "runInitThenAuth();" +
-  "}, 200);" +
-  "if (window.Pi) { clearInterval(piPoll); runInitThenAuth(); }" +
+  "renderStatus();" +
+  "var piPoll = setInterval(function () { renderStatus(); if (!findPi()) return; clearInterval(piPoll); runInitThenAuth(); }, 200);" +
+  "if (findPi()) { clearInterval(piPoll); runInitThenAuth(); }" +
+  "if (!window.__YOUNEON_PI_SDK_LOAD_SCHEDULED__) {" +
+  "window.__YOUNEON_PI_SDK_LOAD_SCHEDULED__ = true;" +
+  "setTimeout(function () {" +
+  "if (findPi()) { renderStatus(); return; }" +
+  "if (document.querySelector('script[data-youneon-pi-sdk]')) return;" +
+  "var preserved = null; try { preserved = window.Pi; } catch (pe) { console.log('[Pi] error: ' + errMsg(pe)); }" +
+  "var s = document.createElement('script');" +
+  "s.src = 'https://sdk.minepi.com/pi-sdk.js';" +
+  "s.async = true;" +
+  "s.setAttribute('data-youneon-pi-sdk', '1');" +
+  "s.onload = function () { if (preserved) { try { window.Pi = preserved; } catch (re) { console.log('[Pi] error: ' + errMsg(re)); } } renderStatus(); };" +
+  "s.onerror = function () { console.log('[Pi] error: failed to load sdk.minepi.com'); setLast('Last: SDK script failed'); };" +
+  "(document.head || document.documentElement).appendChild(s);" +
+  "}, 500);" +
+  "}" +
   "})();";
 
 export const metadata: Metadata = {
@@ -183,9 +201,8 @@ export default function RootLayout({
         }}
       >
         <StaticPiLogin overlayId="youneon-static-login" />
-        <script type="text/javascript" src="https://sdk.minepi.com/pi-sdk.js"></script>
-        <script type="text/javascript" src="/pi-boot.js"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
+        <script type="text/javascript" src="/pi-boot.js?v=studio-auth-2"></script>
         <div
           id="youneon-app-tree"
           style={{ position: "relative", zIndex: 0, isolation: "isolate", pointerEvents: "none" }}
