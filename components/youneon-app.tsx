@@ -18,6 +18,19 @@ import {
   PI_AUTH_OK_EVENT,
   readLiteSession,
 } from "@/lib/pi-client-session";
+import {
+  isPremiumActive,
+  persistPremiumUntil,
+  PREMIUM_GRANTED_EVENT,
+  readStoredNeonBalance,
+  readStoredPremiumUntil,
+  type PremiumGrantedDetail,
+} from "@/lib/premium";
+import {
+  seedAnnouncementsIfEmpty,
+  subscribeToAnnouncements,
+  type Announcement,
+} from "@/lib/announcements";
 
 const MOCK_MATCHES = [
   { id: "sofia", name: "Sofia", avatar: "👩‍🦰", flag: "🇮🇹" },
@@ -39,6 +52,7 @@ type YouNeonUser = {
   profilePicture: string;
   languages: string[];
   interests: string[];
+  premiumUntil?: string;
 };
 
 function readLocalProfileExtras(): Partial<YouNeonUser> {
@@ -79,6 +93,8 @@ export function YouNeonApp() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isInVideoChat, setIsInVideoChat] = useState(false);
   const [neonBalance, setNeonBalance] = useState(100);
+  const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNeonShop, setShowNeonShop] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
 
@@ -133,8 +149,35 @@ export function YouNeonApp() {
   }, [showApp, isAuthenticated]);
 
   useEffect(() => {
-    const bal = localStorage.getItem("youneon_neon_balance");
-    if (bal) setNeonBalance(parseInt(bal));
+    setNeonBalance(readStoredNeonBalance(100));
+    const storedUntil = readStoredPremiumUntil();
+    if (storedUntil) setPremiumUntil(storedUntil);
+  }, []);
+
+  useEffect(() => {
+    const onGranted = (event: Event) => {
+      const detail = (event as CustomEvent<PremiumGrantedDetail>).detail;
+      if (!detail) return;
+      if (detail.premiumUntil) setPremiumUntil(detail.premiumUntil);
+      setNeonBalance(readStoredNeonBalance(0));
+    };
+    window.addEventListener(PREMIUM_GRANTED_EVENT, onGranted);
+    return () => window.removeEventListener(PREMIUM_GRANTED_EVENT, onGranted);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
+    seedAnnouncementsIfEmpty()
+      .catch(() => {})
+      .finally(() => {
+        if (cancelled) return;
+        unsub = subscribeToAnnouncements(setAnnouncements);
+      });
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -190,7 +233,16 @@ export function YouNeonApp() {
             uid,
             piUsername,
             profilePicture: remote.profilePicture || extras.profilePicture || "",
+            premiumUntil: remote.premiumUntil || extras.premiumUntil || readStoredPremiumUntil() || undefined,
           };
+          if (remote.premiumUntil) {
+            persistPremiumUntil(remote.premiumUntil);
+            setPremiumUntil(remote.premiumUntil);
+          }
+          if (typeof remote.neonBalance === "number" && remote.neonBalance > readStoredNeonBalance(0)) {
+            setNeonBalance(remote.neonBalance);
+            localStorage.setItem("youneon_neon_balance", String(remote.neonBalance));
+          }
         }
       } catch {
         /* keep local/verified identity */
@@ -283,23 +335,33 @@ export function YouNeonApp() {
 
   const currentUserId = displayUser.id || displayUser.piUsername;
   const hasOwnPhoto = !!(displayUser.profilePicture && displayUser.profilePicture.length > 0);
+  const isPremium = isPremiumActive(premiumUntil || displayUser.premiumUntil);
 
   if (activeChat && displayUser) {
     return (
-      <ChatScreen
-        conversationId={activeChat.conversationId}
-        currentUserId={currentUserId}
-        hasOwnPhoto={hasOwnPhoto}
-        otherUser={activeChat.otherUser}
-        onBack={() => setActiveChat(null)}
-        onCall={() => {
-          setActiveChat(null);
-          setIsInVideoChat(true);
-        }}
-        neonBalance={neonBalance}
-        onUpdateBalance={updateNeonBalance}
-        onOpenNeonShop={() => setShowNeonShop(true)}
-      />
+      <>
+        <ChatScreen
+          conversationId={activeChat.conversationId}
+          currentUserId={currentUserId}
+          hasOwnPhoto={hasOwnPhoto}
+          otherUser={activeChat.otherUser}
+          onBack={() => setActiveChat(null)}
+          onCall={() => {
+            setActiveChat(null);
+            setIsInVideoChat(true);
+          }}
+          neonBalance={neonBalance}
+          onUpdateBalance={updateNeonBalance}
+          onOpenNeonShop={() => setShowNeonShop(true)}
+          isPremium={isPremium}
+        />
+        <NeonShopModal
+          isOpen={showNeonShop}
+          onClose={() => setShowNeonShop(false)}
+          isPremium={isPremium}
+          premiumUntil={premiumUntil}
+        />
+      </>
     );
   }
 
@@ -309,6 +371,7 @@ export function YouNeonApp() {
         onEnd={handleEndVideoChat}
         currentUserId={currentUserId}
         currentUserName={displayUser.fullName}
+        isPremium={isPremium}
       />
     );
   }
@@ -324,6 +387,8 @@ export function YouNeonApp() {
         onProfileClick={() => setShowProfileModal(true)}
         neonBalance={neonBalance}
         onNeonClick={() => setShowNeonShop(true)}
+        isPremium={isPremium}
+        announcements={announcements}
       />
       <div className={`fixed inset-x-0 top-[calc(48px+env(safe-area-inset-top))] bottom-[calc(56px+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (
@@ -334,6 +399,8 @@ export function YouNeonApp() {
               onUpdateBalance={updateNeonBalance}
               currentUserId={currentUserId}
               onOpenNeonShop={() => setShowNeonShop(true)}
+              isPremium={isPremium}
+              announcements={announcements}
             />
           </div>
         )}
@@ -355,8 +422,16 @@ export function YouNeonApp() {
           setShowProfileModal(false);
           refreshProfilePhoto();
         }}
+        isPremium={isPremium}
+        announcements={announcements}
+        currentUsername={displayUser.piUsername}
       />
-      <NeonShopModal isOpen={showNeonShop} onClose={() => setShowNeonShop(false)} />
+      <NeonShopModal
+        isOpen={showNeonShop}
+        onClose={() => setShowNeonShop(false)}
+        isPremium={isPremium}
+        premiumUntil={premiumUntil}
+      />
     </div>
   );
 }

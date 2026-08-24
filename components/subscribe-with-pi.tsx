@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { Crown } from "lucide-react";
+import { Check, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PI_SDK_UNAVAILABLE, subscribeWithPi } from "@/lib/pi-sdk";
-import { SUBSCRIPTION_PLAN } from "@/lib/product-config";
+import { PREMIUM_BENEFITS, PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
+import { emitPremiumGranted, isPremiumActive } from "@/lib/premium";
 
 function formatUntil(iso: string): string {
   const date = new Date(iso);
@@ -18,12 +19,24 @@ function formatUntil(iso: string): string {
 
 type SubscribeWithPiProps = {
   variant?: "shop" | "settings";
+  isPremium?: boolean;
+  premiumUntil?: string | null;
 };
 
-export function SubscribeWithPi({ variant = "shop" }: SubscribeWithPiProps) {
+export function SubscribeWithPi({
+  variant = "shop",
+  isPremium = false,
+  premiumUntil: premiumUntilProp = null,
+}: SubscribeWithPiProps) {
   const [status, setStatus] = React.useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = React.useState("");
-  const [premiumUntil, setPremiumUntil] = React.useState<string | null>(null);
+  const [premiumUntil, setPremiumUntil] = React.useState<string | null>(premiumUntilProp);
+
+  React.useEffect(() => {
+    setPremiumUntil(premiumUntilProp);
+  }, [premiumUntilProp]);
+
+  const active = isPremium || isPremiumActive(premiumUntil);
 
   const handleSubscribe = async () => {
     setStatus("loading");
@@ -32,11 +45,24 @@ export function SubscribeWithPi({ variant = "shop" }: SubscribeWithPiProps) {
     try {
       const result = await subscribeWithPi();
       const until = result.premiumUntil || null;
+      const neonGranted =
+        result.alreadyGranted
+          ? 0
+          : typeof result.neonGranted === "number" && result.neonGranted > 0
+            ? result.neonGranted
+            : result.granted === false
+              ? 0
+              : PREMIUM_SUBSCRIBE_NEON;
       setPremiumUntil(until);
+      emitPremiumGranted({
+        premiumUntil: until,
+        neonGranted,
+        alreadyGranted: result.alreadyGranted === true,
+      });
       setStatus("success");
       setMessage(
         until
-          ? `YouNeon Premium is active until ${formatUntil(until)}.`
+          ? `YouNeon Premium is active until ${formatUntil(until)}.${neonGranted > 0 ? ` +${neonGranted} Neon added.` : ""}`
           : "Payment complete. YouNeon Premium is now active."
       );
     } catch (error) {
@@ -53,45 +79,71 @@ export function SubscribeWithPi({ variant = "shop" }: SubscribeWithPiProps) {
   };
 
   const isShop = variant === "shop";
+  const titleClass = isShop ? "text-[15px] font-semibold text-white" : "text-[15px] font-semibold text-gray-900";
+  const bodyClass = isShop ? "text-[12px] leading-relaxed text-white/55" : "text-[12px] leading-relaxed text-gray-600";
+  const benefitText = isShop ? "text-[13px] text-white/80" : "text-[13px] text-gray-800";
 
   return (
     <div
       className={
         isShop
-          ? "mx-4 mt-4 mb-1 rounded-xl border border-pink-500/30 bg-gradient-to-b from-purple-900/50 to-transparent p-3.5"
-          : "w-full rounded-xl border border-purple-400/40 bg-gradient-to-r from-purple-50 to-pink-50 p-3.5"
+          ? "mx-4 mt-4 mb-1 rounded-2xl border border-pink-500/30 bg-gradient-to-b from-purple-900/50 to-transparent p-4"
+          : "w-full rounded-2xl border border-purple-400/40 bg-gradient-to-r from-purple-50 to-pink-50 p-4"
       }
     >
       <div className="flex items-start gap-3">
         <div
           className={
             isShop
-              ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500 to-purple-600"
-              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white"
+              ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-purple-600"
+              : "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white"
           }
         >
-          <Crown size={isShop ? 16 : 18} className="text-white" />
+          <Crown size={18} className="text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className={isShop ? "text-sm font-semibold text-white" : "text-sm font-semibold text-gray-900"}>
-            {SUBSCRIPTION_PLAN.name}
-          </div>
-          <p className={isShop ? "mt-0.5 text-xs text-purple-200/80" : "mt-0.5 text-xs text-gray-600"}>
-            {SUBSCRIPTION_PLAN.amount} Pi / {SUBSCRIPTION_PLAN.days} days
+          <div className={titleClass}>{SUBSCRIPTION_PLAN.name}</div>
+          <p className={isShop ? "mt-0.5 text-[13px] font-medium text-pink-200/90" : "mt-0.5 text-[13px] font-medium text-purple-700"}>
+            {SUBSCRIPTION_PLAN.amount} π / {SUBSCRIPTION_PLAN.days} days
           </p>
+          {active && premiumUntil && (
+            <p className={isShop ? "mt-1 text-[11px] text-emerald-300" : "mt-1 text-[11px] text-emerald-700"}>
+              Active until {formatUntil(premiumUntil)}
+            </p>
+          )}
         </div>
       </div>
+
+      <ul className="mt-4 space-y-2.5">
+        {PREMIUM_BENEFITS.map((benefit) => (
+          <li key={benefit.title} className="flex items-start gap-2.5">
+            <span
+              className={
+                isShop
+                  ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300"
+                  : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"
+              }
+            >
+              <Check size={12} strokeWidth={2.5} />
+            </span>
+            <span>
+              <span className={`block font-medium ${benefitText}`}>{benefit.title}</span>
+              <span className={bodyClass}>{benefit.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
 
       <Button
         onClick={handleSubscribe}
         disabled={status === "loading"}
-        className={
-          isShop
-            ? "mt-3 h-11 w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white hover:from-purple-500 hover:to-pink-500"
-            : "mt-3 h-11 w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white hover:from-purple-500 hover:to-pink-500"
-        }
+        className="mt-4 h-11 w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white hover:from-purple-500 hover:to-pink-500"
       >
-        {status === "loading" ? "Processing Pi payment..." : "Subscribe with Pi"}
+        {status === "loading"
+          ? "Processing Pi payment..."
+          : active
+            ? "Renew with Pi"
+            : "Subscribe with Pi"}
       </Button>
 
       {status !== "idle" && message && (
@@ -111,12 +163,6 @@ export function SubscribeWithPi({ variant = "shop" }: SubscribeWithPiProps) {
           }`}
         >
           {message}
-        </p>
-      )}
-
-      {status === "success" && premiumUntil && (
-        <p className={isShop ? "mt-1 text-[10px] text-purple-300" : "mt-1 text-[10px] text-purple-500"}>
-          Premium until {formatUntil(premiumUntil)}
         </p>
       )}
     </div>

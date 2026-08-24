@@ -1,10 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import { X, Upload, Trash2, Plus, Edit2, MapPin } from "lucide-react";
+import { PremiumBadge } from "@/components/premium-badge";
+import { AnnouncementsAdmin } from "@/components/announcements-admin";
+import { isCurrentUserAdmin } from "@/lib/admin";
+import type { Announcement } from "@/lib/announcements";
 
 interface ProfileEditModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isPremium?: boolean;
+  announcements?: Announcement[];
+  currentUsername?: string;
 }
 
 interface UserProfile {
@@ -24,7 +31,13 @@ const INTEREST_OPTIONS = [
   "Yoga", "Fitness", "Fashion", "Design", "Business", "Education"
 ];
 
-export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
+export function ProfileEditModal({
+  isOpen,
+  onClose,
+  isPremium = false,
+  announcements = [],
+  currentUsername,
+}: ProfileEditModalProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
@@ -121,7 +134,10 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
       <div className="w-full max-w-2xl bg-white rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-3xl">
-          <h1 className="text-2xl font-black text-gray-900">Edit Profile</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-gray-900">Edit Profile</h1>
+            {isPremium && <PremiumBadge size="md" />}
+          </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-all"
@@ -403,6 +419,12 @@ export function ProfileEditModal({ isOpen, onClose }: ProfileEditModalProps) {
               </div>
             </div>
           </div>
+
+          {isCurrentUserAdmin(currentUsername) && (
+            <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
+              <AnnouncementsAdmin announcements={announcements} />
+            </div>
+          )}
 
           {/* Close Button */}
           <button

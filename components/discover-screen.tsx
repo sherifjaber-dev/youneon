@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { ChevronDown, Flame } from "lucide-react";
 import { db } from "../lib/firebase";
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { AdBanner, AdInterstitial } from "@/components/ad-placements";
+import { PremiumBadge } from "@/components/premium-badge";
+import type { Announcement } from "@/lib/announcements";
 
 interface DiscoverScreenProps {
   onStartVideo: () => void;
@@ -11,9 +14,19 @@ interface DiscoverScreenProps {
   onUpdateBalance: (newBalance: number) => void;
   currentUserId?: string;
   onOpenNeonShop?: () => void;
+  isPremium?: boolean;
+  announcements?: Announcement[];
 }
 
-export function DiscoverScreen({ onStartVideo, neonBalance, onUpdateBalance, currentUserId, onOpenNeonShop }: DiscoverScreenProps) {
+export function DiscoverScreen({
+  onStartVideo,
+  neonBalance,
+  onUpdateBalance,
+  currentUserId,
+  onOpenNeonShop,
+  isPremium = false,
+  announcements = [],
+}: DiscoverScreenProps) {
   const [selectedGender, setSelectedGender] = useState<"women" | "men" | "both">("both");
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -37,9 +50,10 @@ export function DiscoverScreen({ onStartVideo, neonBalance, onUpdateBalance, cur
     "Singapore", "Malaysia", "Philippines", "Bangladesh", "Iran", "Iraq", "Syria", "Yemen",
   ];
 
-  const genderCost = genderOptions.find((g) => g.value === selectedGender)?.cost || 0;
-  const countryCost = selectedCountry !== "Worldwide" ? 5 : 0;
+  const genderCost = isPremium ? 0 : genderOptions.find((g) => g.value === selectedGender)?.cost || 0;
+  const countryCost = isPremium || selectedCountry === "Worldwide" ? 0 : 5;
   const totalCost = genderCost + countryCost;
+  const adItems = announcements.filter((item) => item.active && item.type === "ad");
   const hasEnoughNeon = neonBalance >= totalCost;
   const missingNeon = Math.max(0, totalCost - neonBalance);
 
@@ -139,10 +153,10 @@ export function DiscoverScreen({ onStartVideo, neonBalance, onUpdateBalance, cur
                 >
                   <span className="text-[15px] font-semibold leading-none">{option.label}</span>
                   <span className={`mt-1 text-[10px] font-medium leading-none ${selected ? "text-white/80" : "text-white/40"}`}>
-                    {option.cost > 0 ? (
-                      <>◆ {option.cost} Neon</>
-                    ) : (
+                    {isPremium || option.cost === 0 ? (
                       <span className={selected ? "text-emerald-200" : "text-emerald-400/80"}>Free</span>
+                    ) : (
+                      <>◆ {option.cost} Neon</>
                     )}
                   </span>
                 </button>
@@ -160,8 +174,11 @@ export function DiscoverScreen({ onStartVideo, neonBalance, onUpdateBalance, cur
           >
             <span className="text-[15px] font-medium text-white">{selectedCountry}</span>
             <div className="flex items-center gap-2">
-              {selectedCountry !== "Worldwide" && (
+              {selectedCountry !== "Worldwide" && !isPremium && (
                 <span className="rounded-full bg-yellow-400/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-300">◆ 5</span>
+              )}
+              {selectedCountry !== "Worldwide" && isPremium && (
+                <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">Free</span>
               )}
               <ChevronDown className={`h-4 w-4 text-white/50 transition-transform ${showCountryDropdown ? "rotate-180" : ""}`} />
             </div>
@@ -179,7 +196,9 @@ export function DiscoverScreen({ onStartVideo, neonBalance, onUpdateBalance, cur
                   }`}
                 >
                   <span>{country}</span>
-                  {country !== "Worldwide" && <span className="text-[10px] font-semibold text-yellow-300">◆ 5</span>}
+                  {country !== "Worldwide" && !isPremium && (
+                    <span className="text-[10px] font-semibold text-yellow-300">◆ 5</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -196,8 +215,13 @@ export function DiscoverScreen({ onStartVideo, neonBalance, onUpdateBalance, cur
         >
           <Flame className="h-4 w-4 text-yellow-200" fill="currentColor" />
           <span>Start Random Chat</span>
+          {isPremium && <PremiumBadge />}
         </button>
-        {totalCost > 0 ? (
+        {isPremium ? (
+          <p className="mt-1.5 text-center text-[11px] font-medium text-amber-200/80">
+            Priority matching · filters included
+          </p>
+        ) : totalCost > 0 ? (
           <p className="mt-1.5 text-center text-[11px] font-medium text-white/45">
             ◆ {totalCost} Neon · first chat is free
           </p>
@@ -207,6 +231,13 @@ export function DiscoverScreen({ onStartVideo, neonBalance, onUpdateBalance, cur
           </p>
         )}
       </div>
+
+      {!isPremium && (
+        <AdBanner ads={adItems} onSubscribe={onOpenNeonShop} />
+      )}
+      {!isPremium && (
+        <AdInterstitial ads={adItems} onSubscribe={onOpenNeonShop} />
+      )}
 
       {/* ===== INSUFFICIENT NEON MODAL ===== */}
       {showInsufficientModal && (

@@ -19,6 +19,7 @@ interface VideoCallScreenProps {
   partnerProfile?: PartnerProfile;
   currentUserId?: string;
   currentUserName?: string;
+  isPremium?: boolean;
 }
 
 type PermissionState = "checking" | "granted" | "denied" | "not-found" | "in-use" | "error";
@@ -53,7 +54,7 @@ const NSFW_HENTAI_THRESHOLD = 0.7;
 const NSFW_SEXY_THRESHOLD = 0.85;
 const NSFW_CHECK_INTERVAL_MS = 2000;
 
-function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, currentUserName }: VideoCallScreenProps) {
+function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, currentUserName, isPremium = false }: VideoCallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -709,8 +710,13 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none z-10">
           <div className="text-center bg-black/60 backdrop-blur-md rounded-2xl px-8 py-6 max-w-sm mx-4">
             <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-pink-500 mb-4" />
+            {isPremium && (
+              <p className="mb-2 inline-flex items-center rounded-full border border-amber-300/40 bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-semibold text-amber-200">
+                Priority matching
+              </p>
+            )}
             <p className="text-xl font-semibold mb-2">Waiting for {currentPartner.name}…</p>
-            <p className="text-sm text-white/70">Forbinder…</p>
+            <p className="text-sm text-white/70">{isPremium ? "You are in the priority queue." : "Connecting…"}</p>
           </div>
         </div>
       )}

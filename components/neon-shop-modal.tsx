@@ -14,9 +14,16 @@ import { X, Zap, Star } from "lucide-react";
 interface NeonShopModalProps {
   isOpen: boolean;
   onClose: () => void;
+  isPremium?: boolean;
+  premiumUntil?: string | null;
 }
 
-export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
+export function NeonShopModal({
+  isOpen,
+  onClose,
+  isPremium = false,
+  premiumUntil = null,
+}: NeonShopModalProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [message, setMessage] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -67,7 +74,11 @@ export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
           </div>
         </div>
 
-        <SubscribeWithPi variant="shop" />
+        <SubscribeWithPi variant="shop" isPremium={isPremium} premiumUntil={premiumUntil} />
+
+        <div className="px-4 pt-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">Neon packs</p>
+        </div>
 
         <div className="grid grid-cols-2 gap-2.5 p-4">
           {NEON_PACKAGES.map((pkg) => (
@@ -87,18 +98,18 @@ export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
 
               <div className="flex-1">
                 <div className="text-2xl font-semibold leading-none text-yellow-400">
-                  {pkg.neon}
+                  {pkg.neon.toLocaleString()}
                 </div>
                 <div className="mt-0.5 text-[11px] font-medium text-purple-300">Neon</div>
               </div>
 
               <div className="mt-3">
-                <div className="mb-2 text-[15px] font-semibold text-white">{pkg.price} Pi</div>
+                <div className="mb-2 text-[15px] font-semibold text-white">{pkg.price} π</div>
 
                 <Button
                   onClick={() => handlePurchase(pkg.id)}
                   disabled={isLoading}
-                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[13px] font-semibold text-white transition-all hover:from-purple-500 hover:to-pink-500 active:scale-[0.985]"
+                  className="flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[13px] font-semibold text-white transition-all hover:from-purple-500 hover:to-pink-500 active:scale-[0.985]"
                 >
                   <Zap size={14} />
                   Buy with Pi

@@ -31,7 +31,8 @@ export interface MatchResult {
  */
 export async function findRandomMatch(
   userId: string,
-  filters: MatchFilters
+  filters: MatchFilters,
+  options?: { isPremium?: boolean }
 ): Promise<MatchResult> {
   try {
     const response = await api.post<{
@@ -40,6 +41,8 @@ export async function findRandomMatch(
     }>("/api/matches/find", {
       userId,
       filters,
+      priority: !!options?.isPremium,
+      isPremium: !!options?.isPremium,
     });
 
     return {
@@ -49,7 +52,6 @@ export async function findRandomMatch(
     };
   } catch (error) {
     console.error("Error finding match:", error);
-    // Fallback: Return a mock user for demo purposes
     return getMockMatchedUser();
   }
 }

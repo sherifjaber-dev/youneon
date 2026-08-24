@@ -4,6 +4,15 @@ import { ChevronRight, Zap, Globe, LogOut, Trash2, ArrowLeft } from "lucide-reac
 import { useLanguage, type Language } from "@/contexts/language-context";
 import { piAuthService } from "@/lib/pi-auth-service";
 import { SubscribeWithPi } from "@/components/subscribe-with-pi";
+import { AnnouncementsAdmin } from "@/components/announcements-admin";
+import { isCurrentUserAdmin } from "@/lib/admin";
+import { isPremiumActive, readStoredPremiumUntil } from "@/lib/premium";
+import {
+  seedAnnouncementsIfEmpty,
+  subscribeToAnnouncements,
+  type Announcement,
+} from "@/lib/announcements";
+import { readLiteSession } from "@/lib/pi-client-session";
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -22,6 +31,9 @@ export function SettingsScreen({ onBack, onLogOut }: SettingsScreenProps) {
   const [neonBalance, setNeonBalance] = useState(100);
   const [isMounted, setIsMounted] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
+  const [username, setUsername] = useState<string>("");
 
   useEffect(() => {
     setIsMounted(true);
@@ -31,10 +43,22 @@ export function SettingsScreen({ onBack, onLogOut }: SettingsScreenProps) {
         if (balance) {
           setNeonBalance(parseInt(balance));
         }
+        setPremiumUntil(readStoredPremiumUntil());
+        const piUser = piAuthService.getCurrentUser();
+        const lite = readLiteSession();
+        setUsername(piUser?.username || lite?.username || "");
       }
     } catch (e) {
       console.error("[v0] Error loading neon balance:", e);
     }
+
+    let unsub: (() => void) | undefined;
+    seedAnnouncementsIfEmpty()
+      .catch(() => {})
+      .finally(() => {
+        unsub = subscribeToAnnouncements(setAnnouncements);
+      });
+    return () => unsub?.();
   }, []);
 
   const handleDeleteAccount = () => {
@@ -95,7 +119,17 @@ export function SettingsScreen({ onBack, onLogOut }: SettingsScreenProps) {
           <ChevronRight size={24} className="text-yellow-600" />
         </button>
 
-        <SubscribeWithPi variant="settings" />
+        <SubscribeWithPi
+          variant="settings"
+          isPremium={isPremiumActive(premiumUntil)}
+          premiumUntil={premiumUntil}
+        />
+
+        {isCurrentUserAdmin(username) && (
+          <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
+            <AnnouncementsAdmin announcements={announcements} />
+          </div>
+        )}
 
         {/* Divider */}
         <div className="h-px bg-gray-200 my-2"></div>

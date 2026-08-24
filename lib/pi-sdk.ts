@@ -309,6 +309,8 @@ export type CreatePiPaymentResult = {
   payment?: PiPaymentDTO | null;
   premiumUntil?: string | null;
   alreadyGranted?: boolean;
+  granted?: boolean;
+  neonGranted?: number;
 };
 
 async function postPaymentAction(
@@ -384,6 +386,9 @@ export async function createPiPayment(
             premiumUntil:
               typeof result.data.premiumUntil === "string" ? result.data.premiumUntil : null,
             alreadyGranted: result.data.alreadyGranted === true,
+            granted: result.data.granted === true,
+            neonGranted:
+              typeof result.data.neonGranted === "number" ? result.data.neonGranted : 0,
           })
         );
       },

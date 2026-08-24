@@ -1,12 +1,13 @@
-import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc, increment, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { SUBSCRIPTION_PLAN } from "@/lib/product-config";
+import { PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 
 export type PremiumGrantResult = {
   granted: boolean;
   alreadyGranted: boolean;
   premiumUntil: string | null;
+  neonGranted: number;
   skipped?: string;
 };
 
@@ -14,6 +15,19 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function amountsMatch(a: number, b: number): boolean {
   return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.0001;
+}
+
+function skipped(
+  reason: string,
+  premiumUntil: string | null = null
+): PremiumGrantResult {
+  return {
+    granted: false,
+    alreadyGranted: false,
+    premiumUntil,
+    neonGranted: 0,
+    skipped: reason,
+  };
 }
 
 export function isSubscriptionPayment(payment: PiPaymentDTO | null | undefined): boolean {
@@ -42,26 +56,30 @@ export async function grantPremiumIfNeeded(
   username?: string | null
 ): Promise<PremiumGrantResult> {
   if (!payment?.identifier) {
-    return { granted: false, alreadyGranted: false, premiumUntil: null, skipped: "missing_payment" };
+    return skipped("missing_payment");
   }
 
   if (!isSubscriptionPayment(payment)) {
-    return { granted: false, alreadyGranted: false, premiumUntil: null, skipped: "not_subscription" };
+    return skipped("not_subscription");
   }
 
   if (!amountsMatch(Number(payment.amount), SUBSCRIPTION_PLAN.amount)) {
     console.warn("[Pi] skip premium grant: amount mismatch", payment.identifier);
-    return { granted: false, alreadyGranted: false, premiumUntil: null, skipped: "amount_mismatch" };
+    return skipped("amount_mismatch");
   }
 
   const paymentRef = doc(db, "pi_payments", payment.identifier);
   const existingPay = await getDoc(paymentRef);
   if (existingPay.exists() && existingPay.data()?.entitlementGranted) {
+    const data = existingPay.data();
     const premiumUntil =
-      typeof existingPay.data()?.premiumUntil === "string"
-        ? existingPay.data()?.premiumUntil
-        : null;
-    return { granted: false, alreadyGranted: true, premiumUntil };
+      typeof data?.premiumUntil === "string" ? data.premiumUntil : null;
+    return {
+      granted: false,
+      alreadyGranted: true,
+      premiumUntil,
+      neonGranted: 0,
+    };
   }
 
   const userUid = typeof payment.user_uid === "string" ? payment.user_uid : "";
@@ -72,6 +90,7 @@ export async function grantPremiumIfNeeded(
   }
   const premiumUntil = nextPremiumUntil(currentUntil);
   const now = Timestamp.now();
+  const neonGranted = PREMIUM_SUBSCRIBE_NEON;
 
   await setDoc(
     paymentRef,
@@ -85,6 +104,7 @@ export async function grantPremiumIfNeeded(
       txid: payment.transaction?.txid || null,
       entitlementGranted: true,
       premiumUntil,
+      neonGranted,
       planId: SUBSCRIPTION_PLAN.id,
       grantedAt: now,
       updatedAt: now,
@@ -99,6 +119,7 @@ export async function grantPremiumIfNeeded(
         uid: userUid,
         username: username || "",
         premiumUntil,
+        neonBalance: increment(neonGranted),
         lastPaymentId: payment.identifier,
         updatedAt: now,
       },
@@ -113,6 +134,7 @@ export async function grantPremiumIfNeeded(
         uid: userUid || undefined,
         piUsername: username,
         premiumUntil,
+        neonBalance: increment(neonGranted),
         lastPaymentId: payment.identifier,
         updatedAt: now,
       },
@@ -120,7 +142,7 @@ export async function grantPremiumIfNeeded(
     );
   }
 
-  return { granted: true, alreadyGranted: false, premiumUntil };
+  return { granted: true, alreadyGranted: false, premiumUntil, neonGranted };
 }
 
 export async function getPremiumUntil(userUid: string): Promise<string | null> {

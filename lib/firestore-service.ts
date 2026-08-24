@@ -17,6 +17,7 @@ export interface UserProfile {
   profilePicture?: string;
   premiumUntil?: string;
   lastPaymentId?: string;
+  neonBalance?: number;
   createdAt?: Date;
 }
 
@@ -32,8 +33,9 @@ export const FREE_CALL_INTERVAL_MS = TWENTY_FOUR_HOURS_MS;
 export const PAID_CALL_COST = 20;
 
 export const saveUserProfile = async (profile: UserProfile) => {
+  const { neonBalance: _neon, premiumUntil: _until, lastPaymentId: _pay, ...rest } = profile;
   const ref = doc(db, "users", profile.piUsername);
-  await setDoc(ref, { ...profile, updatedAt: Timestamp.now() }, { merge: true });
+  await setDoc(ref, { ...rest, updatedAt: Timestamp.now() }, { merge: true });
   return profile.piUsername;
 };
 

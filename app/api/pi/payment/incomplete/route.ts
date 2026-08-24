@@ -29,6 +29,9 @@ export async function POST(request: Request) {
       paymentId,
       payment: result.payment,
       premiumUntil: result.grant?.premiumUntil || null,
+      alreadyGranted: result.grant?.alreadyGranted || false,
+      granted: result.grant?.granted || false,
+      neonGranted: result.grant?.neonGranted || 0,
       waiting: result.waiting || false,
     });
   } catch (error) {

@@ -15,6 +15,8 @@ import {
   ChatMessage,
 } from "@/lib/firestore-service";
 
+import { PremiumBadge } from "@/components/premium-badge";
+
 const UNLOCK_COST = 100;
 
 interface ChatScreenProps {
@@ -34,6 +36,7 @@ interface ChatScreenProps {
   neonBalance: number;
   onUpdateBalance: (newBalance: number) => void;
   onOpenNeonShop?: () => void;
+  isPremium?: boolean;
 }
 
 export function ChatScreen({
@@ -46,6 +49,7 @@ export function ChatScreen({
   neonBalance,
   onUpdateBalance,
   onOpenNeonShop,
+  isPremium = false,
 }: ChatScreenProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -82,7 +86,7 @@ export function ChatScreen({
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const isUnlocked = !!conv?.unlocked;
+  const isUnlocked = !!conv?.unlocked || isPremium;
   // Other user has replied if there exists at least one message from otherUser.id
   const otherHasReplied = useMemo(
     () => messages.some((m) => m.senderId === otherUser.id),
@@ -92,6 +96,11 @@ export function ChatScreen({
   const callCost = useMemo(() => getCallCost(conv, currentUserId), [conv, currentUserId]);
   // Can other's profile picture be shown? Only if I uploaded my own photo.
   const canSeeOtherPhoto = hasOwnPhoto && !!otherUser.photo;
+
+  useEffect(() => {
+    if (!isPremium || !conv || conv.unlocked) return;
+    unlockConversation(conversationId, currentUserId).catch(() => {});
+  }, [isPremium, conv, conversationId, currentUserId]);
 
   const handleUnlock = async () => {
     if (unlocking) return;
@@ -105,7 +114,7 @@ export function ChatScreen({
       onUpdateBalance(neonBalance - UNLOCK_COST);
     } catch (e) {
       console.error(e);
-      alert("Kunne ikke låse chatten op. Prøv igen.");
+      alert("Could not unlock chat. Please try again.");
     }
     setUnlocking(false);
   };
@@ -213,9 +222,10 @@ export function ChatScreen({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <p className="font-semibold text-white truncate">{otherUser.name}</p>
             {otherUser.countryFlag && <span>{otherUser.countryFlag}</span>}
+            {isPremium && <PremiumBadge />}
           </div>
           <p className="text-xs text-purple-300/70">
             {otherUser.isOnline ? "Online" : "Offline"}

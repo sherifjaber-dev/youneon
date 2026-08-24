@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       premiumUntil: result.grant?.premiumUntil || null,
       alreadyGranted: result.grant?.alreadyGranted || false,
       granted: result.grant?.granted || false,
+      neonGranted: result.grant?.neonGranted || 0,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Complete failed";
