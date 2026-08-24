@@ -191,17 +191,13 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const cap = setTimeout(() => {
-      if (!cancelled) setIsInitializing(false);
-    }, 2000);
-
     (async () => {
-      setIsInitializing(true);
       try {
         await authenticate(false);
+      } catch {
+        /* vanilla boot script already logs [Pi] error */
       } finally {
         if (!cancelled) {
-          setIsInitializing(false);
           setPiAvailable(isPiAvailable());
         }
       }
@@ -209,7 +205,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      clearTimeout(cap);
     };
   }, [authenticate]);
 
@@ -246,10 +241,26 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   return <PiAuthContext.Provider value={value}>{children}</PiAuthContext.Provider>;
 }
 
+const EMPTY_PI_AUTH: PiAuthContextType = {
+  user: null,
+  accessToken: null,
+  isAuthenticated: false,
+  isInitializing: false,
+  hasError: false,
+  authMessage: "",
+  piAvailable: true,
+  login: async () => {},
+  logout: async () => {},
+  reinitialize: async () => {},
+  sdk: null,
+  products: [],
+  restoredPurchases: [],
+};
+
 export function usePiAuth() {
   const context = useContext(PiAuthContext);
   if (context === undefined) {
-    throw new Error("usePiAuth must be used within PiAuthProvider");
+    return EMPTY_PI_AUTH;
   }
   return context;
 }

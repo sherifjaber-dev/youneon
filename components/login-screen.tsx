@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 interface LoginScreenProps {
   onLogin: () => void;
   isLoggingIn?: boolean;
@@ -20,11 +18,6 @@ export function LoginScreen({
   const showPiBrowserHint = !piAvailable;
   const showError = Boolean(errorMessage) && (piAvailable || !errorMessage?.includes("Pi Browser"));
 
-  useEffect(() => {
-    const el = document.getElementById("youneon-static-login");
-    if (el) el.style.display = "none";
-  }, []);
-
   const handleSignIn = () => {
     if (typeof window.__youneonPiAuth === "function") {
       void window.__youneonPiAuth(true);
@@ -34,44 +27,74 @@ export function LoginScreen({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center px-4 overflow-hidden"
+      className="youneon-static-login"
       style={{
-        backgroundColor: "#1a0533",
-        backgroundImage: "linear-gradient(to bottom right, #2e1065, #000000)",
-        minHeight: "100dvh",
+        position: "fixed",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#0f0117",
+        minHeight: "100%",
+        padding: 16,
+        boxSizing: "border-box",
+        fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
       }}
     >
-      <div className="relative z-10 text-center w-full max-w-sm">
-        <h1 className="text-4xl font-extrabold tracking-tight mb-3" style={{ color: "#e9d5ff" }}>
+      <div style={{ position: "relative", zIndex: 10, textAlign: "center", width: "100%", maxWidth: 384 }}>
+        <h1
+          style={{
+            fontSize: "2.25rem",
+            fontWeight: 800,
+            margin: "0 0 0.75rem",
+            color: "#e9d5ff",
+            fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+          }}
+        >
           YouNeon
         </h1>
-        <p className="text-sm text-white/90 font-light tracking-wide mb-6">
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", margin: "0 0 1.5rem" }}>
           Meet the Pi Network – Live video chat with real people
         </p>
 
         {showPiBrowserHint && (
-          <p className="text-amber-200 text-xs mb-4 leading-relaxed">
+          <p style={{ color: "#fde68a", fontSize: 12, margin: "0 0 1rem", lineHeight: 1.5 }}>
             Pi authentication only works inside the Pi Browser. Open YouNeon in Pi Browser, then tap
             Sign in with Pi Network.
           </p>
         )}
 
         {showError && (
-          <p className="text-red-200 text-xs mb-4 leading-relaxed">{errorMessage}</p>
+          <p style={{ color: "#fecaca", fontSize: 12, margin: "0 0 1rem", lineHeight: 1.5 }}>{errorMessage}</p>
         )}
 
         {isLoggingIn && (
-          <p className="text-purple-200 text-xs mb-3">Connecting to Pi Network…</p>
+          <p style={{ color: "#e9d5ff", fontSize: 12, margin: "0 0 0.75rem" }}>Connecting to Pi Network…</p>
         )}
 
         <button
           type="button"
+          data-youneon-signin="1"
           onClick={handleSignIn}
-          className="relative z-20 w-full px-6 py-4 text-lg font-bold rounded-2xl shadow-xl shadow-purple-500/60 hover:shadow-pink-500/80 active:scale-95 transition-all cursor-pointer"
           style={{
+            position: "relative",
+            zIndex: 20,
+            width: "100%",
+            padding: "16px 24px",
+            fontSize: "1.125rem",
+            fontWeight: 700,
+            borderRadius: 16,
             color: "#ffffff",
+            backgroundColor: "#a855f7",
             backgroundImage: "linear-gradient(to right, #a855f7, #ec4899)",
             border: 0,
+            cursor: "pointer",
+            fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
           }}
         >
           Sign in with Pi Network
@@ -81,13 +104,28 @@ export function LoginScreen({
           <button
             type="button"
             onClick={onGuest}
-            className="relative z-20 mt-4 block mx-auto text-sm text-white/60 underline underline-offset-4 hover:text-white/90"
+            style={{
+              position: "relative",
+              zIndex: 20,
+              marginTop: 16,
+              display: "block",
+              marginLeft: "auto",
+              marginRight: "auto",
+              fontSize: 14,
+              color: "rgba(255,255,255,0.6)",
+              background: "transparent",
+              border: 0,
+              textDecoration: "underline",
+              cursor: "pointer",
+            }}
           >
             Continue as guest (demo)
           </button>
         )}
 
-        <p className="text-white/70 text-xs mt-6">Secure • Instant • Powered by Pi Network</p>
+        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 24 }}>
+          Secure • Instant • Powered by Pi Network
+        </p>
       </div>
     </div>
   );

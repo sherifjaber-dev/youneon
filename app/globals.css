@@ -4,8 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: #0f0117;
+  --foreground: #ffffff;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -75,8 +75,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, Consolas, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -188,11 +188,11 @@
   }
   html,
   body {
-    background-color: #1a0533;
+    background-color: #0f0117 !important;
     min-height: 100%;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   body {
-    background-image: linear-gradient(to bottom right, #2e1065, #000000);
     color: #ffffff;
   }
 }
