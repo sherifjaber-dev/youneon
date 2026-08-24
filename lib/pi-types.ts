@@ -1,5 +1,9 @@
 export type PiScope = "username" | "payments" | "wallet_address";
 
+export type PiAuthenticateOptions = {
+  scopes: PiScope[];
+};
+
 export type PiAuthResult = {
   accessToken: string;
   user: {
@@ -56,10 +60,13 @@ export type PiAdType = "interstitial" | "rewarded";
 
 export type PiSDK = {
   init: (options: { version: string; sandbox?: boolean }) => Promise<void> | void;
-  authenticate: (
-    scopes: PiScope[],
-    onIncompletePaymentFound?: (payment: PiPaymentDTO) => void
-  ) => Promise<PiAuthResult>;
+  authenticate: {
+    (options: PiAuthenticateOptions): Promise<PiAuthResult>;
+    (
+      scopes: PiScope[],
+      onIncompletePaymentFound?: (payment: PiPaymentDTO) => void
+    ): Promise<PiAuthResult>;
+  };
   createPayment: (paymentData: PiPaymentData, callbacks: PiPaymentCallbacks) => void;
   nativeFeaturesList?: () => Promise<PiNativeFeature[]>;
   openShareDialog?: (title: string, message: string) => void;
@@ -74,6 +81,7 @@ export type PiSDK = {
 declare global {
   interface Window {
     Pi?: PiSDK;
+    __YOUNEON_PI_AUTH_PROMISE__?: Promise<PiAuthResult>;
   }
 }
 

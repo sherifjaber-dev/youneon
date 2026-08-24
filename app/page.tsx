@@ -211,6 +211,8 @@ export default function HomePage() {
   const currentUserId = currentUser?.id || currentUser?.piUsername;
   const showApp = (isAuthenticated && profileReady && !!currentUser) || (isGuestDemo && !!currentUser);
 
+  // Keep LoginScreen mounted while Pi.authenticate runs. Do not block on AuthLoadingScreen
+  // until after authenticate has already succeeded. Guest is never the default path.
   if (!showApp) {
     if (isAuthenticated && !isGuestDemo) {
       return <AuthLoadingScreen />;
@@ -219,6 +221,7 @@ export default function HomePage() {
     return (
       <LoginScreen
         onLogin={() => {
+          console.log("[Pi] LoginScreen requesting Sign in");
           void login();
         }}
         isLoggingIn={isInitializing}

@@ -47,7 +47,10 @@ export function LoginScreen({
 
         <button
           type="button"
-          onClick={onLogin}
+          onClick={() => {
+            console.log("[Pi] Sign in button clicked");
+            onLogin();
+          }}
           className="relative z-20 mx-auto px-10 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/60 hover:shadow-pink-500/80 active:scale-95 transition-all cursor-pointer disabled:opacity-70"
         >
           {isLoggingIn ? "Signing in..." : "Log in with Pi Network"}

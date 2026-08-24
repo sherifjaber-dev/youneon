@@ -10,9 +10,11 @@ import {
 
 async function verifyAccessToken(accessToken: string) {
   // Identity comes only from GET /v2/me. No Pi API key is used for this flow.
+  console.log("[Pi] /me verify start");
   const piRes = await fetchPiMe(accessToken);
 
   if (piRes.status === 401) {
+    console.log("[Pi] /me verify fail", { status: 401 });
     await clearPiSessionCookie();
     return NextResponse.json(
       { error: "Invalid or expired Pi access token" },
@@ -21,6 +23,7 @@ async function verifyAccessToken(accessToken: string) {
   }
 
   if (!piRes.ok) {
+    console.log("[Pi] /me verify fail", { status: piRes.status });
     return NextResponse.json(
       { error: "Pi Network verification failed" },
       { status: 502 }
@@ -29,12 +32,14 @@ async function verifyAccessToken(accessToken: string) {
 
   const user = await parseVerifiedPiUser(piRes);
   if (!user) {
+    console.log("[Pi] /me verify fail", "Pi user identity missing");
     return NextResponse.json(
       { error: "Pi user identity missing" },
       { status: 502 }
     );
   }
 
+  console.log("[Pi] /me verify success", { uid: user.uid, username: user.username });
   await setPiSessionCookie(accessToken);
   return NextResponse.json(user);
 }
