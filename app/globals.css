@@ -186,7 +186,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
   body {
-    @apply bg-background text-foreground;
+    background-color: #1a0533;
+    min-height: 100%;
+  }
+  body {
+    background-image: linear-gradient(to bottom right, #2e1065, #000000);
+    color: #ffffff;
   }
 }

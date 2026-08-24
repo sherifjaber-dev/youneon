@@ -1,6 +1,5 @@
 import type React from "react";
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { GeistSans } from "geist/font/sans";
 import { LanguageProvider } from "@/contexts/language-context";
 import { PiAuthProvider } from "@/contexts/pi-auth-context";
@@ -13,57 +12,88 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pine
 const PI_SANDBOX = PI_NETWORK_CONFIG.SANDBOX;
 
 /**
- * Inline auto-auth so Pi App Studio sees a real Pi.authenticate call in the HTML
- * and at runtime — without waiting for React hydration or a button click.
- * Polls for window.Pi, awaits Pi.init, then calls the object-form authenticate.
+ * Non-blocking Pi boot: logs SDK load, wires the first-paint Sign in button,
+ * and starts auto-auth after paint. Does not use beforeInteractive (that delays
+ * hydration if sdk.minepi.com is slow/blocked and produces a blank preview).
  */
-const PI_AUTO_AUTH_SCRIPT = `
-(function youneonPiAutoAuth() {
-  function log(event, detail) {
-    try {
-      if (detail !== undefined) console.log("[Pi] " + event, detail);
-      else console.log("[Pi] " + event);
-    } catch (e) {}
+const PI_BOOT_SCRIPT = `
+(function youneonPiBoot() {
+  var SANDBOX = ${PI_SANDBOX};
+  function errMsg(e) {
+    if (!e) return "unknown";
+    if (typeof e === "string") return e;
+    if (e.message) return e.message;
+    try { return JSON.stringify(e); } catch (x) { return String(e); }
   }
-  function waitForPi(timeoutMs) {
+  function logSdkLoaded() {
+    if (window.__YOUNEON_PI_SDK_LOGGED__ || !window.Pi) return;
+    window.__YOUNEON_PI_SDK_LOGGED__ = true;
+    console.log("[Pi] SDK loaded");
+  }
+  window.__youneonWaitForPi = function (timeoutMs) {
     return new Promise(function (resolve) {
-      if (window.Pi) { resolve(true); return; }
+      if (window.Pi) { logSdkLoaded(); resolve(true); return; }
       var started = Date.now();
       var timer = setInterval(function () {
-        if (window.Pi) { clearInterval(timer); resolve(true); }
+        if (window.Pi) { clearInterval(timer); logSdkLoaded(); resolve(true); }
         else if (Date.now() - started >= timeoutMs) { clearInterval(timer); resolve(!!window.Pi); }
       }, 50);
     });
-  }
-  function onIncompletePaymentFound(payment) {
-    log("incomplete payment found", payment && payment.identifier);
-  }
-  if (window.__YOUNEON_PI_AUTH_PROMISE__) return;
-  window.__YOUNEON_PI_AUTH_PROMISE__ = (async function () {
-    log("waiting for window.Pi");
-    var found = await waitForPi(20000);
-    if (!found || !window.Pi) {
-      log("missing window.Pi");
-      throw new Error("PI_SDK_UNAVAILABLE");
+  };
+  window.__youneonPiAuth = function (force) {
+    if (window.__YOUNEON_PI_AUTH_PENDING__ && window.__YOUNEON_PI_AUTH_PROMISE__) {
+      return window.__YOUNEON_PI_AUTH_PROMISE__;
     }
-    var Pi = window.Pi;
-    log("init start", { version: "2.0", sandbox: ${PI_SANDBOX} });
-    await Pi.init({ version: "2.0", sandbox: ${PI_SANDBOX} });
-    log("init success");
-    log("authenticate start");
-    var result;
-    try {
-      result = await Pi.authenticate({ scopes: ['username'] });
-    } catch (objectFormError) {
-      log("authenticate object form failed, using array form", objectFormError);
-      result = await Pi.authenticate(['username'], onIncompletePaymentFound);
-    }
-    log("authenticate success", result && result.user);
-    return result;
-  })().catch(function (error) {
-    log("authenticate fail", error);
-    throw error;
-  });
+    if (!force && window.__YOUNEON_PI_AUTH_PROMISE__) return window.__YOUNEON_PI_AUTH_PROMISE__;
+    window.__YOUNEON_PI_AUTH_PENDING__ = true;
+    var p = (async function () {
+      try {
+        var found = await window.__youneonWaitForPi(2000);
+        if (!found || !window.Pi) throw new Error("PI_SDK_UNAVAILABLE");
+        logSdkLoaded();
+        if (!window.__YOUNEON_PI_INIT_PROMISE__) {
+          window.__YOUNEON_PI_INIT_PROMISE__ = (async function () {
+            console.log("[Pi] init start");
+            await window.Pi.init({ version: "2.0", sandbox: SANDBOX });
+            console.log("[Pi] init success");
+          })().catch(function (e) {
+            window.__YOUNEON_PI_INIT_PROMISE__ = undefined;
+            throw e;
+          });
+        }
+        await window.__YOUNEON_PI_INIT_PROMISE__;
+        console.log("[Pi] authenticate start");
+        var result;
+        try {
+          result = await window.Pi.authenticate({ scopes: ['username'] });
+        } catch (objectFormError) {
+          result = await window.Pi.authenticate(['username'], function () {});
+        }
+        console.log("[Pi] authenticate success");
+        return result;
+      } catch (e) {
+        console.log("[Pi] error: " + errMsg(e));
+        throw e;
+      }
+    })();
+    window.__YOUNEON_PI_AUTH_PROMISE__ = p;
+    p.finally(function () { window.__YOUNEON_PI_AUTH_PENDING__ = false; });
+    p.catch(function () {
+      if (window.__YOUNEON_PI_AUTH_PROMISE__ === p) window.__YOUNEON_PI_AUTH_PROMISE__ = undefined;
+    });
+    return p;
+  };
+  function bindBtn() {
+    var btn = document.getElementById("youneon-signin-btn");
+    if (!btn || btn.getAttribute("data-bound") === "1") return;
+    btn.setAttribute("data-bound", "1");
+    btn.addEventListener("click", function () {
+      window.__youneonPiAuth(true);
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindBtn);
+  else bindBtn();
+  setTimeout(function () { window.__youneonPiAuth(false).catch(function () {}); }, 0);
 })();
 `;
 
@@ -123,7 +153,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="bg-gradient-to-br from-purple-950 to-black">
+    <html lang="en" className="bg-[#1a0533]" style={{ backgroundColor: "#1a0533", minHeight: "100%" }}>
       <head>
         <meta charSet="utf-8" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -134,13 +164,65 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-180.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <Script id="pi-sdk" src={PI_NETWORK_CONFIG.SDK_URL} strategy="beforeInteractive" />
-        <Script id="pi-auto-auth-boot" strategy="beforeInteractive">
-          {PI_AUTO_AUTH_SCRIPT}
-        </Script>
-        <script id="pi-auto-auth" dangerouslySetInnerHTML={{ __html: PI_AUTO_AUTH_SCRIPT }} />
+        <script src={PI_NETWORK_CONFIG.SDK_URL} async />
       </head>
-      <body className={`${GeistSans.className} bg-gradient-to-br from-purple-950 to-black text-white`}>
+      <body
+        className={`${GeistSans.className} text-white`}
+        style={{
+          backgroundColor: "#1a0533",
+          backgroundImage: "linear-gradient(to bottom right, #2e1065, #000000)",
+          minHeight: "100dvh",
+          margin: 0,
+          color: "#ffffff",
+        }}
+      >
+        <div
+          id="youneon-static-login"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2147483000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "linear-gradient(to bottom right, #2e1065, #000000)",
+            color: "#ffffff",
+            padding: 16,
+            textAlign: "center",
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "2rem",
+              fontWeight: 800,
+              margin: "0 0 1.25rem",
+              color: "#e9d5ff",
+            }}
+          >
+            YouNeon
+          </h1>
+          <button
+            id="youneon-signin-btn"
+            type="button"
+            style={{
+              padding: "16px 32px",
+              fontSize: "1.125rem",
+              fontWeight: 700,
+              border: 0,
+              borderRadius: 16,
+              color: "#ffffff",
+              background: "linear-gradient(to right, #a855f7, #ec4899)",
+              cursor: "pointer",
+              width: "100%",
+              maxWidth: 320,
+            }}
+          >
+            Sign in with Pi Network
+          </button>
+        </div>
+        <script dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
         <ErrorBoundary>
           <LanguageProvider>
             <PiAuthProvider>

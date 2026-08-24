@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 interface LoginScreenProps {
   onLogin: () => void;
   isLoggingIn?: boolean;
@@ -18,56 +20,74 @@ export function LoginScreen({
   const showPiBrowserHint = !piAvailable;
   const showError = Boolean(errorMessage) && (piAvailable || !errorMessage?.includes("Pi Browser"));
 
+  useEffect(() => {
+    const el = document.getElementById("youneon-static-login");
+    if (el) el.style.display = "none";
+  }, []);
+
+  const handleSignIn = () => {
+    if (typeof window.__youneonPiAuth === "function") {
+      void window.__youneonPiAuth(true);
+    }
+    onLogin();
+  };
+
   return (
     <div
-      className="min-h-screen bg-cover flex flex-col items-center justify-center px-6 relative overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center px-4 overflow-hidden"
       style={{
-        backgroundImage: "url('/login-bg.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center 70%",
+        backgroundColor: "#1a0533",
+        backgroundImage: "linear-gradient(to bottom right, #2e1065, #000000)",
+        minHeight: "100dvh",
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/45 to-black/65 pointer-events-none" />
-      <div className="relative z-10 text-center max-w-md w-full">
-        <div className="h-[580px]" />
-        <p className="text-2xl text-white/95 font-light tracking-wide mb-6">
+      <div className="relative z-10 text-center w-full max-w-sm">
+        <h1 className="text-4xl font-extrabold tracking-tight mb-3" style={{ color: "#e9d5ff" }}>
+          YouNeon
+        </h1>
+        <p className="text-sm text-white/90 font-light tracking-wide mb-6">
           Meet the Pi Network – Live video chat with real people
         </p>
 
         {showPiBrowserHint && (
-          <p className="text-amber-200 text-sm mb-4 leading-relaxed">
+          <p className="text-amber-200 text-xs mb-4 leading-relaxed">
             Pi authentication only works inside the Pi Browser. Open YouNeon in Pi Browser, then tap
-            Log in with Pi Network.
+            Sign in with Pi Network.
           </p>
         )}
 
         {showError && (
-          <p className="text-red-200 text-sm mb-4 leading-relaxed">{errorMessage}</p>
+          <p className="text-red-200 text-xs mb-4 leading-relaxed">{errorMessage}</p>
+        )}
+
+        {isLoggingIn && (
+          <p className="text-purple-200 text-xs mb-3">Connecting to Pi Network…</p>
         )}
 
         <button
           type="button"
-          onClick={() => {
-            console.log("[Pi] Sign in button clicked");
-            onLogin();
+          onClick={handleSignIn}
+          className="relative z-20 w-full px-6 py-4 text-lg font-bold rounded-2xl shadow-xl shadow-purple-500/60 hover:shadow-pink-500/80 active:scale-95 transition-all cursor-pointer"
+          style={{
+            color: "#ffffff",
+            backgroundImage: "linear-gradient(to right, #a855f7, #ec4899)",
+            border: 0,
           }}
-          className="relative z-20 mx-auto px-10 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/60 hover:shadow-pink-500/80 active:scale-95 transition-all cursor-pointer disabled:opacity-70"
         >
-          {isLoggingIn ? "Signing in..." : "Log in with Pi Network"}
+          Sign in with Pi Network
         </button>
 
         {onGuest && (
           <button
             type="button"
             onClick={onGuest}
-            disabled={isLoggingIn}
-            className="relative z-20 mt-4 block mx-auto text-sm text-white/60 underline underline-offset-4 hover:text-white/90 disabled:opacity-50"
+            className="relative z-20 mt-4 block mx-auto text-sm text-white/60 underline underline-offset-4 hover:text-white/90"
           >
             Continue as guest (demo)
           </button>
         )}
 
-        <p className="text-white/70 text-sm mt-10">Secure • Instant • Powered by Pi Network</p>
+        <p className="text-white/70 text-xs mt-6">Secure • Instant • Powered by Pi Network</p>
       </div>
     </div>
   );

@@ -15,7 +15,6 @@ import { piAuthService } from "@/lib/pi-auth-service";
 import {
   authenticatePi,
   handleIncompletePayment,
-  initPiSdk,
   isPiAvailable,
   PI_AUTH_SCOPES,
   PI_SDK_UNAVAILABLE,
@@ -45,7 +44,7 @@ export interface PiAuthContextType {
 }
 
 const PI_BROWSER_MESSAGE =
-  "Pi authentication only works inside the Pi Browser. Open YouNeon in Pi Browser, then tap Log in with Pi Network.";
+  "Pi authentication only works inside the Pi Browser. Open YouNeon in Pi Browser, then tap Sign in with Pi Network.";
 
 const PiAuthContext = createContext<PiAuthContextType | undefined>(undefined);
 
@@ -56,7 +55,7 @@ function messageForError(error: unknown): string {
     return PI_BROWSER_MESSAGE;
   }
   if (/cancel/i.test(raw)) {
-    return "Sign-in was cancelled. Tap Log in with Pi Network to try again.";
+    return "Sign-in was cancelled. Tap Sign in with Pi Network to try again.";
   }
   if (err?.status === 401 || /401|invalid or expired/i.test(raw)) {
     return "Could not verify your Pi account. Please try again.";
@@ -79,9 +78,9 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PiAuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [authMessage, setAuthMessage] = useState("Connecting to Pi Network...");
+  const [authMessage, setAuthMessage] = useState("");
   const [piAvailable, setPiAvailable] = useState(true);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const sessionReadyRef = useRef(false);
@@ -100,10 +99,8 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const authenticate = useCallback(async () => {
-    // Do not skip Pi.authenticate when a cookie/session already exists —
-    // Pi App Studio still needs window.Pi.authenticate invoked on every load.
-    if (inFlightRef.current) {
+  const authenticate = useCallback(async (force = false) => {
+    if (inFlightRef.current && !force) {
       await inFlightRef.current;
       if (sessionReadyRef.current) return;
     }
@@ -111,31 +108,16 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     const run = (async () => {
       setHasError(false);
       setAuthMessage("Connecting to Pi Network...");
-      console.log("[Pi] auto-auth on app load");
 
-      try {
-        await initPiSdk();
-        setPiAvailable(true);
-      } catch (error) {
-        console.log("[Pi] init fail", error);
-        sessionReadyRef.current = false;
-        setPiAvailable(isPiAvailable());
-        clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
-        setHasError(true);
-        setAuthMessage(messageForError(error));
-        return;
-      }
-
-      setAuthMessage("Signing in with Pi Network...");
       let token = "";
       try {
-        const auth = await authenticatePi(PI_AUTH_SCOPES, handleIncompletePayment);
+        const auth = await authenticatePi(PI_AUTH_SCOPES, handleIncompletePayment, force);
+        setPiAvailable(true);
         token = typeof auth?.accessToken === "string" ? auth.accessToken : "";
         if (!token) {
           throw new Error("Pi did not return an access token");
         }
       } catch (error) {
-        console.log("[Pi] authenticate fail", error);
         sessionReadyRef.current = false;
         setPiAvailable(isPiAvailable());
         clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
@@ -145,7 +127,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       }
 
       setAuthMessage("Verifying your Pi account...");
-      console.log("[Pi] /me verify start");
       try {
         const { data } = await api.post<PiAuthUser>("/api/pi/auth", {
           accessToken: token,
@@ -153,8 +134,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         if (!data?.uid) {
           throw new Error("Could not verify your Pi account. Please try again.");
         }
-        console.log("[Pi] /me verify success", { uid: data.uid, username: data.username });
-        // Identity from backend /me only — never auth.user from the SDK.
         applyVerifiedSession(
           {
             uid: data.uid,
@@ -163,7 +142,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
           token
         );
       } catch (error) {
-        console.log("[Pi] /me verify fail", error);
         sessionReadyRef.current = false;
         clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
         setHasError(true);
@@ -175,21 +153,15 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     try {
       await run;
     } finally {
-      inFlightRef.current = null;
+      if (inFlightRef.current === run) inFlightRef.current = null;
     }
   }, [applyVerifiedSession]);
 
   const login = useCallback(async () => {
-    console.log("[Pi] manual Sign in clicked");
     setIsInitializing(true);
     try {
-      if (inFlightRef.current) {
-        await inFlightRef.current;
-        if (sessionReadyRef.current) return;
-      }
       sessionReadyRef.current = false;
-      resetPiSdkInit();
-      await authenticate();
+      await authenticate(true);
     } finally {
       setIsInitializing(false);
     }
@@ -202,7 +174,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(null);
     setIsAuthenticated(false);
     setHasError(false);
-    setAuthMessage("Signed out. Tap Log in with Pi Network to sign in again.");
+    setAuthMessage("Signed out. Tap Sign in with Pi Network to sign in again.");
     setApiAuthToken(null);
     try {
       await api.delete("/api/pi/auth");
@@ -219,12 +191,14 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    const cap = setTimeout(() => {
+      if (!cancelled) setIsInitializing(false);
+    }, 2000);
 
     (async () => {
-      console.log("[Pi] PiAuthProvider mounted — calling Pi.authenticate automatically");
       setIsInitializing(true);
       try {
-        await authenticate();
+        await authenticate(false);
       } finally {
         if (!cancelled) {
           setIsInitializing(false);
@@ -235,6 +209,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      clearTimeout(cap);
     };
   }, [authenticate]);
 

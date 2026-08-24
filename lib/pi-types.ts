@@ -82,6 +82,11 @@ declare global {
   interface Window {
     Pi?: PiSDK;
     __YOUNEON_PI_AUTH_PROMISE__?: Promise<PiAuthResult>;
+    __YOUNEON_PI_INIT_PROMISE__?: Promise<void>;
+    __YOUNEON_PI_SDK_LOGGED__?: boolean;
+    __YOUNEON_PI_AUTH_PENDING__?: boolean;
+    __youneonWaitForPi?: (timeoutMs: number) => Promise<boolean>;
+    __youneonPiAuth?: (force?: boolean) => Promise<PiAuthResult>;
   }
 }
 

@@ -10,7 +10,6 @@ import { ProfileEditModal } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
 import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory } from "@/lib/firestore-service";
 import { VideoCallScreen } from "@/components/video-call-screen";
-import { AuthLoadingScreen } from "@/components/auth-loading-screen";
 import { LoginScreen } from "@/components/login-screen";
 import { usePiAuth } from "@/contexts/pi-auth-context";
 
@@ -67,6 +66,12 @@ export default function HomePage() {
   const [neonBalance, setNeonBalance] = useState(100);
   const [showNeonShop, setShowNeonShop] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated && !isGuestDemo) return;
+    const el = document.getElementById("youneon-static-login");
+    if (el) el.style.display = "none";
+  }, [isAuthenticated, isGuestDemo]);
 
   useEffect(() => {
     const bal = localStorage.getItem("youneon_neon_balance");
@@ -148,6 +153,31 @@ export default function HomePage() {
     };
   }, [isAuthenticated, isGuestDemo, user]);
 
+  // Never leave a spinner-only screen up: after 2s use a local profile fallback.
+  useEffect(() => {
+    if (!isAuthenticated || isGuestDemo || profileReady) return;
+    const t = setTimeout(() => {
+      setCurrentUser((prev) => {
+        if (prev) return prev;
+        const piUsername = user?.username || user?.uid || "pi_user";
+        return {
+          id: piUsername,
+          uid: user?.uid,
+          piUsername,
+          fullName: piUsername,
+          age: 18,
+          country: "",
+          avatar: "🙂",
+          profilePicture: "",
+          languages: ["English"],
+          interests: [],
+        };
+      });
+      setProfileReady(true);
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [isAuthenticated, isGuestDemo, profileReady, user]);
+
   const updateNeonBalance = (n: number) => {
     setNeonBalance(n);
     localStorage.setItem("youneon_neon_balance", n.toString());
@@ -211,17 +241,11 @@ export default function HomePage() {
   const currentUserId = currentUser?.id || currentUser?.piUsername;
   const showApp = (isAuthenticated && profileReady && !!currentUser) || (isGuestDemo && !!currentUser);
 
-  // Keep LoginScreen mounted while Pi.authenticate runs. Do not block on AuthLoadingScreen
-  // until after authenticate has already succeeded. Guest is never the default path.
+  // Login UI is the first paint and stays until authenticate (+ profile) succeeds.
   if (!showApp) {
-    if (isAuthenticated && !isGuestDemo) {
-      return <AuthLoadingScreen />;
-    }
-
     return (
       <LoginScreen
         onLogin={() => {
-          console.log("[Pi] LoginScreen requesting Sign in");
           void login();
         }}
         isLoggingIn={isInitializing}
