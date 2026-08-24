@@ -15,23 +15,26 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-purple-950/95 to-purple-950/80 border-t border-purple-500/30 backdrop-blur-lg">
-      <div className="flex items-center justify-around px-2 py-3 max-w-lg mx-auto w-full">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => onTabChange(id as any)}
-            className={cn(
-              "flex flex-col items-center justify-center py-2 px-3 rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95",
-              activeTab === id
-                ? "text-white bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 shadow-lg shadow-purple-500/50"
-                : "text-purple-300 hover:text-pink-300"
-            )}
-          >
-            <Icon size={20} className="mb-1" />
-            <span className="text-xs font-medium mt-0.5">{label}</span>
-          </button>
-        ))}
+    <div className="yn-glass fixed bottom-0 left-0 right-0 z-50 border-t border-white/8 pb-[env(safe-area-inset-bottom)]">
+      <div className="mx-auto flex h-14 max-w-lg w-full items-center justify-around px-2">
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const active = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onTabChange(id as "discover" | "messages" | "history")}
+              className={cn(
+                "flex min-w-[72px] flex-col items-center justify-center gap-0.5 rounded-lg px-3 py-1 transition-colors active:scale-95",
+                active ? "text-white" : "text-white/45"
+              )}
+            >
+              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} className={active ? "text-pink-400" : undefined} />
+              <span className={cn("text-[10px] font-medium leading-none", active && "text-pink-300")}>
+                {label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

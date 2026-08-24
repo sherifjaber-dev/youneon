@@ -29,20 +29,20 @@ interface ChatMsg { id: string; from: "me" | "partner"; text: string; timestamp:
 
 const GIFTS = [
   { id: "rose", emoji: "🌹", label: "Rose" },
-  { id: "heart", emoji: "❤️", label: "Hjerte" },
-  { id: "bouquet", emoji: "💐", label: "Buket" },
-  { id: "diamond", emoji: "💎", label: "Diamant" },
-  { id: "gift", emoji: "🎁", label: "Gave" },
-  { id: "teddy", emoji: "🧸", label: "Bamse" },
+  { id: "heart", emoji: "❤️", label: "Heart" },
+  { id: "bouquet", emoji: "💐", label: "Bouquet" },
+  { id: "diamond", emoji: "💎", label: "Diamond" },
+  { id: "gift", emoji: "🎁", label: "Gift" },
+  { id: "teddy", emoji: "🧸", label: "Teddy" },
 ];
 
 const MOCK_PARTNERS: PartnerProfile[] = [
-  { name: "Sofia", age: 26, country: "Spanien", countryFlag: "🇪🇸", bio: "Elsker sol, hav og latter ☀️", interests: ["Dans", "Mad", "Strand"] },
-  { name: "Liam", age: 30, country: "USA", countryFlag: "🇺🇸", bio: "Musiker fra New York 🎸", interests: ["Rock", "Film", "Kaffe"] },
-  { name: "Yuki", age: 24, country: "Japan", countryFlag: "🇯🇵", bio: "Anime + ramen = lykke 🍜", interests: ["Anime", "Tegning", "Tech"] },
-  { name: "Pierre", age: 28, country: "Frankrig", countryFlag: "🇫🇷", bio: "Kok og rejseelsker 🥐", interests: ["Madlavning", "Vin", "Rejser"] },
-  { name: "Anna", age: 22, country: "Tyskland", countryFlag: "🇩🇪", bio: "Studerende og bogorm 📚", interests: ["Bøger", "Yoga", "Kunst"] },
-  { name: "Diego", age: 27, country: "Brasilien", countryFlag: "🇧🇷", bio: "Fodbold og samba 🕺", interests: ["Sport", "Musik", "Fest"] },
+  { name: "Sofia", age: 26, country: "Spain", countryFlag: "🇪🇸", bio: "Sun, sea, and laughter ☀️", interests: ["Dance", "Food", "Beach"] },
+  { name: "Liam", age: 30, country: "USA", countryFlag: "🇺🇸", bio: "Musician from New York 🎸", interests: ["Rock", "Film", "Coffee"] },
+  { name: "Yuki", age: 24, country: "Japan", countryFlag: "🇯🇵", bio: "Anime + ramen = happiness 🍜", interests: ["Anime", "Drawing", "Tech"] },
+  { name: "Pierre", age: 28, country: "France", countryFlag: "🇫🇷", bio: "Chef and travel lover 🥐", interests: ["Cooking", "Wine", "Travel"] },
+  { name: "Anna", age: 22, country: "Germany", countryFlag: "🇩🇪", bio: "Student and bookworm 📚", interests: ["Books", "Yoga", "Art"] },
+  { name: "Diego", age: 27, country: "Brazil", countryFlag: "🇧🇷", bio: "Football and samba 🕺", interests: ["Sport", "Music", "Party"] },
 ];
 
 const SKIP_COOLDOWN_MS = 5000;
@@ -244,7 +244,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         const predictions: Array<{ className: string; probability: number }> = await model.classify(video);
         let triggered: string | null = null;
         for (const p of predictions) {
-          if (p.className === "Porn" && p.probability > NSFW_PORN_THRESHOLD) triggered = "nøgenhed";
+          if (p.className === "Porn" && p.probability > NSFW_PORN_THRESHOLD) triggered = "nudity";
           else if (p.className === "Hentai" && p.probability > NSFW_HENTAI_THRESHOLD) triggered = "eksplicit tegning";
           else if (p.className === "Sexy" && p.probability > NSFW_SEXY_THRESHOLD) triggered = "let seksuelt indhold";
         }
@@ -441,44 +441,44 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
           {permission === "checking" && (
             <div className="text-center py-8">
               <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white mb-4" />
-              <p className="text-lg">Tjekker kamera og mikrofon…</p>
+              <p className="text-lg">Checking camera and microphone…</p>
             </div>
           )}
           {permission === "denied" && (
             <>
               <div className="text-center mb-5">
                 <div className="text-5xl mb-3">🎥🚫</div>
-                <h2 className="text-2xl font-bold mb-2">Kamera blokeret</h2>
-                <p className="text-white/80 text-sm">Din browser blokerer adgang til kamera og mikrofon.</p>
+                <h2 className="text-2xl font-bold mb-2">Camera blocked</h2>
+                <p className="text-white/80 text-sm">Your browser is blocking camera and microphone access.</p>
               </div>
               <div className="bg-black/30 rounded-xl p-4 mb-5 text-sm">
                 {browser === "edge" && (
                   <>
-                    <p className="font-semibold text-yellow-300 mb-2">Sådan tillader du i Edge:</p>
+                    <p className="font-semibold text-yellow-300 mb-2">How to allow in Edge:</p>
                     <ol className="list-decimal list-inside space-y-1 text-white/90">
-                      <li>Klik på <b>🔒 hængelåsen</b> i adresselinjen</li>
-                      <li>Sæt <b>Kamera</b> og <b>Mikrofon</b> til <b>Tillad</b></li>
-                      <li>Genindlæs siden (F5)</li>
+                      <li>Tap the <b>lock icon</b> in the address bar</li>
+                      <li>Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b></li>
+                      <li>Reload the page</li>
                     </ol>
                   </>
                 )}
                 {browser === "chrome" && (
                   <>
-                    <p className="font-semibold text-yellow-300 mb-2">Sådan tillader du i Chrome:</p>
+                    <p className="font-semibold text-yellow-300 mb-2">How to allow in Chrome:</p>
                     <ol className="list-decimal list-inside space-y-1 text-white/90">
-                      <li>Klik på <b>🔒 hængelås-ikonet</b></li>
-                      <li>Sæt <b>Kamera</b> og <b>Mikrofon</b> til <b>Tillad</b></li>
-                      <li>Genindlæs siden (F5)</li>
+                      <li>Tap the <b>lock icon</b></li>
+                      <li>Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b></li>
+                      <li>Reload the page</li>
                     </ol>
                   </>
                 )}
                 {(browser === "firefox" || browser === "other") && (
-                  <p>Åbn webstedsindstillinger og tillad kamera + mikrofon.</p>
+                  <p>Open site settings and allow camera + microphone.</p>
                 )}
               </div>
               <div className="flex gap-2">
-                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Prøv igen</button>
-                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Annullér</button>
+                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Try again</button>
+                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Cancel</button>
               </div>
             </>
           )}
@@ -487,19 +487,19 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               <div className="text-center mb-5">
                 <div className="text-5xl mb-3">⚠️</div>
                 <h2 className="text-2xl font-bold mb-2">
-                  {permission === "not-found" && "Intet kamera fundet"}
-                  {permission === "in-use" && "Kamera er optaget"}
-                  {permission === "error" && "Noget gik galt"}
+                  {permission === "not-found" && "No camera found"}
+                  {permission === "in-use" && "Camera is in use"}
+                  {permission === "error" && "Something went wrong"}
                 </h2>
                 <p className="text-white/80 text-sm break-words">
-                  {permission === "not-found" && "Tilslut et kamera og prøv igen."}
-                  {permission === "in-use" && "Luk Zoom, Teams eller andre videoapps."}
+                  {permission === "not-found" && "Connect a camera and try again."}
+                  {permission === "in-use" && "Close Zoom, Teams, or other video apps."}
                   {permission === "error" && errorMsg}
                 </p>
               </div>
               <div className="flex gap-2">
-                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Prøv igen</button>
-                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Luk</button>
+                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Try again</button>
+                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Close</button>
               </div>
             </>
           )}
@@ -524,16 +524,16 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
           </div>
         </div>
         <div className="text-center text-white max-w-sm">
-          <p className="text-sm text-white/60 uppercase tracking-widest mb-1">Forbinder dig med</p>
+          <p className="text-sm text-white/60 uppercase tracking-widest mb-1">Connecting you with</p>
           <h2 className="text-4xl font-bold mb-2">{currentPartner.name}{currentPartner.age && <span className="text-white/80">, {currentPartner.age}</span>}</h2>
           {currentPartner.country && <p className="text-lg text-white/80 mb-4">{currentPartner.countryFlag} {currentPartner.country}</p>}
           {currentPartner.bio && <p className="text-sm text-white/70 italic mb-6">"{currentPartner.bio}"</p>}
           <div className="inline-flex items-center gap-2 text-white/80">
             <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-sm">Klargør videoopkald…</span>
+            <span className="text-sm">Preparing video call…</span>
           </div>
         </div>
-        <button onClick={onEnd} className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 text-sm font-medium border border-white/20">Annullér</button>
+        <button onClick={onEnd} className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 text-sm font-medium border border-white/20">Cancel</button>
       </div>
     );
   }
@@ -577,17 +577,17 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500/50 mb-4">
                 <span className="text-4xl">⚠️</span>
               </div>
-              <h2 className="text-2xl font-bold mb-2">Upassende indhold registreret</h2>
+              <h2 className="text-xl font-semibold mb-2">Inappropriate content detected</h2>
               <p className="text-white/70 text-sm">
-                Vores AI har opdaget muligt <b className="text-red-300">{nsfwReason}</b> i videoen.
+                Our AI detected possible <b className="text-red-300">{nsfwReason}</b> in the video.
               </p>
             </div>
             <div className="bg-black/30 rounded-xl p-3 mb-5 text-xs text-white/60 text-center">
-              🤖 Beskyttelsen kører helt lokalt på din enhed — intet sendes til en server.
+              Protection runs locally on your device — nothing is sent to a server.
             </div>
             <div className="flex flex-col gap-2">
-              <button onClick={handleBlock} className="w-full rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 py-3.5 font-bold text-white shadow-lg" data-testid="block-user-btn">🚫 Blokér og skip</button>
-              <button onClick={handleSeeAnyway} className="w-full rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 py-3 text-sm font-medium text-white/80" data-testid="see-anyway-btn">Se alligevel (30 sek.)</button>
+              <button onClick={handleBlock} className="w-full rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 h-11 font-semibold text-white" data-testid="block-user-btn">Block and skip</button>
+              <button onClick={handleSeeAnyway} className="w-full rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 h-11 text-sm font-medium text-white/80" data-testid="see-anyway-btn">See anyway (30 sec.)</button>
             </div>
           </div>
         </div>
@@ -597,10 +597,10 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" data-testid="local-video" />
         {!camOn && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-white text-xs flex-col gap-1">
-            <span className="text-2xl">📷</span><span>Kamera fra</span>
+            <span className="text-2xl">📷</span><span>Camera off</span>
           </div>
         )}
-        <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">Dig</div>
+        <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">You</div>
       </div>
 
       {displayedMessage && (
@@ -611,7 +611,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               : "bg-black/70 border-white/20 text-white"
           }`}>
             <p className="text-[10px] opacity-70 mb-1 font-semibold">
-              {displayedMessage.from === "me" ? "Dig" : currentPartner.name}
+              {displayedMessage.from === "me" ? "You" : currentPartner.name}
             </p>
             <p className="text-sm break-words">{displayedMessage.text}</p>
           </div>
@@ -621,12 +621,12 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
       {showHistory && (
         <div className="absolute top-4 right-4 w-80 max-h-96 z-40 bg-black/85 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl flex flex-col">
           <div className="flex items-center justify-between p-3 border-b border-white/10">
-            <span className="text-white font-semibold text-sm">Chat-historik</span>
+            <span className="text-white font-semibold text-sm">Chat history</span>
             <button onClick={() => setShowHistory(false)} className="text-white/70 hover:text-white text-xl">×</button>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {chatHistory.length === 0 ? (
-              <p className="text-white/50 text-sm text-center py-6">Ingen beskeder endnu</p>
+              <p className="text-white/50 text-sm text-center py-6">No messages yet</p>
             ) : (
               chatHistory.map((m) => (
                 <div key={m.id} className={`flex ${m.from === "me" ? "justify-end" : "justify-start"}`}>
@@ -644,7 +644,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
             <input
               type="text" value={chatInputValue} onChange={(e) => setChatInputValue(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") sendChatMessage(); }}
-              placeholder="Skriv en besked…" autoFocus maxLength={200}
+              placeholder="Type a message…" autoFocus maxLength={200}
               className="flex-1 bg-white/10 text-white placeholder-white/40 rounded-xl px-4 py-2 outline-none border border-white/10 focus:border-pink-400"
               data-testid="chat-input"
             />
@@ -657,7 +657,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
       {showGiftPicker && (
         <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40" style={{ animation: "slideUp 0.25s ease forwards" }}>
           <div className="bg-black/85 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl">
-            <p className="text-white text-sm font-semibold mb-3 text-center">Send en gave 🎁</p>
+            <p className="text-white text-sm font-semibold mb-3 text-center">Send a gift</p>
             <div className="grid grid-cols-3 gap-2">
               {GIFTS.map((g) => (
                 <button key={g.id} onClick={() => sendGift(g)} className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/10 hover:bg-white/20 hover:scale-110 transition text-white" data-testid={`gift-${g.id}`}>
@@ -686,13 +686,13 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
             </div>
             {currentPartner.bio && (
               <div className="bg-white/5 rounded-2xl p-3 mb-3">
-                <p className="text-xs text-white/50 mb-1 font-semibold">OM</p>
+                <p className="text-xs text-white/50 mb-1 font-semibold">ABOUT</p>
                 <p className="text-sm">{currentPartner.bio}</p>
               </div>
             )}
             {currentPartner.interests && currentPartner.interests.length > 0 && (
               <div className="bg-white/5 rounded-2xl p-3 mb-4">
-                <p className="text-xs text-white/50 mb-2 font-semibold">INTERESSER</p>
+                <p className="text-xs text-white/50 mb-2 font-semibold">INTERESTS</p>
                 <div className="flex flex-wrap gap-1.5">
                   {currentPartner.interests.map((i) => (
                     <span key={i} className="bg-pink-500/20 text-pink-200 text-xs px-2.5 py-1 rounded-full border border-pink-400/30">{i}</span>
@@ -700,7 +700,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
                 </div>
               </div>
             )}
-            <button onClick={() => setShowProfile(false)} className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Tilbage til chat</button>
+            <button onClick={() => setShowProfile(false)} className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 h-11 font-semibold">Back to chat</button>
           </div>
         </div>
       )}
@@ -709,7 +709,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none z-10">
           <div className="text-center bg-black/60 backdrop-blur-md rounded-2xl px-8 py-6 max-w-sm mx-4">
             <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-pink-500 mb-4" />
-            <p className="text-xl font-semibold mb-2">Venter på {currentPartner.name}…</p>
+            <p className="text-xl font-semibold mb-2">Waiting for {currentPartner.name}…</p>
             <p className="text-sm text-white/70">Forbinder…</p>
           </div>
         </div>
@@ -745,7 +745,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               onClick={toggleCam}
               className={`dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl ${camOn ? "bg-white/15 hover:bg-white/25 text-white" : "bg-red-500/90 text-white"}`}
               data-testid="toggle-cam-btn"
-              title={camOn ? "Slå kamera fra" : "Slå kamera til"}
+              title={camOn ? "Turn camera off" : "Turn camera on"}
             >
               {camOn ? "📹" : "🚫"}
             </button>
@@ -774,7 +774,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               onClick={() => { setShowGiftPicker((v) => !v); setShowChatInput(false); setShowHistory(false); }}
               className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 hover:shadow-pink-500/50 hover:shadow-lg flex items-center justify-center text-xl sm:text-2xl text-white"
               data-testid="gift-btn"
-              title="Send gave"
+              title="Send gift"
             >
               🎁
             </button>
@@ -805,7 +805,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
                   : "bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-orange-500/50 hover:shadow-lg"
               }`}
               data-testid="skip-btn"
-              title={skipRemaining > 0 ? `Skip om ${skipRemaining}s` : "Skip til næste"}
+              title={skipRemaining > 0 ? `Skip in ${skipRemaining}s` : "Skip to next"}
             >
               <span className="text-lg sm:text-xl">⏭️</span>
               {skipRemaining > 0 ? (
@@ -820,7 +820,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               className="dock-btn h-12 sm:h-14 rounded-full bg-gradient-to-br from-red-500 to-rose-600 hover:shadow-red-500/50 hover:shadow-lg flex items-center justify-center text-white font-bold px-4 sm:px-5"
               data-testid="end-call-btn"
             >
-              <span className="text-sm sm:text-base">Afslut</span>
+              <span className="text-sm sm:text-base">End</span>
             </button>
           </div>
         </div>

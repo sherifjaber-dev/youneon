@@ -64,41 +64,41 @@ export function HistoryScreen({ currentUserId, onOpenChat }: HistoryScreenProps)
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-950 via-black to-purple-950 pt-24 pb-24">
-      <div className="sticky top-0 z-40 bg-gradient-to-b from-purple-950/95 to-purple-950/80 border-b border-purple-500/30 px-4 py-6 backdrop-blur-lg">
-        <h1 className="text-4xl font-black text-white">History</h1>
-        <p className="text-purple-300/70 text-sm mt-1">Your recent video chats</p>
+    <div className="min-h-full bg-[#0f0117] pb-4">
+      <div className="px-4 pt-3 pb-2">
+        <h1 className="text-xl font-semibold tracking-tight text-white">History</h1>
+        <p className="mt-0.5 text-[13px] text-white/45">Your recent video chats</p>
       </div>
 
-      <div className="px-4 space-y-3 mt-4">
+      <div className="mt-2 space-y-2 px-4">
         {history.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-purple-300/70 text-lg">No video chats yet</p>
-            <p className="text-purple-400/50 text-sm mt-2">Start a random chat from Discover</p>
+          <div className="py-14 text-center">
+            <p className="text-white/55">No video chats yet</p>
+            <p className="mt-1.5 text-sm text-white/35">Start a random chat from Discover</p>
           </div>
         ) : (
           history.map((u) => (
-            <div key={u.id} className="flex items-center justify-between gap-3 p-4 rounded-lg bg-purple-900/20 border border-purple-500/30 hover:border-purple-400/60">
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-3xl shadow-md">
+            <div key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-xl">
                   {u.avatar}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold text-white truncate">{u.name}</p>
-                    <span className="text-xl">{u.countryFlag}</span>
+                    <p className="truncate text-[15px] font-semibold text-white">{u.name}</p>
+                    <span className="text-sm">{u.countryFlag}</span>
                     <OnlineBadge isOnline={online[u.matchId] || false} />
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-purple-400/60 mt-1">
+                  <div className="mt-0.5 flex items-center gap-2 text-[12px] text-white/40">
                     <span>{formatTime(u.timestamp)}</span>
                     <span>•</span>
                     <span>{u.duration}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <button className="p-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white"><Heart size={18} /></button>
-                <button onClick={() => setConfirmUser(u)} className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white"><MessageSquare size={18} /></button>
+              <div className="flex gap-1.5">
+                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white" aria-label="Like"><Heart size={15} /></button>
+                <button onClick={() => setConfirmUser(u)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white" aria-label="Message"><MessageSquare size={15} /></button>
               </div>
             </div>
           ))
@@ -106,13 +106,13 @@ export function HistoryScreen({ currentUserId, onOpenChat }: HistoryScreenProps)
       </div>
 
       {confirmUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="bg-gradient-to-br from-purple-900 to-purple-950 rounded-3xl p-6 max-w-sm w-full border border-purple-500/50">
-            <h3 className="text-xl font-bold text-center mb-4 text-white">Start chat with {confirmUser.name}?</h3>
-            <p className="text-center text-purple-300 mb-6">Cost: <span className="font-bold text-yellow-300">{MESSAGE_COST} Neon</span></p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmUser(null)} className="flex-1 py-4 border border-purple-500/50 text-purple-300 rounded-2xl">Cancel</button>
-              <button onClick={confirmChat} className="flex-1 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl">Confirm</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#16101f] p-5">
+            <h3 className="mb-2 text-center text-lg font-semibold text-white">Start chat with {confirmUser.name}?</h3>
+            <p className="mb-5 text-center text-sm text-white/55">Cost: <span className="font-semibold text-yellow-300">{MESSAGE_COST} Neon</span></p>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmUser(null)} className="h-11 flex-1 rounded-xl border border-white/12 text-[15px] font-semibold text-white/80">Cancel</button>
+              <button onClick={confirmChat} className="h-11 flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white">Confirm</button>
             </div>
           </div>
         </div>

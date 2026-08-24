@@ -314,9 +314,9 @@ export function YouNeonApp() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-dvh bg-[#0f0117]">
       {sessionUnverified && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-100 text-amber-950 text-xs text-center py-1.5 px-3">
+        <div className="fixed left-0 right-0 top-[calc(48px+env(safe-area-inset-top))] z-40 bg-amber-100/95 px-3 py-1 text-center text-[11px] text-amber-950">
           Signed in. Pi account verification is still pending.
         </div>
       )}
@@ -325,15 +325,17 @@ export function YouNeonApp() {
         neonBalance={neonBalance}
         onNeonClick={() => setShowNeonShop(true)}
       />
-      <div className="flex-1 overflow-y-auto pt-16 pb-24">
+      <div className={`fixed inset-x-0 top-[calc(48px+env(safe-area-inset-top))] bottom-[calc(56px+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (
-          <DiscoverScreen
-            onStartVideo={() => setIsInVideoChat(true)}
-            neonBalance={neonBalance}
-            onUpdateBalance={updateNeonBalance}
-            currentUserId={currentUserId}
-            onOpenNeonShop={() => setShowNeonShop(true)}
-          />
+          <div className="h-full">
+            <DiscoverScreen
+              onStartVideo={() => setIsInVideoChat(true)}
+              neonBalance={neonBalance}
+              onUpdateBalance={updateNeonBalance}
+              currentUserId={currentUserId}
+              onOpenNeonShop={() => setShowNeonShop(true)}
+            />
+          </div>
         )}
         {activeTab === "messages" && (
           <MessagesScreen

@@ -59,51 +59,51 @@ export function MessagesScreen({ currentUserId, hasOwnPhoto = false, onOpenChat 
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white pt-6 pb-24">
-      <div className="px-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-4xl font-black">Messages</h1>
-          <button className="p-2 hover:bg-zinc-800 rounded-xl transition">
-            <Users size={24} className="text-purple-400" />
+    <div className="min-h-full bg-[#0f0117] pb-4 text-white">
+      <div className="mb-4 px-4 pt-3">
+        <div className="mb-3 flex items-center justify-between">
+          <h1 className="text-xl font-semibold tracking-tight">Messages</h1>
+          <button className="rounded-lg p-1.5 text-purple-300 transition hover:bg-white/6">
+            <Users size={18} />
           </button>
         </div>
 
         {!hasOwnPhoto && (
-          <div className="mb-4 bg-gradient-to-r from-purple-900/40 to-pink-900/30 border border-purple-500/40 rounded-2xl p-3 flex items-center gap-3" data-testid="messages-photo-gate">
-            <div className="w-10 h-10 rounded-full bg-purple-700/50 flex items-center justify-center flex-shrink-0">
-              <Camera size={18} className="text-white" />
+          <div className="mb-3 flex items-center gap-3 rounded-xl border border-purple-500/25 bg-purple-900/25 p-3" data-testid="messages-photo-gate">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-purple-700/50">
+              <Camera size={16} className="text-white" />
             </div>
             <div className="text-sm">
-              <p className="font-bold text-white">Tilføj dit profilbillede</p>
-              <p className="text-xs text-white/70">Du skal uploade dit eget billede for at se andres profilbilleder</p>
+              <p className="font-semibold text-white">Add your profile photo</p>
+              <p className="text-[12px] text-white/55">Upload a photo to see others’ profile pictures</p>
             </div>
           </div>
         )}
 
         <div className="relative">
-          <Search className="absolute left-4 top-3.5 text-zinc-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" size={16} />
           <input
             type="text"
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-700 pl-11 py-3 rounded-2xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-purple-500"
+            className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-10 text-[15px] text-white placeholder:text-white/35 focus:border-purple-500/50 focus:outline-none"
             data-testid="messages-search-input"
           />
         </div>
       </div>
 
-      <div className="px-5">
-        <div className="flex items-center justify-between mb-4 px-1">
-          <span className="text-sm font-semibold text-zinc-400">Messages</span>
-          <span className="text-xs text-purple-400">{filtered.length} conversations</span>
+      <div className="px-4">
+        <div className="mb-3 flex items-center justify-between px-0.5">
+          <span className="text-[12px] font-medium text-white/45">Inbox</span>
+          <span className="text-[12px] text-purple-300/80">{filtered.length} conversations</span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageCircle size={64} className="mx-auto mb-4 text-zinc-700" />
-            <p className="text-zinc-400">No conversations yet</p>
-            <p className="text-zinc-500 text-sm mt-2">
+          <div className="py-12 text-center">
+            <MessageCircle size={36} className="mx-auto mb-3 text-white/20" />
+            <p className="text-white/55">No conversations yet</p>
+            <p className="mt-1.5 text-sm text-white/35">
               Go to History and tap the message icon to start chatting
             </p>
           </div>
@@ -121,13 +121,12 @@ export function MessagesScreen({ currentUserId, hasOwnPhoto = false, onOpenChat 
                 <div
                   key={conv.id}
                   onClick={() => handleClick(conv)}
-                  className="flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-800 hover:border-purple-500/60 rounded-2xl cursor-pointer transition-all active:scale-[0.985]"
+                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3 transition-all hover:border-purple-500/40 active:scale-[0.99]"
                   data-testid={`conversation-${otherId}`}
                 >
-                  {/* Round profile circle */}
-                  <div className="relative w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl shadow-md border-2 border-purple-400/30 flex-shrink-0">
+                  <div className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-lg">
                     {showPhoto ? (
-                      <img src={photo} alt={name} className="w-full h-full object-cover" data-testid={`avatar-photo-${otherId}`} />
+                      <img src={photo} alt={name} className="h-full w-full object-cover" data-testid={`avatar-photo-${otherId}`} />
                     ) : (
                       <span data-testid={`avatar-emoji-${otherId}`}>{avatar}</span>
                     )}
@@ -138,10 +137,10 @@ export function MessagesScreen({ currentUserId, hasOwnPhoto = false, onOpenChat 
                         <span className="font-semibold text-white" data-testid={`conversation-name-${otherId}`}>{name}</span>
                         {flag && <span className="text-lg">{flag}</span>}
                       </div>
-                      <span className="text-xs text-zinc-500">{formatTime(conv.lastMessageTime)}</span>
+                      <span className="text-xs text-white/35">{formatTime(conv.lastMessageTime)}</span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-sm text-zinc-400 truncate pr-4">
+                      <p className="text-sm text-white/45 truncate pr-4">
                         {conv.lastMessage || "Start the conversation..."}
                       </p>
                       {unread > 0 && (

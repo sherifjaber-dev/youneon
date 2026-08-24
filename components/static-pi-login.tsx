@@ -12,13 +12,16 @@ import {
  * The entire overlay is the hit target (click/tap anywhere = Pi.authenticate).
  */
 const OVERLAY_STYLE =
-  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#0f0117;color:#ffffff;padding:16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:rgba(168,85,247,0.5);caret-color:transparent";
+  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#0f0117;color:#ffffff;padding:16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:rgba(168,85,247,0.35);caret-color:transparent";
 
 const TITLE_STYLE =
-  "font-size:2rem;font-weight:800;margin:0 0 1.25rem;color:#e9d5ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer;caret-color:transparent";
+  "font-size:1.75rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 0.5rem;color:#e9d5ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer;caret-color:transparent";
+
+const SUB_STYLE =
+  "font-size:14px;line-height:1.45;color:rgba(255,255,255,0.62);margin:0 0 1.5rem;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer";
 
 const HINT_STYLE =
-  "font-size:0.875rem;color:rgba(255,255,255,0.75);margin:12px 0 0;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer";
+  "font-size:0.8125rem;color:rgba(255,255,255,0.45);margin:12px 0 0;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer";
 
 export function StaticPiLogin({
   buttonId = "youneon-signin-btn",
@@ -39,6 +42,9 @@ export function StaticPiLogin({
     '<h1 style="' +
     TITLE_STYLE +
     '">YouNeon</h1>' +
+    '<p style="' +
+    SUB_STYLE +
+    '">Live video chat with people on Pi Network</p>' +
     piSigninControlsHtml(buttonId) +
     '<p style="' +
     HINT_STYLE +

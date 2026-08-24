@@ -115,18 +115,26 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* YouNeon Neon Theme - Deep Purple & Hot Pink */
+/* YouNeon — refined purple/pink, production proportions */
+:root {
+  --yn-purple: #a855f7;
+  --yn-pink: #ec4899;
+  --yn-bg: #0f0117;
+  --yn-topbar-inner: 48px;
+  --yn-bottomnav-inner: 58px;
+}
+
 @layer components {
   .neon-glow {
-    @apply shadow-xl shadow-purple-500/60;
+    @apply shadow-md shadow-purple-500/25;
   }
 
   .neon-glow-strong {
-    @apply shadow-2xl shadow-purple-500/80;
+    @apply shadow-lg shadow-purple-500/30;
   }
 
   .neon-glow-pink {
-    @apply shadow-2xl shadow-pink-500/80;
+    @apply shadow-lg shadow-pink-500/30;
   }
 
   .neon-purple {
@@ -146,11 +154,11 @@
   }
 
   .neon-button {
-    @apply bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold transition-all duration-300 shadow-2xl shadow-purple-600/70 hover:shadow-pink-500/90 active:scale-95;
+    @apply h-12 px-5 text-[15px] font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white transition-all duration-200 shadow-[0_4px_16px_rgba(168,85,247,0.32)] hover:shadow-[0_6px_20px_rgba(236,72,153,0.35)] active:scale-[0.98];
   }
 
   .neon-button-outline {
-    @apply border-2 border-purple-400 text-purple-300 hover:bg-purple-500/20 hover:shadow-2xl hover:shadow-purple-500/60 transition-all duration-300;
+    @apply h-11 border border-purple-400/50 text-purple-300 hover:bg-purple-500/15 hover:border-purple-400/70 transition-all duration-200;
   }
 
   .bg-neon-dark {
@@ -162,11 +170,11 @@
   }
 
   .border-neon {
-    @apply border-purple-500/50;
+    @apply border-purple-500/30;
   }
 
   .border-neon-hover {
-    @apply hover:border-purple-400/70 hover:shadow-xl hover:shadow-purple-500/60 transition-all;
+    @apply hover:border-purple-400/50 hover:shadow-md hover:shadow-purple-500/20 transition-all;
   }
 
   .text-neon {
@@ -179,6 +187,26 @@
 
   .bg-neon-subtle {
     @apply bg-purple-950/30;
+  }
+
+  .yn-glass {
+    background: rgba(15, 1, 23, 0.72);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .yn-cta {
+    height: 48px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 14px;
+    background-image: linear-gradient(90deg, #a855f7, #ec4899);
+    box-shadow: 0 4px 18px rgba(168, 85, 247, 0.32);
+  }
+
+  .yn-cta:active {
+    transform: scale(0.985);
   }
 }
 
@@ -195,4 +223,18 @@
   body {
     color: #ffffff;
   }
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Compact Sign in with Pi — keep native handlers; size only */
+.youneon-signin-btn {
+  height: 48px !important;
+  padding: 0 20px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 48px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.32) !important;
 }

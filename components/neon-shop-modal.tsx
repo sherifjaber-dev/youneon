@@ -4,7 +4,6 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,7 @@ export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
     try {
       setMessage({
         type: "success",
-        text: `✨ +${neonPackage.neon} Neon added!`,
+        text: `+${neonPackage.neon} Neon added!`,
       });
 
       setTimeout(() => {
@@ -50,61 +49,58 @@ export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#0a0a0f] border border-purple-500/40 shadow-2xl shadow-purple-500/30 max-w-[360px] max-h-[90vh] overflow-y-auto rounded-3xl p-0">
-        
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 px-5 py-4 relative">
+      <DialogContent className="max-h-[90vh] max-w-[360px] overflow-y-auto rounded-2xl border border-white/10 bg-[#0f0117] p-0 shadow-xl">
+        <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3.5">
           <button
             onClick={onClose}
-            className="absolute right-3 top-3 text-white/80 hover:text-white transition"
+            className="absolute right-3 top-3 text-white/80 transition hover:text-white"
+            aria-label="Close"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
-          
+
           <div className="text-center">
-            <DialogTitle className="text-2xl font-black text-white tracking-tight">
+            <DialogTitle className="text-lg font-semibold tracking-tight text-white">
               Neon Shop
             </DialogTitle>
-            <p className="text-white/90 text-xs mt-0.5">Subscribe or buy Neon with Pi</p>
+            <p className="mt-0.5 text-[12px] text-white/80">Subscribe or buy Neon with Pi</p>
           </div>
         </div>
 
         <SubscribeWithPi variant="shop" />
 
-        {/* Packages */}
-        <div className="p-4 grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5 p-4">
           {NEON_PACKAGES.map((pkg) => (
             <div
               key={pkg.id}
-              className={`relative bg-zinc-900 border rounded-2xl p-4 transition-all hover:scale-[1.01] flex flex-col ${
-                pkg.badge 
-                  ? "border-pink-500/60 shadow-lg shadow-pink-500/20" 
-                  : "border-purple-500/30 hover:border-purple-400"
+              className={`relative flex flex-col rounded-xl border bg-white/[0.04] p-3.5 transition-colors ${
+                pkg.badge
+                  ? "border-pink-500/40"
+                  : "border-white/10"
               }`}
             >
-              {/* Badge */}
               {pkg.badge && (
-                <div className="absolute -top-1.5 right-3 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                  <Star size={10} /> {pkg.badge}
+                <div className="absolute -top-1.5 right-2 flex items-center gap-0.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                  <Star size={9} /> {pkg.badge}
                 </div>
               )}
 
               <div className="flex-1">
-                <div className="text-4xl font-black text-yellow-400 leading-none">
+                <div className="text-2xl font-semibold leading-none text-yellow-400">
                   {pkg.neon}
                 </div>
-                <div className="text-xs text-purple-300 font-medium -mt-1">Neon</div>
+                <div className="mt-0.5 text-[11px] font-medium text-purple-300">Neon</div>
               </div>
 
               <div className="mt-3">
-                <div className="text-xl font-bold text-white mb-2">{pkg.price} Pi</div>
-                
+                <div className="mb-2 text-[15px] font-semibold text-white">{pkg.price} Pi</div>
+
                 <Button
                   onClick={() => handlePurchase(pkg.id)}
                   disabled={isLoading}
-                  className="w-full h-9 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-[0.985]"
+                  className="flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[13px] font-semibold text-white transition-all hover:from-purple-500 hover:to-pink-500 active:scale-[0.985]"
                 >
-                  <Zap size={15} />
+                  <Zap size={14} />
                   Buy with Pi
                 </Button>
               </div>
@@ -112,19 +108,17 @@ export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="px-5 pb-5 text-center">
-          <p className="text-[10px] text-purple-400/70">
+        <div className="px-4 pb-4 text-center">
+          <p className="text-[10px] text-white/35">
             Secure payment via Pi Network
           </p>
         </div>
 
-        {/* Message */}
         {message && (
-          <div className={`mx-4 mb-4 p-3 rounded-xl text-center text-xs font-medium ${
-            message.type === "success" 
-              ? "bg-green-500/20 text-green-400 border border-green-500/40" 
-              : "bg-red-500/20 text-red-400 border border-red-500/40"
+          <div className={`mx-4 mb-4 rounded-xl p-2.5 text-center text-xs font-medium ${
+            message.type === "success"
+              ? "border border-green-500/30 bg-green-500/15 text-green-400"
+              : "border border-red-500/30 bg-red-500/15 text-red-400"
           }`}>
             {message.text}
           </div>

@@ -138,7 +138,7 @@ export function ProfileScreen() {
           className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold shadow-lg shadow-purple-500/30 transition-all"
         >
           <span className="text-2xl">✨</span>
-          <span className="flex-1 text-left">Køb Neon Coins</span>
+          <span className="flex-1 text-left">Buy Neon</span>
           <span className="text-xl">π</span>
         </button>
 

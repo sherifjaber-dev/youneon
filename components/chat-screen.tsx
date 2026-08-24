@@ -229,7 +229,7 @@ export function ChatScreen({
               ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
               : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/40"
           }`}
-          title={!isUnlocked ? "Lås chatten op først" : !otherHasReplied ? "Vent på at den anden svarer først" : (callCost > 0 ? `Video-opkald: ${callCost} Neon` : "Gratis video-opkald")}
+          title={!isUnlocked ? "Unlock chat first" : !otherHasReplied ? "Wait for a reply first" : (callCost > 0 ? `Video call: ${callCost} Neon` : "Free video call")}
           data-testid="chat-video-call-btn"
         >
           <Video size={20} />
@@ -251,42 +251,42 @@ export function ChatScreen({
 
       {/* ===== LOCKED PAYWALL OVERLAY ===== */}
       {!isUnlocked && (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="max-w-sm w-full bg-gradient-to-br from-purple-900/60 to-pink-900/40 border-2 border-pink-500/40 rounded-3xl p-6 text-center shadow-[0_0_40px_rgba(236,72,153,0.3)]" data-testid="chat-locked-paywall">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 mb-4 shadow-[0_0_30px_rgba(236,72,153,0.6)]">
-              <Lock className="text-white" size={36} />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="max-w-sm w-full bg-[#16101f] border border-white/10 rounded-2xl p-5 text-center" data-testid="chat-locked-paywall">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 mb-3">
+              <Lock className="text-white" size={20} />
             </div>
-            <h2 className="text-2xl font-black text-white mb-2">Chat er låst 🔒</h2>
-            <p className="text-white/70 text-sm mb-5">
-              Lås chatten op med <b className="text-yellow-300">{otherUser.name}</b> for at sende beskeder, billeder og video-opkald uden grænser.
+            <h2 className="text-lg font-semibold text-white mb-2">Chat is locked</h2>
+            <p className="text-white/55 text-sm mb-4">
+              Unlock chat with <b className="text-yellow-300">{otherUser.name}</b> to send messages, photos, and video calls.
             </p>
 
-            <div className="bg-black/30 rounded-2xl p-4 mb-5 border border-purple-500/30">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Diamond className="text-yellow-400" size={28} fill="currentColor" />
-                <span className="text-3xl font-black text-yellow-300">{UNLOCK_COST}</span>
-                <span className="text-white/70 font-semibold">Neon</span>
+            <div className="bg-black/30 rounded-xl p-3 mb-4 border border-white/8">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Diamond className="text-yellow-400" size={18} fill="currentColor" />
+                <span className="text-xl font-semibold text-yellow-300">{UNLOCK_COST}</span>
+                <span className="text-white/60 text-sm font-medium">Neon</span>
               </div>
-              <p className="text-xs text-white/60">Engangsbetaling — derefter ubegrænset</p>
+              <p className="text-[11px] text-white/45">One-time unlock — then unlimited</p>
             </div>
 
-            <ul className="text-left text-sm text-white/80 space-y-2 mb-5">
-              <li className="flex items-center gap-2">✅ Send ubegrænsede beskeder</li>
-              <li className="flex items-center gap-2">✅ Del billeder</li>
-              <li className="flex items-center gap-2">✅ Video-opkald (når den anden har svaret)</li>
+            <ul className="text-left text-sm text-white/70 space-y-1.5 mb-4">
+              <li>Unlimited messages</li>
+              <li>Share photos</li>
+              <li>Video calls (after they reply)</li>
             </ul>
 
             <button
               onClick={handleUnlock}
               disabled={unlocking}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-lg shadow-lg shadow-pink-500/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60"
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[15px] font-semibold shadow-[0_4px_14px_rgba(168,85,247,0.3)] active:scale-[0.98] transition-all disabled:opacity-60"
               data-testid="unlock-chat-btn"
             >
-              {unlocking ? "Låser op..." : `🔓 Lås op for ${UNLOCK_COST} Neon`}
+              {unlocking ? "Unlocking..." : `Unlock for ${UNLOCK_COST} Neon`}
             </button>
 
-            <p className="text-xs text-white/50 mt-3">
-              Din saldo: <span className="text-yellow-300 font-bold">◆ {neonBalance}</span> Neon
+            <p className="text-xs text-white/40 mt-3">
+              Your balance: <span className="text-yellow-300 font-semibold">◆ {neonBalance}</span> Neon
             </p>
           </div>
         </div>
@@ -298,17 +298,17 @@ export function ChatScreen({
           <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-28">
             {!hasOwnPhoto && (
               <div className="bg-purple-500/10 border border-purple-500/30 rounded-2xl p-3 text-center text-purple-200 text-xs" data-testid="photo-gate-banner">
-                📸 Tilføj dit eget profilbillede i din profil for at se <b>{otherUser.name}</b>s billede
+                Add your own profile photo to see {otherUser.name}’s picture
               </div>
             )}
             {!otherHasReplied && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-3 text-center text-yellow-200 text-xs" data-testid="awaiting-reply-banner">
-                ⏳ Vent på at <b>{otherUser.name}</b> svarer — så kan du lave video-opkald
+                Wait for {otherUser.name} to reply — then you can start a video call
               </div>
             )}
             {otherHasReplied && callCost > 0 && (
               <div className="bg-pink-500/10 border border-pink-500/30 rounded-2xl p-3 text-center text-pink-200 text-xs" data-testid="call-cost-banner">
-                📞 Næste video-opkald koster <b>{callCost} Neon</b> · gratis igen om 24t
+                Next video call costs {callCost} Neon · free again in 24h
               </div>
             )}
             {messages.length === 0 ? (
@@ -407,45 +407,45 @@ export function ChatScreen({
       {/* ===== "No reply yet" toast for video call ===== */}
       {showNoReplyToast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-yellow-500/50 rounded-2xl px-5 py-3 shadow-2xl text-white text-sm max-w-xs text-center" data-testid="no-reply-toast">
-          ⏳ Du kan først ringe video, når <b>{otherUser.name}</b> har svaret på din besked
+          You can start a video call after {otherUser.name} replies to your message
         </div>
       )}
 
       {/* ===== INSUFFICIENT NEON MODAL ===== */}
       {showInsufficientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowInsufficientModal(false)}>
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 max-w-sm w-full border border-pink-500/30 shadow-2xl text-white" onClick={(e) => e.stopPropagation()} data-testid="chat-insufficient-modal">
-            <div className="text-center mb-5">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500/30 to-pink-500/20 border-2 border-yellow-400/60 mb-4 shadow-[0_0_30px_rgba(250,204,21,0.4)]">
-                <span className="text-4xl">◆</span>
+          <div className="bg-[#16101f] rounded-2xl p-5 max-w-sm w-full border border-white/10 text-white" onClick={(e) => e.stopPropagation()} data-testid="chat-insufficient-modal">
+            <div className="text-center mb-4">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-500/15 border border-yellow-400/40 mb-3">
+                <span className="text-xl">◆</span>
               </div>
-              <h3 className="text-2xl font-black mb-3">Ikke nok Neon</h3>
-              <div className="bg-zinc-900/60 rounded-2xl p-4 mb-3 border border-zinc-700/60">
+              <h3 className="text-lg font-semibold mb-3">Not enough Neon</h3>
+              <div className="bg-black/30 rounded-xl p-3 mb-3 border border-white/8">
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-white/60">Lås chatten op:</span>
-                  <span className="font-bold text-yellow-300">◆ {UNLOCK_COST} Neon</span>
+                  <span className="text-white/50">Unlock chat</span>
+                  <span className="font-semibold text-yellow-300">◆ {UNLOCK_COST} Neon</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-white/60">Du har:</span>
-                  <span className="font-bold text-white">◆ {neonBalance} Neon</span>
+                  <span className="text-white/50">You have</span>
+                  <span className="font-semibold text-white">◆ {neonBalance} Neon</span>
                 </div>
-                <div className="border-t border-zinc-700/60 my-2"></div>
-                <div className="flex items-center justify-between text-base">
-                  <span className="text-white/80 font-semibold">Du mangler:</span>
-                  <span className="font-black text-pink-400 text-lg">◆ {missingNeon} Neon</span>
+                <div className="border-t border-white/8 my-2"></div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-white/70 font-medium">Missing</span>
+                  <span className="font-semibold text-pink-400">◆ {missingNeon} Neon</span>
                 </div>
               </div>
-              <p className="text-white/70 text-sm">
-                Fyld dit Neon-saldo op for at låse chatten op 🚀
+              <p className="text-white/55 text-sm">
+                Add Neon to unlock this chat.
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowInsufficientModal(false)}
-                className="flex-1 py-3 rounded-2xl border border-zinc-700 text-white font-semibold hover:bg-zinc-800 transition"
+                className="flex-1 h-11 rounded-xl border border-white/12 text-white/80 text-[15px] font-semibold hover:bg-white/6 transition"
                 data-testid="chat-cancel-insufficient-btn"
               >
-                Annullér
+                Cancel
               </button>
               <button
                 onClick={() => {
@@ -453,13 +453,13 @@ export function ChatScreen({
                   if (onOpenNeonShop) {
                     onOpenNeonShop();
                   } else {
-                    alert("Neon Shop er ikke tilgængelig endnu.");
+                    alert("Neon Shop is not available yet.");
                   }
                 }}
-                className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black shadow-lg shadow-pink-500/40 hover:scale-[1.02] active:scale-95 transition-all"
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[15px] font-semibold"
                 data-testid="chat-buy-neon-btn"
               >
-                ◆ Køb Neon
+                ◆ Buy Neon
               </button>
             </div>
           </div>

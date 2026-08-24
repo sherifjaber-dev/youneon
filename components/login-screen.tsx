@@ -36,7 +36,7 @@ const overlayStyle = {
   MozUserSelect: "none",
   msUserSelect: "none",
   WebkitTouchCallout: "none",
-  WebkitTapHighlightColor: "rgba(168,85,247,0.5)",
+  WebkitTapHighlightColor: "rgba(168,85,247,0.35)",
   caretColor: "transparent",
 } as CSSProperties;
 
@@ -78,7 +78,7 @@ export function LoginScreen({
           zIndex: 10,
           textAlign: "center",
           width: "100%",
-          maxWidth: 384,
+          maxWidth: 360,
           pointerEvents: "none",
           userSelect: "none",
           WebkitUserSelect: "none",
@@ -88,9 +88,10 @@ export function LoginScreen({
       >
         <h1
           style={{
-            fontSize: "2.25rem",
-            fontWeight: 800,
-            margin: "0 0 0.75rem",
+            fontSize: "1.75rem",
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            margin: "0 0 0.5rem",
             color: "#e9d5ff",
             fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
             pointerEvents: "none",
@@ -102,13 +103,14 @@ export function LoginScreen({
         <p
           style={{
             fontSize: 14,
-            color: "rgba(255,255,255,0.9)",
+            lineHeight: 1.45,
+            color: "rgba(255,255,255,0.62)",
             margin: "0 0 1.5rem",
             pointerEvents: "none",
             userSelect: "none",
           }}
         >
-          Meet the Pi Network – Live video chat with real people
+          Live video chat with people on Pi Network
         </p>
 
         {showPiBrowserHint && (
@@ -181,7 +183,7 @@ export function LoginScreen({
               marginLeft: "auto",
               marginRight: "auto",
               fontSize: 14,
-              color: "rgba(255,255,255,0.6)",
+              color: "rgba(255,255,255,0.5)",
               background: "transparent",
               border: 0,
               textDecoration: "underline",
@@ -196,14 +198,14 @@ export function LoginScreen({
 
         <p
           style={{
-            color: "rgba(255,255,255,0.7)",
+            color: "rgba(255,255,255,0.4)",
             fontSize: 12,
             marginTop: 24,
             pointerEvents: "none",
             userSelect: "none",
           }}
         >
-          Secure • Instant • Powered by Pi Network
+          Secure · Instant · Powered by Pi Network
         </p>
       </div>
     </div>
