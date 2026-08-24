@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { DiscoverScreen } from "@/components/discover-screen";
 import { MessagesScreen } from "@/components/messages-screen";
 import { HistoryScreen } from "@/components/history-screen";
 import { ChatScreen } from "@/components/chat-screen";
 import { BottomNav } from "@/components/bottom-nav";
 import { TopBar } from "@/components/top-bar";
-import { ProfileEditModal } from "@/components/profile-edit-modal";
+import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
 import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory } from "@/lib/firestore-service";
+import { piAuthService } from "@/lib/pi-auth-service";
 import { VideoCallScreen } from "@/components/video-call-screen";
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import {
@@ -52,6 +53,8 @@ type YouNeonUser = {
   profilePicture: string;
   languages: string[];
   interests: string[];
+  bio?: string;
+  location?: string;
   premiumUntil?: string;
 };
 
@@ -81,6 +84,8 @@ function stubUser(uid?: string, username?: string): YouNeonUser {
     profilePicture: extras.profilePicture || "",
     languages: extras.languages || ["English"],
     interests: extras.interests || [],
+    bio: extras.bio || "",
+    location: extras.location || extras.country || "",
   };
 }
 
@@ -97,6 +102,7 @@ export function YouNeonApp() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNeonShop, setShowNeonShop] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
+  const profileSavedAtRef = useRef(0);
 
   const signedIn = isAuthenticated || bootAuthOk;
   const showApp = signedIn || (isGuestDemo && !!currentUser);
@@ -192,6 +198,8 @@ export function YouNeonApp() {
         profilePicture: "",
         languages: ["English"],
         interests: [],
+        bio: "",
+        location: "",
       });
       return;
     }
@@ -209,6 +217,7 @@ export function YouNeonApp() {
     setCurrentUser((prev) => prev || stubUser(uid, piUsername));
 
     (async () => {
+      const fetchStartedAt = Date.now();
       const extras = readLocalProfileExtras();
       let profile: YouNeonUser = {
         id: piUsername,
@@ -221,6 +230,8 @@ export function YouNeonApp() {
         profilePicture: extras.profilePicture || "",
         languages: extras.languages || ["English"],
         interests: extras.interests || [],
+        bio: extras.bio || "",
+        location: extras.location || extras.country || "",
       };
 
       try {
@@ -233,6 +244,8 @@ export function YouNeonApp() {
             uid,
             piUsername,
             profilePicture: remote.profilePicture || extras.profilePicture || "",
+            bio: remote.bio || extras.bio || "",
+            location: remote.location || extras.location || extras.country || "",
             premiumUntil: remote.premiumUntil || extras.premiumUntil || readStoredPremiumUntil() || undefined,
           };
           if (remote.premiumUntil) {
@@ -248,15 +261,37 @@ export function YouNeonApp() {
         /* keep local/verified identity */
       }
 
-      try {
-        await saveUserProfile(profile);
-      } catch (e) {
-        console.warn("Profile sync failed", e);
+      if (profileSavedAtRef.current < fetchStartedAt) {
+        try {
+          await saveUserProfile(profile);
+        } catch (e) {
+          console.warn("Profile sync failed", e);
+        }
       }
 
       if (cancelled) return;
-      setCurrentUser(profile);
-      localStorage.setItem("youneon_user", JSON.stringify(profile));
+      setCurrentUser((prev) => {
+        const next =
+          prev && profileSavedAtRef.current >= fetchStartedAt
+            ? {
+                ...profile,
+                fullName: prev.fullName,
+                age: prev.age,
+                country: prev.country,
+                location: prev.location,
+                bio: prev.bio,
+                interests: prev.interests,
+                languages: prev.languages,
+                profilePicture: prev.profilePicture,
+              }
+            : profile;
+        try {
+          localStorage.setItem("youneon_user", JSON.stringify(next));
+        } catch {
+          /* quota */
+        }
+        return next;
+      });
     })();
 
     return () => {
@@ -269,20 +304,62 @@ export function YouNeonApp() {
     localStorage.setItem("youneon_neon_balance", n.toString());
   };
 
-  const refreshProfilePhoto = () => {
+  const handleProfileSaved = async (saved: ProfileSavePayload) => {
+    const lite = readLiteSession();
+    const base = currentUser || stubUser(user?.uid || lite?.uid, user?.username || lite?.username);
+    const merged: YouNeonUser = {
+      ...base,
+      fullName: saved.fullName || base.fullName,
+      age: saved.age || base.age,
+      country: saved.country || saved.location || base.country,
+      location: saved.location || saved.country || base.location || "",
+      bio: saved.bio || "",
+      interests: saved.interests || base.interests,
+      languages: saved.languages?.length ? saved.languages : base.languages,
+      profilePicture: saved.profilePicture || "",
+    };
+
+    profileSavedAtRef.current = Date.now();
+    setCurrentUser(merged);
+
     try {
-      const stored = localStorage.getItem("youneon_user_profile");
-      if (!stored || !currentUser) return;
-      const data = JSON.parse(stored);
-      const photo = data?.profilePicture || data?.photos?.[data?.mainPhotoIndex || 0] || "";
-      const merged = { ...currentUser, ...data, profilePicture: photo };
-      setCurrentUser(merged);
       localStorage.setItem("youneon_user", JSON.stringify(merged));
-      if (!isGuestDemo) {
-        saveUserProfile(merged).catch(() => {});
-      }
+      localStorage.setItem("youneon_user_profile", JSON.stringify(merged));
     } catch {
-      /* silent */
+      /* quota */
+    }
+
+    try {
+      piAuthService.saveProfile({
+        piUsername: merged.piUsername,
+        fullName: merged.fullName,
+        age: merged.age,
+        country: merged.country,
+        languages: merged.languages,
+        interests: merged.interests,
+        profilePicture: merged.profilePicture,
+        bio: merged.bio,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } catch {
+      /* non-critical */
+    }
+
+    if (!isGuestDemo) {
+      await saveUserProfile({
+        piUsername: merged.piUsername,
+        uid: merged.uid,
+        fullName: merged.fullName,
+        age: merged.age,
+        country: merged.country,
+        languages: merged.languages,
+        interests: merged.interests,
+        avatar: merged.avatar,
+        profilePicture: merged.profilePicture,
+        bio: merged.bio,
+        location: merged.location,
+      });
     }
   };
 
@@ -389,6 +466,7 @@ export function YouNeonApp() {
         onNeonClick={() => setShowNeonShop(true)}
         isPremium={isPremium}
         announcements={announcements}
+        profilePicture={displayUser.profilePicture}
       />
       <div className={`fixed inset-x-0 top-[calc(48px+env(safe-area-inset-top))] bottom-[calc(56px+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (
@@ -418,10 +496,9 @@ export function YouNeonApp() {
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       <ProfileEditModal
         isOpen={showProfileModal}
-        onClose={() => {
-          setShowProfileModal(false);
-          refreshProfilePhoto();
-        }}
+        onClose={() => setShowProfileModal(false)}
+        onSave={handleProfileSaved}
+        currentUser={displayUser}
         isPremium={isPremium}
         announcements={announcements}
         currentUsername={displayUser.piUsername}

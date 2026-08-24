@@ -1,9 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Bell, Crown } from "lucide-react";
-import { piAuthService } from "@/lib/pi-auth-service";
 import { NotificationPanel } from "@/components/notification-panel";
 import type { Announcement } from "@/lib/announcements";
 import { markAnnouncementsRead, unreadAnnouncementCount } from "@/lib/announcements";
@@ -14,6 +12,7 @@ interface TopBarProps {
   onNeonClick?: () => void;
   isPremium?: boolean;
   announcements?: Announcement[];
+  profilePicture?: string;
 }
 
 export function TopBar({
@@ -22,17 +21,11 @@ export function TopBar({
   onNeonClick,
   isPremium = false,
   announcements = [],
+  profilePicture = "",
 }: TopBarProps) {
-  const [profilePic, setProfilePic] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [unread, setUnread] = useState(0);
-
-  useEffect(() => {
-    const user = piAuthService.getCurrentUser() || piAuthService.loadProfile();
-    if (user?.profilePicture) {
-      setProfilePic(user.profilePicture);
-    }
-  }, []);
+  const photo = typeof profilePicture === "string" ? profilePicture.trim() : "";
 
   useEffect(() => {
     setUnread(unreadAnnouncementCount(announcements));
@@ -54,12 +47,10 @@ export function TopBar({
             className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-white/20 transition-transform active:scale-95"
             aria-label="Open profile"
           >
-            {profilePic ? (
-              <Image
-                src={profilePic}
+            {photo ? (
+              <img
+                src={photo}
                 alt="Your Profile"
-                width={32}
-                height={32}
                 className="h-full w-full object-cover"
               />
             ) : (

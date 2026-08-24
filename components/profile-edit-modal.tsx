@@ -1,437 +1,346 @@
 "use client";
-import { useState, useEffect } from "react";
-import { X, Upload, Trash2, Plus, Edit2, MapPin } from "lucide-react";
+
+import { useEffect, useRef, useState } from "react";
+import { Camera, MapPin, X } from "lucide-react";
 import { PremiumBadge } from "@/components/premium-badge";
 import { AnnouncementsAdmin } from "@/components/announcements-admin";
 import { isCurrentUserAdmin } from "@/lib/admin";
+import { compressImageFile } from "@/lib/compress-image";
 import type { Announcement } from "@/lib/announcements";
+
+export type ProfileSavePayload = {
+  fullName: string;
+  age: number;
+  country: string;
+  location: string;
+  bio: string;
+  interests: string[];
+  languages: string[];
+  profilePicture: string;
+};
+
+export type ProfileModalUser = {
+  fullName?: string;
+  age?: number;
+  country?: string;
+  location?: string;
+  bio?: string;
+  interests?: string[];
+  languages?: string[];
+  profilePicture?: string;
+};
 
 interface ProfileEditModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSave?: (profile: ProfileSavePayload) => void | Promise<void>;
   isPremium?: boolean;
   announcements?: Announcement[];
   currentUsername?: string;
-}
-
-interface UserProfile {
-  fullName: string;
-  age: number;
-  country: string;
-  languages: string[];
-  interests: string[];
-  profilePicture: string;
-  bio?: string;
-  location?: string;
+  currentUser?: ProfileModalUser | null;
 }
 
 const INTEREST_OPTIONS = [
   "Travel", "Gaming", "Music", "Language Exchange", "Dating", "Friends", "Sports",
   "Books", "Movies", "Art", "Technology", "Cooking", "Photography", "Hiking",
-  "Yoga", "Fitness", "Fashion", "Design", "Business", "Education"
+  "Yoga", "Fitness", "Fashion", "Design", "Business", "Education",
 ];
+
+const FIELD =
+  "h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3.5 text-[14px] text-white placeholder:text-white/35 outline-none transition-colors focus:border-purple-400/55 focus:ring-1 focus:ring-purple-400/35";
+
+function readStoredProfile(): ProfileModalUser {
+  try {
+    const stored = localStorage.getItem("youneon_user_profile");
+    if (!stored) return {};
+    return JSON.parse(stored) as ProfileModalUser;
+  } catch {
+    return {};
+  }
+}
+
+function emptyForm(): ProfileSavePayload {
+  return {
+    fullName: "",
+    age: 18,
+    country: "",
+    location: "",
+    bio: "",
+    interests: [],
+    languages: ["English"],
+    profilePicture: "",
+  };
+}
+
+function formFromSources(user?: ProfileModalUser | null): ProfileSavePayload {
+  const stored = typeof window !== "undefined" ? readStoredProfile() : {};
+  const src = { ...stored, ...user };
+  const location = src.location || src.country || "";
+  return {
+    fullName: src.fullName || "",
+    age: typeof src.age === "number" && src.age > 0 ? src.age : 18,
+    country: src.country || location,
+    location,
+    bio: src.bio || "",
+    interests: Array.isArray(src.interests) ? src.interests : [],
+    languages: Array.isArray(src.languages) && src.languages.length > 0 ? src.languages : ["English"],
+    profilePicture: src.profilePicture || "",
+  };
+}
 
 export function ProfileEditModal({
   isOpen,
   onClose,
+  onSave,
   isPremium = false,
   announcements = [],
   currentUsername,
+  currentUser,
 }: ProfileEditModalProps) {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<UserProfile>>({});
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
-  const [reactionsReceived, setReactionsReceived] = useState<Record<string, number>>({});
-  const [isMounted, setIsMounted] = useState(false);
-
-  const REACTION_LIST = [
-    { name: "Awesome", emoji: "👍" },
-    { name: "Funny", emoji: "😂" },
-    { name: "Friendly", emoji: "🙌" },
-    { name: "WOW", emoji: "😲" },
-    { name: "Magic Rabbit", emoji: "🪄" },
-    { name: "Charming", emoji: "❤️" },
-    { name: "Rose", emoji: "🌹" },
-  ];
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formData, setFormData] = useState<ProfileSavePayload>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [savedHint, setSavedHint] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-    try {
-      if (typeof window !== "undefined" && typeof Storage !== "undefined") {
-        const stored = localStorage.getItem("youneon_user_profile");
-        if (stored) {
-          const profileData = JSON.parse(stored);
-          setProfile(profileData);
-          setFormData(profileData);
-          if (profileData.profilePicture) {
-            setPhotos([profileData.profilePicture]);
-          }
-        }
+    if (!isOpen) return;
+    setFormData(formFromSources(currentUser));
+    setError("");
+    setSavedHint(false);
+    setSaving(false);
+    setUploading(false);
+  }, [isOpen, currentUser]);
 
-        const reactions = localStorage.getItem("youneon_reactions_received");
-        if (reactions) {
-          setReactionsReceived(JSON.parse(reactions));
-        }
-      }
-    } catch (e) {
-      console.error("[v0] Error loading profile:", e);
-    }
-  }, []);
-
-  const handleSave = () => {
-    try {
-      if (typeof window !== "undefined" && typeof Storage !== "undefined") {
-        const updated = { ...profile, ...formData };
-        localStorage.setItem("youneon_user_profile", JSON.stringify(updated));
-        setProfile(updated);
-        setEditingField(null);
-      }
-    } catch (e) {
-      console.error("[v0] Error saving profile:", e);
-    }
-  };
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        setPhotos([...photos, base64]);
-      };
-      reader.readAsDataURL(file);
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose a photo.");
+      return;
     }
-  };
-
-  const handleSetMainPhoto = (index: number) => {
-    setMainPhotoIndex(index);
-    setFormData({ ...formData, profilePicture: photos[index] });
-  };
-
-  const handleDeletePhoto = (index: number) => {
-    const newPhotos = photos.filter((_, i) => i !== index);
-    setPhotos(newPhotos);
-    if (mainPhotoIndex === index && newPhotos.length > 0) {
-      setMainPhotoIndex(0);
-      setFormData({ ...formData, profilePicture: newPhotos[0] });
+    setUploading(true);
+    setError("");
+    try {
+      const profilePicture = await compressImageFile(file);
+      setFormData((prev) => ({ ...prev, profilePicture }));
+    } catch {
+      setError("Could not process that photo. Try another image.");
+    } finally {
+      setUploading(false);
     }
   };
 
   const toggleInterest = (interest: string) => {
-    const currentInterests = formData.interests || [];
-    const updated = currentInterests.includes(interest)
-      ? currentInterests.filter(i => i !== interest)
-      : [...currentInterests, interest];
-    setFormData({ ...formData, interests: updated });
+    setFormData((prev) => {
+      const current = prev.interests || [];
+      const interests = current.includes(interest)
+        ? current.filter((item) => item !== interest)
+        : [...current, interest];
+      return { ...prev, interests };
+    });
   };
 
-  if (!isMounted || !isOpen) return null;
+  const handleSave = async () => {
+    const fullName = formData.fullName.trim();
+    if (!fullName) {
+      setError("Please enter your name.");
+      return;
+    }
+    const age = Number(formData.age);
+    if (!Number.isFinite(age) || age < 18 || age > 99) {
+      setError("Age must be between 18 and 99.");
+      return;
+    }
+
+    const payload: ProfileSavePayload = {
+      ...formData,
+      fullName,
+      age,
+      location: formData.location.trim(),
+      country: formData.country.trim() || formData.location.trim(),
+      bio: formData.bio.trim(),
+      profilePicture: formData.profilePicture || "",
+    };
+
+    setSaving(true);
+    setError("");
+    try {
+      localStorage.setItem("youneon_user_profile", JSON.stringify(payload));
+      await onSave?.(payload);
+      setFormData(payload);
+      setSavedHint(true);
+    } catch {
+      setError("Saved on this device. Cloud sync failed — try again later.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end">
-      <div className="w-full max-w-2xl bg-white rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-3xl">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-gray-900">Edit Profile</h1>
-            {isPremium && <PremiumBadge size="md" />}
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/65 backdrop-blur-sm"
+        aria-label="Close profile"
+        onClick={onClose}
+      />
+      <div className="relative flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#0f0117] shadow-2xl sm:rounded-2xl">
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/8 bg-gradient-to-r from-purple-600/90 to-pink-600/90 px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="text-[16px] font-semibold tracking-tight text-white">Edit Profile</h1>
+            {isPremium && <PremiumBadge size="sm" />}
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="Close"
           >
-            <X size={24} className="text-gray-600" />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-6 space-y-6">
-          {/* Photos & Videos */}
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span>📸</span> Photos & Videos
-            </h2>
-            <div className="grid grid-cols-3 gap-3">
-              {photos.map((photo, index) => (
-                <div
-                  key={index}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
-                    mainPhotoIndex === index
-                      ? "border-gradient-to-r from-purple-500 to-pink-500 ring-2 ring-purple-500"
-                      : "border-gray-300 hover:border-purple-400"
-                  }`}
-                >
-                  <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => handleSetMainPhoto(index)}
-                      className="px-2 py-1 bg-purple-500 text-white text-xs font-bold rounded hover:bg-purple-600"
-                    >
-                      Main
-                    </button>
-                    <button
-                      onClick={() => handleDeletePhoto(index)}
-                      className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <label className="aspect-square rounded-lg border-2 border-dashed border-purple-400 flex items-center justify-center cursor-pointer hover:bg-purple-50 transition-all">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
+        <div className="flex-1 overflow-y-auto px-5 py-5">
+          <div className="mb-6 flex flex-col items-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="group relative h-[112px] w-[112px] overflow-hidden rounded-full border-2 border-purple-400/50 bg-white/[0.06] shadow-[0_0_24px_rgba(168,85,247,0.22)] transition-transform active:scale-[0.98] disabled:opacity-70"
+              aria-label="Upload profile photo"
+            >
+              {formData.profilePicture ? (
+                <img
+                  src={formData.profilePicture}
+                  alt="Your profile"
+                  className="h-full w-full object-cover"
                 />
-                <div className="text-center">
-                  <Plus size={32} className="text-purple-600 mx-auto mb-1" />
-                  <span className="text-xs font-semibold text-purple-600">Add Photo</span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Name */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-900">Name</label>
-              {editingField !== "fullName" && (
-                <button
-                  onClick={() => setEditingField("fullName")}
-                  className="text-purple-600 hover:text-pink-600 text-sm font-semibold flex items-center gap-1"
-                >
-                  <Edit2 size={14} /> Edit
-                </button>
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-[36px]">👤</span>
               )}
-            </div>
-            {editingField === "fullName" ? (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.fullName || ""}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="flex-1 px-4 py-2 border-2 border-purple-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600"
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <p className="text-gray-600">{profile?.fullName}</p>
-            )}
+              <span className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera size={22} className="text-white" />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="mt-3 h-11 rounded-xl px-4 text-[13px] font-medium text-purple-300 transition-colors hover:text-pink-300 disabled:opacity-60"
+            >
+              {uploading ? "Processing photo…" : formData.profilePicture ? "Change photo" : "Add photo"}
+            </button>
           </div>
 
-          {/* Age */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-900">Age</label>
-              {editingField !== "age" && (
-                <button
-                  onClick={() => setEditingField("age")}
-                  className="text-purple-600 hover:text-pink-600 text-sm font-semibold flex items-center gap-1"
-                >
-                  <Edit2 size={14} /> Edit
-                </button>
-              )}
-            </div>
-            {editingField === "age" ? (
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={formData.age || ""}
-                  onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
-                  className="flex-1 px-4 py-2 border-2 border-purple-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600"
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <p className="text-gray-600">{profile?.age} years old</p>
-            )}
-          </div>
+          <div className="space-y-4">
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium uppercase tracking-wide text-white/50">Name</span>
+              <input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                className={FIELD}
+                placeholder="Your name"
+                maxLength={40}
+              />
+            </label>
 
-          {/* Location */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                <MapPin size={16} /> Location
-              </label>
-              {editingField !== "location" && (
-                <button
-                  onClick={() => setEditingField("location")}
-                  className="text-purple-600 hover:text-pink-600 text-sm font-semibold flex items-center gap-1"
-                >
-                  <Edit2 size={14} /> Edit
-                </button>
-              )}
-            </div>
-            {editingField === "location" ? (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={formData.location || ""}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="flex-1 px-4 py-2 border-2 border-purple-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter your location"
-                />
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600"
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <p className="text-gray-600">{formData.location || profile?.country || "Not set"}</p>
-            )}
-          </div>
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium uppercase tracking-wide text-white/50">Age</span>
+              <input
+                type="number"
+                min={18}
+                max={99}
+                value={formData.age || ""}
+                onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value, 10) || 0 })}
+                className={FIELD}
+                placeholder="18"
+              />
+            </label>
 
-          {/* Bio */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-900">Bio</label>
-              {editingField !== "bio" && (
-                <button
-                  onClick={() => setEditingField("bio")}
-                  className="text-purple-600 hover:text-pink-600 text-sm font-semibold flex items-center gap-1"
-                >
-                  <Edit2 size={14} /> Edit
-                </button>
-              )}
-            </div>
-            {editingField === "bio" ? (
-              <div className="flex flex-col gap-2">
-                <textarea
-                  value={formData.bio || ""}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  className="flex-1 px-4 py-2 border-2 border-purple-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 min-h-24"
-                  placeholder="Tell others about yourself..."
-                />
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600"
-                >
-                  Save
-                </button>
-              </div>
-            ) : (
-              <p className="text-gray-600">{formData.bio || "No bio yet"}</p>
-            )}
-          </div>
+            <label className="block">
+              <span className="mb-1.5 flex items-center gap-1 text-[12px] font-medium uppercase tracking-wide text-white/50">
+                <MapPin size={12} /> Location
+              </span>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value, country: e.target.value })}
+                className={FIELD}
+                placeholder="City, country"
+                maxLength={60}
+              />
+            </label>
 
-          {/* Interests */}
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span>⚡</span> Interests
-            </h2>
-            {editingField === "interests" ? (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {INTEREST_OPTIONS.map((interest) => (
+            <label className="block">
+              <span className="mb-1.5 block text-[12px] font-medium uppercase tracking-wide text-white/50">Bio</span>
+              <textarea
+                value={formData.bio}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                className={`${FIELD} h-24 resize-none py-2.5 leading-relaxed`}
+                placeholder="A short intro about you"
+                maxLength={180}
+              />
+            </label>
+
+            <div>
+              <span className="mb-2 block text-[12px] font-medium uppercase tracking-wide text-white/50">Interests</span>
+              <div className="flex flex-wrap gap-1.5">
+                {INTEREST_OPTIONS.map((interest) => {
+                  const active = formData.interests.includes(interest);
+                  return (
                     <button
                       key={interest}
+                      type="button"
                       onClick={() => toggleInterest(interest)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                        (formData.interests || []).includes(interest)
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                          : "bg-gray-100 text-gray-900 hover:border-purple-400"
+                      className={`h-9 rounded-full px-3 text-[12px] font-medium transition-colors ${
+                        active
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                          : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-purple-400/40 hover:text-white"
                       }`}
                     >
                       {interest}
                     </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => {
-                    handleSave();
-                    setEditingField(null);
-                  }}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600"
-                >
-                  Done
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {(formData.interests || []).map((interest) => (
-                    <span
-                      key={interest}
-                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
-                    >
-                      {interest}
-                    </span>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setEditingField("interests")}
-                  className="text-purple-600 hover:text-pink-600 text-sm font-semibold"
-                >
-                  Edit your interests
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Reactions Received */}
-          <div>
-            <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span>💫</span> Reactions Received
-            </h2>
-            {Object.keys(reactionsReceived).length > 0 ? (
-              <div className="space-y-2">
-                {REACTION_LIST.map((reaction) => {
-                  const count = reactionsReceived[reaction.name] || 0;
-                  return count > 0 ? (
-                    <div key={reaction.name} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{reaction.emoji}</span>
-                        <span className="text-sm font-medium text-gray-900">{reaction.name}</span>
-                      </div>
-                      <span className="text-lg font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-clip-text text-transparent">{count}</span>
-                    </div>
-                  ) : null;
+                  );
                 })}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No reactions yet. Start chatting to receive reactions!</p>
-            )}
-          </div>
-
-          {/* Azar Badge */}
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-400 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">✓</span>
-              <div>
-                <p className="font-bold text-gray-900">Azar Badge</p>
-                <p className="text-sm text-gray-600">Verified & trusted member</p>
               </div>
             </div>
           </div>
 
           {isCurrentUserAdmin(currentUsername) && (
-            <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
+            <div className="mt-5 rounded-xl border border-purple-400/25 bg-purple-500/10 p-3">
               <AnnouncementsAdmin announcements={announcements} />
             </div>
           )}
 
-          {/* Close Button */}
+          {error && (
+            <p className="mt-4 text-center text-[13px] text-pink-300">{error}</p>
+          )}
+          {savedHint && !error && (
+            <p className="mt-4 text-center text-[13px] text-emerald-300">Profile saved.</p>
+          )}
+        </div>
+
+        <div className="shrink-0 border-t border-white/8 px-5 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">
           <button
-            onClick={onClose}
-            className="w-full py-3 bg-white border-2 border-gray-300 text-gray-900 font-semibold rounded-lg hover:bg-gray-100 transition-all"
+            type="button"
+            onClick={handleSave}
+            disabled={saving || uploading}
+            className="flex h-11 w-full items-center justify-center rounded-[14px] bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(168,85,247,0.32)] transition-transform active:scale-[0.985] disabled:opacity-60"
           >
-            Close
+            {saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>
