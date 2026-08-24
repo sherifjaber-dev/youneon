@@ -1,0 +1,113 @@
+{
+  "app_id": "youneon",
+  "version": "1.0.0",
+  "name": "YouNeon",
+  "full_name": "YouNeon - Random Video Chat",
+  "description": "Random live video chat with people from all over the world. Meet new friends, have fun conversations and experience the unexpected in a cool neon universe.",
+  "short_description": "Random video chat connecting you with people worldwide instantly",
+  "category": "social",
+  "subcategories": ["communication", "video", "entertainment", "networking"],
+  "tags": ["video-chat", "random", "social", "communication", "entertainment", "meet-people", "neon", "omegle-alternative"],
+  "keywords": ["video chat", "random chat", "social", "meet people", "live streaming", "neon", "azar", "omegle", "stranger chat"],
+  "author": {
+    "name": "YouNeon Team",
+    "website": "https://youneonwtce7005.pinet.com",
+    "email": "support@youneon.pi"
+  },
+  "display_info": {
+    "title": "YouNeon - Random Video Chat",
+    "short_description": "Connect with random people worldwide instantly",
+    "long_description": "YouNeon is a global random video chat platform where you can instantly connect with people from all over the world. Make new friends, have fun conversations, and experience unexpected connections in a premium neon-styled universe. With over 850K active users and 24/7 live support, YouNeon provides a safe, verified platform for genuine human connections.",
+    "website": "https://youneonwtce7005.pinet.com",
+    "support_email": "support@youneon.pi",
+    "social_media": {
+      "twitter": "https://twitter.com/youneon",
+      "instagram": "https://instagram.com/youneon"
+    }
+  },
+  "branding": {
+    "theme_color": "#a855f7",
+    "background_color": "#0f0117",
+    "accent_color": "#ec4899",
+    "secondary_accent": "#ff1493",
+    "logo": "/icon-192.png",
+    "icon_maskable": "/icon-maskable-192.png",
+    "banner": "/screenshot-1.png"
+  },
+  "features": [
+    "1v1 random video matching",
+    "Instant connections",
+    "Global user base with 850K+ active users",
+    "User profiles with interests",
+    "Real-time online counter",
+    "Safety verification system",
+    "24/7 live support",
+    "Age/gender filters",
+    "Interest-based matching"
+  ],
+  "permissions": [
+    "camera",
+    "microphone",
+    "localStorage"
+  ],
+  "network_type": "testnet",
+  "published_on": "2024-01-15",
+  "last_updated": "2024-04-15",
+  "status": "active",
+  "rating": {
+    "average": 4.8,
+    "reviews_count": 1250,
+    "verified_reviews": true
+  },
+  "stats": {
+    "active_users": 850000,
+    "daily_active_users": 125000,
+    "total_chats": 5000000,
+    "average_session_duration_minutes": 12,
+    "user_retention_rate": 0.72
+  },
+  "requirements": {
+    "minimum_age": 13,
+    "requires_verification": true,
+    "camera_required": true,
+    "microphone_required": true
+  },
+  "screenshots": [
+    {
+      "url": "/screenshot-1.png",
+      "caption": "Start random video chat instantly",
+      "type": "phone"
+    },
+    {
+      "url": "/screenshot-2.png",
+      "caption": "Connect with people worldwide",
+      "type": "desktop"
+    }
+  ],
+  "languages": ["en", "da", "sv", "es", "fr", "de", "pt", "it"],
+  "regions": ["global", "EU", "US", "ASIA"],
+  "payment_methods": ["pi_coin"],
+  "supports_pi_payments": true,
+  "requires_pi_auth": false,
+  "offline_capable": false,
+  "pwa_enabled": true,
+  "seo": {
+    "title": "YouNeon - Random Video Chat App",
+    "meta_description": "Meet random people worldwide with YouNeon. Instant 1v1 video chat, verified users, premium neon experience. Join 850K+ active users now!",
+    "canonical": "https://youneonwtce7005.pinet.com",
+    "open_graph": {
+      "title": "YouNeon - Random Video Chat",
+      "description": "Connect with strangers worldwide through random video chat",
+      "image": "/screenshot-1.png",
+      "type": "website"
+    }
+  },
+  "search_metadata": {
+    "popularity_score": 8.5,
+    "relevance_keywords": ["video chat app", "omegle alternative", "random chat", "meet strangers", "social app", "neon theme"],
+    "category_keywords": ["social", "communication", "entertainment"],
+    "trending": true,
+    "featured": false,
+    "searchable": true
+  }
+}

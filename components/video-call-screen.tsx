@@ -1,0 +1,833 @@
+"use client";
+
+import { useEffect, useRef, useState, useCallback } from "react";
+import DailyIframe, { DailyCall, DailyParticipant } from "@daily-co/daily-js";
+
+interface PartnerProfile {
+  name: string;
+  avatar?: string;
+  age?: number;
+  country?: string;
+  countryFlag?: string;
+  bio?: string;
+  interests?: string[];
+}
+
+interface VideoCallScreenProps {
+  onEnd: () => void;
+  partnerName?: string;
+  partnerProfile?: PartnerProfile;
+  currentUserId?: string;
+  currentUserName?: string;
+}
+
+type PermissionState = "checking" | "granted" | "denied" | "not-found" | "in-use" | "error";
+type CallStatus = "idle" | "preview" | "joining" | "waiting" | "joined";
+
+interface FloatingGift { id: string; emoji: string; left: number; duration: number; delay: number; }
+interface ChatMsg { id: string; from: "me" | "partner"; text: string; timestamp: number; }
+
+const GIFTS = [
+  { id: "rose", emoji: "🌹", label: "Rose" },
+  { id: "heart", emoji: "❤️", label: "Hjerte" },
+  { id: "bouquet", emoji: "💐", label: "Buket" },
+  { id: "diamond", emoji: "💎", label: "Diamant" },
+  { id: "gift", emoji: "🎁", label: "Gave" },
+  { id: "teddy", emoji: "🧸", label: "Bamse" },
+];
+
+const MOCK_PARTNERS: PartnerProfile[] = [
+  { name: "Sofia", age: 26, country: "Spanien", countryFlag: "🇪🇸", bio: "Elsker sol, hav og latter ☀️", interests: ["Dans", "Mad", "Strand"] },
+  { name: "Liam", age: 30, country: "USA", countryFlag: "🇺🇸", bio: "Musiker fra New York 🎸", interests: ["Rock", "Film", "Kaffe"] },
+  { name: "Yuki", age: 24, country: "Japan", countryFlag: "🇯🇵", bio: "Anime + ramen = lykke 🍜", interests: ["Anime", "Tegning", "Tech"] },
+  { name: "Pierre", age: 28, country: "Frankrig", countryFlag: "🇫🇷", bio: "Kok og rejseelsker 🥐", interests: ["Madlavning", "Vin", "Rejser"] },
+  { name: "Anna", age: 22, country: "Tyskland", countryFlag: "🇩🇪", bio: "Studerende og bogorm 📚", interests: ["Bøger", "Yoga", "Kunst"] },
+  { name: "Diego", age: 27, country: "Brasilien", countryFlag: "🇧🇷", bio: "Fodbold og samba 🕺", interests: ["Sport", "Musik", "Fest"] },
+];
+
+const SKIP_COOLDOWN_MS = 5000;
+const PREVIEW_DURATION_MS = 3000;
+
+const NSFW_PORN_THRESHOLD = 0.7;
+const NSFW_HENTAI_THRESHOLD = 0.7;
+const NSFW_SEXY_THRESHOLD = 0.85;
+const NSFW_CHECK_INTERVAL_MS = 2000;
+
+function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, currentUserName }: VideoCallScreenProps) {
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  const callRef = useRef<DailyCall | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const previewStreamRef = useRef<MediaStream | null>(null);
+  const nsfwModelRef = useRef<any>(null);
+  const nsfwIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [permission, setPermission] = useState<PermissionState>("checking");
+  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [browser, setBrowser] = useState<"chrome" | "edge" | "firefox" | "other">("other");
+  const [callStatus, setCallStatus] = useState<CallStatus>("idle");
+  const [camOn, setCamOn] = useState(true);
+  const [remoteName, setRemoteName] = useState<string>("");
+
+  const [sessionId, setSessionId] = useState(0);
+  const [partnerIndex, setPartnerIndex] = useState(0);
+  const [skipRemaining, setSkipRemaining] = useState(SKIP_COOLDOWN_MS / 1000);
+
+  const currentPartner: PartnerProfile = partnerProfile
+    ? partnerProfile
+    : MOCK_PARTNERS[partnerIndex % MOCK_PARTNERS.length];
+
+  const [showChatInput, setShowChatInput] = useState(false);
+  const [chatInputValue, setChatInputValue] = useState("");
+  const [displayedMessage, setDisplayedMessage] = useState<ChatMsg | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatMsg[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const messageTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [showGiftPicker, setShowGiftPicker] = useState(false);
+  const [floatingGifts, setFloatingGifts] = useState<FloatingGift[]>([]);
+  const [showProfile, setShowProfile] = useState(false);
+
+  const [nsfwBlur, setNsfwBlur] = useState(false);
+  const [nsfwReason, setNsfwReason] = useState<string>("");
+  const [bypassNsfw, setBypassNsfw] = useState(false);
+  const bypassTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes("edg/")) setBrowser("edge");
+    else if (ua.includes("chrome")) setBrowser("chrome");
+    else if (ua.includes("firefox")) setBrowser("firefox");
+    else setBrowser("other");
+  }, []);
+
+  const checkPermissions = async () => {
+    setPermission("checking");
+    setErrorMsg("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream.getTracks().forEach((t) => t.stop());
+      setPermission("granted");
+    } catch (err: any) {
+      const name = err?.name || "";
+      console.error("getUserMedia failed:", name);
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") setPermission("denied");
+      else if (name === "NotFoundError" || name === "DevicesNotFoundError") setPermission("not-found");
+      else if (name === "NotReadableError" || name === "TrackStartError") setPermission("in-use");
+      else { setPermission("error"); setErrorMsg(err?.message || "Ukendt fejl"); }
+    }
+  };
+
+  useEffect(() => { checkPermissions(); }, []);
+
+  // ============ Load NSFW AI model from CDN (no webpack bundling) ============
+  useEffect(() => {
+    let cancelled = false;
+    const loadScript = (src: string) =>
+      new Promise<void>((resolve, reject) => {
+        if (document.querySelector(`script[src="${src}"]`)) {
+          resolve();
+          return;
+        }
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.body.appendChild(s);
+      });
+
+    (async () => {
+      try {
+        await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/nsfwjs.min.js");
+        const nsfwjs = (window as any).nsfwjs;
+        if (!nsfwjs) throw new Error("nsfwjs not available on window");
+        const model = await nsfwjs.load(
+          "https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/"
+        );
+        if (!cancelled) {
+          nsfwModelRef.current = model;
+          console.log("✅ NSFW AI model loaded from CDN");
+        }
+      } catch (e) {
+        console.warn("⚠️ NSFW model failed to load:", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const playGiftSound = useCallback(() => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(523, ctx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) { console.warn(e); }
+  }, []);
+
+  const triggerFallingGift = useCallback((emoji: string) => {
+    const newGifts: FloatingGift[] = [];
+    for (let i = 0; i < 8; i++) {
+      newGifts.push({
+        id: `${Date.now()}-${i}-${Math.random()}`,
+        emoji, left: Math.random() * 90 + 5,
+        duration: 2.5 + Math.random() * 1.5, delay: Math.random() * 0.6,
+      });
+    }
+    setFloatingGifts((prev) => [...prev, ...newGifts]);
+    playGiftSound();
+    setTimeout(() => {
+      setFloatingGifts((prev) => prev.filter((g) => !newGifts.find((n) => n.id === g.id)));
+    }, 5000);
+  }, [playGiftSound]);
+
+  const saveReceivedGift = useCallback((giftId: string, giftEmoji: string, fromName: string) => {
+    try {
+      const userId = currentUserId || "anon";
+      const key = `younn-received-gifts-${userId}`;
+      const existing = JSON.parse(localStorage.getItem(key) || "[]");
+      existing.push({ id: giftId, emoji: giftEmoji, from: fromName, timestamp: Date.now() });
+      localStorage.setItem(key, JSON.stringify(existing));
+    } catch (e) { console.warn(e); }
+  }, [currentUserId]);
+
+  const showIncomingMessage = useCallback((msg: ChatMsg) => {
+    setDisplayedMessage(msg);
+    setChatHistory((prev) => [...prev, msg]);
+    if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    messageTimerRef.current = setTimeout(() => setDisplayedMessage(null), 10000);
+  }, []);
+
+  useEffect(() => {
+    if (permission !== "granted" || callStatus !== "preview") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        previewStreamRef.current = stream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      } catch (e) { console.warn(e); }
+    })();
+    return () => {
+      cancelled = true;
+      if (previewStreamRef.current) {
+        previewStreamRef.current.getTracks().forEach((t) => t.stop());
+        previewStreamRef.current = null;
+      }
+    };
+  }, [permission, callStatus]);
+
+  useEffect(() => {
+    if (callStatus !== "joined" || !nsfwModelRef.current || bypassNsfw) {
+      if (nsfwIntervalRef.current) clearInterval(nsfwIntervalRef.current);
+      return;
+    }
+    const checkFrame = async () => {
+      const video = remoteVideoRef.current;
+      const model = nsfwModelRef.current;
+      if (!video || !model || video.readyState < 2 || video.videoWidth === 0) return;
+      try {
+        const predictions: Array<{ className: string; probability: number }> = await model.classify(video);
+        let triggered: string | null = null;
+        for (const p of predictions) {
+          if (p.className === "Porn" && p.probability > NSFW_PORN_THRESHOLD) triggered = "nøgenhed";
+          else if (p.className === "Hentai" && p.probability > NSFW_HENTAI_THRESHOLD) triggered = "eksplicit tegning";
+          else if (p.className === "Sexy" && p.probability > NSFW_SEXY_THRESHOLD) triggered = "let seksuelt indhold";
+        }
+        if (triggered) {
+          setNsfwReason(triggered);
+          setNsfwBlur(true);
+        }
+      } catch (e) { /* silent */ }
+    };
+    nsfwIntervalRef.current = setInterval(checkFrame, NSFW_CHECK_INTERVAL_MS);
+    return () => { if (nsfwIntervalRef.current) clearInterval(nsfwIntervalRef.current); };
+  }, [callStatus, bypassNsfw, sessionId]);
+
+  const updateMediaElements = useCallback((call: DailyCall) => {
+    const participants = call.participants();
+    let remoteCount = 0;
+    Object.values(participants).forEach((p: DailyParticipant) => {
+      if (p.local) {
+        const videoTrack = p.tracks.video?.persistentTrack;
+        if (videoTrack && localVideoRef.current) {
+          const cur = localVideoRef.current.srcObject as MediaStream | null;
+          if (!cur || cur.getVideoTracks()[0] !== videoTrack) {
+            localVideoRef.current.srcObject = new MediaStream([videoTrack]);
+          }
+        }
+      } else {
+        remoteCount++;
+        setRemoteName(p.user_name || "Partner");
+        const videoTrack = p.tracks.video?.persistentTrack;
+        const audioTrack = p.tracks.audio?.persistentTrack;
+        if (videoTrack && remoteVideoRef.current) {
+          const cur = remoteVideoRef.current.srcObject as MediaStream | null;
+          if (!cur || cur.getVideoTracks()[0] !== videoTrack) {
+            remoteVideoRef.current.srcObject = new MediaStream([videoTrack]);
+          }
+        }
+        if (audioTrack && remoteAudioRef.current) {
+          const cur = remoteAudioRef.current.srcObject as MediaStream | null;
+          if (!cur || cur.getAudioTracks()[0] !== audioTrack) {
+            remoteAudioRef.current.srcObject = new MediaStream([audioTrack]);
+          }
+        }
+      }
+    });
+    setCallStatus(remoteCount === 0 ? "waiting" : "joined");
+  }, []);
+
+  useEffect(() => {
+    if (permission !== "granted") return;
+    let cancelled = false;
+    const start = async () => {
+      try {
+        setCallStatus("preview");
+        setSkipRemaining(SKIP_COOLDOWN_MS / 1000);
+        setNsfwBlur(false);
+        setBypassNsfw(false);
+        await new Promise((r) => setTimeout(r, PREVIEW_DURATION_MS));
+        if (cancelled) return;
+        if (previewStreamRef.current) {
+          previewStreamRef.current.getTracks().forEach((t) => t.stop());
+          previewStreamRef.current = null;
+        }
+        setCallStatus("joining");
+        const res = await fetch("/api/daily", { method: "POST" });
+        if (!res.ok) throw new Error(`API returned ${res.status}`);
+        const data = await res.json();
+        if (!data?.url) throw new Error("No room URL");
+        if (cancelled) return;
+        const callObject = DailyIframe.createCallObject({ audioSource: true, videoSource: true });
+        callRef.current = callObject;
+        const refresh = () => updateMediaElements(callObject);
+        callObject.on("joined-meeting", refresh);
+        callObject.on("participant-joined", refresh);
+        callObject.on("participant-updated", refresh);
+        callObject.on("participant-left", refresh);
+        callObject.on("track-started", refresh);
+        callObject.on("track-stopped", refresh);
+        callObject.on("app-message", (event: any) => {
+          const d = event?.data;
+          if (!d || !d.type) return;
+          if (d.type === "chat" && d.text) {
+            showIncomingMessage({
+              id: `msg-${Date.now()}-${Math.random()}`,
+              from: "partner", text: String(d.text).slice(0, 200), timestamp: Date.now(),
+            });
+          } else if (d.type === "gift" && d.emoji) {
+            triggerFallingGift(String(d.emoji));
+            saveReceivedGift(d.giftId || "unknown", String(d.emoji), currentPartner.name);
+          }
+        });
+        await callObject.join({ url: data.url, userName: currentUserName || "Mig" });
+        refresh();
+      } catch (err: any) {
+        console.error("Daily start failed:", err);
+        if (!cancelled) { setPermission("error"); setErrorMsg(err?.message || "Kunne ikke starte"); }
+      }
+    };
+    start();
+    return () => {
+      cancelled = true;
+      setDisplayedMessage(null); setChatHistory([]); setFloatingGifts([]);
+      setShowChatInput(false); setShowHistory(false); setShowGiftPicker(false);
+      setShowProfile(false); setRemoteName(""); setNsfwBlur(false); setBypassNsfw(false);
+      if (bypassTimerRef.current) clearTimeout(bypassTimerRef.current);
+      if (callRef.current) {
+        callRef.current.leave().catch(() => {});
+        callRef.current.destroy().catch(() => {});
+        callRef.current = null;
+      }
+      if (previewStreamRef.current) {
+        previewStreamRef.current.getTracks().forEach((t) => t.stop());
+        previewStreamRef.current = null;
+      }
+    };
+  }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerFallingGift, saveReceivedGift, currentPartner.name, currentUserName]);
+
+  useEffect(() => {
+    if (callStatus !== "joined" && callStatus !== "waiting") {
+      setSkipRemaining(SKIP_COOLDOWN_MS / 1000);
+      return;
+    }
+    const startedAt = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - startedAt;
+      setSkipRemaining(Math.max(0, Math.ceil((SKIP_COOLDOWN_MS - elapsed) / 1000)));
+    };
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [callStatus, sessionId]);
+
+  const sendChatMessage = () => {
+    const text = chatInputValue.trim();
+    if (!text || !callRef.current) return;
+    callRef.current.sendAppMessage({ type: "chat", text }, "*");
+    const myMsg: ChatMsg = { id: `msg-${Date.now()}-${Math.random()}`, from: "me", text, timestamp: Date.now() };
+    setChatHistory((prev) => [...prev, myMsg]);
+    setDisplayedMessage(myMsg);
+    if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
+    messageTimerRef.current = setTimeout(() => setDisplayedMessage(null), 10000);
+    setChatInputValue(""); setShowChatInput(false);
+  };
+
+  const sendGift = (gift: { id: string; emoji: string }) => {
+    if (!callRef.current) return;
+    callRef.current.sendAppMessage({ type: "gift", giftId: gift.id, emoji: gift.emoji }, "*");
+    triggerFallingGift(gift.emoji);
+    setShowGiftPicker(false);
+  };
+
+  const toggleCam = () => {
+    if (!callRef.current) return;
+    const next = !camOn;
+    callRef.current.setLocalVideo(next);
+    setCamOn(next);
+  };
+
+  const skipToNext = () => {
+    if (skipRemaining > 0) return;
+    if (callStatus !== "joined" && callStatus !== "waiting") return;
+    setPartnerIndex((i) => i + 1);
+    setSessionId((s) => s + 1);
+  };
+
+  const handleEnd = async () => {
+    if (callRef.current) await callRef.current.leave().catch(() => {});
+    onEnd();
+  };
+
+  const handleSeeAnyway = () => {
+    setNsfwBlur(false);
+    setBypassNsfw(true);
+    if (bypassTimerRef.current) clearTimeout(bypassTimerRef.current);
+    bypassTimerRef.current = setTimeout(() => setBypassNsfw(false), 30000);
+  };
+
+  const handleBlock = () => {
+    try {
+      const userId = currentUserId || "anon";
+      const key = `younn-blocked-${userId}`;
+      const blocked = JSON.parse(localStorage.getItem(key) || "[]");
+      blocked.push({ name: currentPartner.name, timestamp: Date.now(), reason: nsfwReason });
+      localStorage.setItem(key, JSON.stringify(blocked));
+    } catch (e) { /* ignore */ }
+    setNsfwBlur(false);
+    setPartnerIndex((i) => i + 1);
+    setSessionId((s) => s + 1);
+  };
+
+  if (permission !== "granted") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+        <div className="w-full max-w-md rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-6 text-white shadow-2xl">
+          {permission === "checking" && (
+            <div className="text-center py-8">
+              <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white mb-4" />
+              <p className="text-lg">Tjekker kamera og mikrofon…</p>
+            </div>
+          )}
+          {permission === "denied" && (
+            <>
+              <div className="text-center mb-5">
+                <div className="text-5xl mb-3">🎥🚫</div>
+                <h2 className="text-2xl font-bold mb-2">Kamera blokeret</h2>
+                <p className="text-white/80 text-sm">Din browser blokerer adgang til kamera og mikrofon.</p>
+              </div>
+              <div className="bg-black/30 rounded-xl p-4 mb-5 text-sm">
+                {browser === "edge" && (
+                  <>
+                    <p className="font-semibold text-yellow-300 mb-2">Sådan tillader du i Edge:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-white/90">
+                      <li>Klik på <b>🔒 hængelåsen</b> i adresselinjen</li>
+                      <li>Sæt <b>Kamera</b> og <b>Mikrofon</b> til <b>Tillad</b></li>
+                      <li>Genindlæs siden (F5)</li>
+                    </ol>
+                  </>
+                )}
+                {browser === "chrome" && (
+                  <>
+                    <p className="font-semibold text-yellow-300 mb-2">Sådan tillader du i Chrome:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-white/90">
+                      <li>Klik på <b>🔒 hængelås-ikonet</b></li>
+                      <li>Sæt <b>Kamera</b> og <b>Mikrofon</b> til <b>Tillad</b></li>
+                      <li>Genindlæs siden (F5)</li>
+                    </ol>
+                  </>
+                )}
+                {(browser === "firefox" || browser === "other") && (
+                  <p>Åbn webstedsindstillinger og tillad kamera + mikrofon.</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Prøv igen</button>
+                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Annullér</button>
+              </div>
+            </>
+          )}
+          {(permission === "not-found" || permission === "in-use" || permission === "error") && (
+            <>
+              <div className="text-center mb-5">
+                <div className="text-5xl mb-3">⚠️</div>
+                <h2 className="text-2xl font-bold mb-2">
+                  {permission === "not-found" && "Intet kamera fundet"}
+                  {permission === "in-use" && "Kamera er optaget"}
+                  {permission === "error" && "Noget gik galt"}
+                </h2>
+                <p className="text-white/80 text-sm break-words">
+                  {permission === "not-found" && "Tilslut et kamera og prøv igen."}
+                  {permission === "in-use" && "Luk Zoom, Teams eller andre videoapps."}
+                  {permission === "error" && errorMsg}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Prøv igen</button>
+                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Luk</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (callStatus === "preview") {
+    return (
+      <div className="fixed inset-0 z-50 bg-gradient-to-br from-purple-900 via-slate-900 to-pink-900 flex flex-col items-center justify-center p-6 overflow-hidden">
+        <video ref={localVideoRef} autoPlay playsInline muted className="absolute top-4 left-4 w-24 h-32 sm:w-32 sm:h-44 rounded-2xl object-cover border-2 border-white/40 shadow-2xl scale-x-[-1] bg-black" />
+        <div className="relative mb-6">
+          <div className="absolute inset-0 rounded-full bg-pink-500/30 animate-ping" />
+          <div className="absolute inset-0 rounded-full bg-purple-500/30 animate-pulse" />
+          <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden border-4 border-white/80 shadow-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+            {currentPartner.avatar ? (
+              <img src={currentPartner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-7xl font-bold text-white">{currentPartner.name.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+        </div>
+        <div className="text-center text-white max-w-sm">
+          <p className="text-sm text-white/60 uppercase tracking-widest mb-1">Forbinder dig med</p>
+          <h2 className="text-4xl font-bold mb-2">{currentPartner.name}{currentPartner.age && <span className="text-white/80">, {currentPartner.age}</span>}</h2>
+          {currentPartner.country && <p className="text-lg text-white/80 mb-4">{currentPartner.countryFlag} {currentPartner.country}</p>}
+          {currentPartner.bio && <p className="text-sm text-white/70 italic mb-6">"{currentPartner.bio}"</p>}
+          <div className="inline-flex items-center gap-2 text-white/80">
+            <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-sm">Klargør videoopkald…</span>
+          </div>
+        </div>
+        <button onClick={onEnd} className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 text-sm font-medium border border-white/20">Annullér</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black overflow-hidden">
+      <style>{`
+        @keyframes fallDown {
+          0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(110vh) rotate(360deg); opacity: 0.7; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .dock-btn { position: relative; transition: all 0.2s ease; }
+        .dock-btn:hover { transform: translateY(-3px); }
+        .dock-btn:active { transform: translateY(0); }
+      `}</style>
+
+      <video
+        ref={remoteVideoRef}
+        autoPlay playsInline
+        className={`absolute inset-0 w-full h-full object-cover bg-gradient-to-br from-slate-800 to-slate-900 transition-all duration-300 ${nsfwBlur ? "blur-3xl scale-110" : ""}`}
+        data-testid="remote-video"
+      />
+      <audio ref={remoteAudioRef} autoPlay />
+
+      <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+        {floatingGifts.map((g) => (
+          <div key={g.id} className="absolute text-5xl" style={{ left: `${g.left}%`, top: 0, animation: `fallDown ${g.duration}s linear ${g.delay}s forwards` }}>
+            {g.emoji}
+          </div>
+        ))}
+      </div>
+
+      {nsfwBlur && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-gradient-to-br from-red-950/95 to-slate-900/95 backdrop-blur-xl rounded-3xl p-7 max-w-md w-full border-2 border-red-500/40 shadow-2xl text-white">
+            <div className="text-center mb-5">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500/50 mb-4">
+                <span className="text-4xl">⚠️</span>
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Upassende indhold registreret</h2>
+              <p className="text-white/70 text-sm">
+                Vores AI har opdaget muligt <b className="text-red-300">{nsfwReason}</b> i videoen.
+              </p>
+            </div>
+            <div className="bg-black/30 rounded-xl p-3 mb-5 text-xs text-white/60 text-center">
+              🤖 Beskyttelsen kører helt lokalt på din enhed — intet sendes til en server.
+            </div>
+            <div className="flex flex-col gap-2">
+              <button onClick={handleBlock} className="w-full rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 py-3.5 font-bold text-white shadow-lg" data-testid="block-user-btn">🚫 Blokér og skip</button>
+              <button onClick={handleSeeAnyway} className="w-full rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 py-3 text-sm font-medium text-white/80" data-testid="see-anyway-btn">Se alligevel (30 sek.)</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="absolute top-4 left-4 w-32 h-44 sm:w-40 sm:h-56 rounded-2xl overflow-hidden border-2 border-white/40 shadow-2xl bg-gray-900 z-20">
+        <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" data-testid="local-video" />
+        {!camOn && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-white text-xs flex-col gap-1">
+            <span className="text-2xl">📷</span><span>Kamera fra</span>
+          </div>
+        )}
+        <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">Dig</div>
+      </div>
+
+      {displayedMessage && (
+        <div className="absolute top-4 right-4 max-w-xs z-20" style={{ animation: "slideUp 0.3s ease forwards" }}>
+          <div className={`rounded-2xl backdrop-blur-md px-4 py-3 shadow-2xl border ${
+            displayedMessage.from === "me"
+              ? "bg-gradient-to-br from-pink-500/90 to-purple-600/90 border-white/30 text-white"
+              : "bg-black/70 border-white/20 text-white"
+          }`}>
+            <p className="text-[10px] opacity-70 mb-1 font-semibold">
+              {displayedMessage.from === "me" ? "Dig" : currentPartner.name}
+            </p>
+            <p className="text-sm break-words">{displayedMessage.text}</p>
+          </div>
+        </div>
+      )}
+
+      {showHistory && (
+        <div className="absolute top-4 right-4 w-80 max-h-96 z-40 bg-black/85 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl flex flex-col">
+          <div className="flex items-center justify-between p-3 border-b border-white/10">
+            <span className="text-white font-semibold text-sm">Chat-historik</span>
+            <button onClick={() => setShowHistory(false)} className="text-white/70 hover:text-white text-xl">×</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {chatHistory.length === 0 ? (
+              <p className="text-white/50 text-sm text-center py-6">Ingen beskeder endnu</p>
+            ) : (
+              chatHistory.map((m) => (
+                <div key={m.id} className={`flex ${m.from === "me" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${m.from === "me" ? "bg-gradient-to-br from-pink-500 to-purple-600 text-white" : "bg-white/15 text-white"}`}>{m.text}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {showChatInput && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-40" style={{ animation: "slideUp 0.25s ease forwards" }}>
+          <div className="bg-black/85 backdrop-blur-xl rounded-2xl p-3 border border-white/20 shadow-2xl flex gap-2">
+            <input
+              type="text" value={chatInputValue} onChange={(e) => setChatInputValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") sendChatMessage(); }}
+              placeholder="Skriv en besked…" autoFocus maxLength={200}
+              className="flex-1 bg-white/10 text-white placeholder-white/40 rounded-xl px-4 py-2 outline-none border border-white/10 focus:border-pink-400"
+              data-testid="chat-input"
+            />
+            <button onClick={sendChatMessage} disabled={!chatInputValue.trim()} className="px-4 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold disabled:opacity-40" data-testid="send-chat-btn">Send</button>
+            <button onClick={() => setShowChatInput(false)} className="px-3 rounded-xl bg-white/10 text-white">✕</button>
+          </div>
+        </div>
+      )}
+
+      {showGiftPicker && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40" style={{ animation: "slideUp 0.25s ease forwards" }}>
+          <div className="bg-black/85 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl">
+            <p className="text-white text-sm font-semibold mb-3 text-center">Send en gave 🎁</p>
+            <div className="grid grid-cols-3 gap-2">
+              {GIFTS.map((g) => (
+                <button key={g.id} onClick={() => sendGift(g)} className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/10 hover:bg-white/20 hover:scale-110 transition text-white" data-testid={`gift-${g.id}`}>
+                  <span className="text-3xl">{g.emoji}</span>
+                  <span className="text-[10px] opacity-80">{g.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showProfile && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowProfile(false)}>
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 max-w-sm w-full border border-white/10 shadow-2xl text-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center mb-4">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-pink-500 shadow-lg mb-3 bg-white/10">
+                {currentPartner.avatar ? (
+                  <img src={currentPartner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl font-bold">{currentPartner.name.charAt(0).toUpperCase()}</div>
+                )}
+              </div>
+              <h3 className="text-2xl font-bold">{currentPartner.name}{currentPartner.age ? `, ${currentPartner.age}` : ""}</h3>
+              {currentPartner.country && <p className="text-white/70 text-sm mt-1">{currentPartner.countryFlag} {currentPartner.country}</p>}
+            </div>
+            {currentPartner.bio && (
+              <div className="bg-white/5 rounded-2xl p-3 mb-3">
+                <p className="text-xs text-white/50 mb-1 font-semibold">OM</p>
+                <p className="text-sm">{currentPartner.bio}</p>
+              </div>
+            )}
+            {currentPartner.interests && currentPartner.interests.length > 0 && (
+              <div className="bg-white/5 rounded-2xl p-3 mb-4">
+                <p className="text-xs text-white/50 mb-2 font-semibold">INTERESSER</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {currentPartner.interests.map((i) => (
+                    <span key={i} className="bg-pink-500/20 text-pink-200 text-xs px-2.5 py-1 rounded-full border border-pink-400/30">{i}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button onClick={() => setShowProfile(false)} className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Tilbage til chat</button>
+          </div>
+        </div>
+      )}
+
+      {callStatus === "waiting" && (
+        <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none z-10">
+          <div className="text-center bg-black/60 backdrop-blur-md rounded-2xl px-8 py-6 max-w-sm mx-4">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-pink-500 mb-4" />
+            <p className="text-xl font-semibold mb-2">Venter på {currentPartner.name}…</p>
+            <p className="text-sm text-white/70">Forbinder…</p>
+          </div>
+        </div>
+      )}
+      {callStatus === "joining" && (
+        <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none z-10">
+          <div className="text-center">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white mb-4" />
+            <p className="text-lg">Starter video…</p>
+          </div>
+        </div>
+      )}
+
+      {callStatus === "joined" && nsfwModelRef.current && !nsfwBlur && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-1.5 border border-white/10">
+          <span className="text-sm">🛡️</span>
+          <span className="text-[11px] text-white/80 font-medium">AI-beskyttelse aktiv</span>
+          <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+        </div>
+      )}
+
+      {callStatus === "joined" && remoteName && !showProfile && !displayedMessage && (
+        <div className="absolute top-16 right-4 bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium z-10">
+          {remoteName}
+        </div>
+      )}
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 px-4 w-full max-w-[680px]">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-pink-500/30 via-purple-500/30 to-pink-500/30 blur-2xl rounded-full" />
+          <div className="relative flex items-center justify-center gap-2 sm:gap-3 bg-black/55 backdrop-blur-2xl rounded-full p-2 sm:p-2.5 border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+            <button
+              onClick={toggleCam}
+              className={`dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl ${camOn ? "bg-white/15 hover:bg-white/25 text-white" : "bg-red-500/90 text-white"}`}
+              data-testid="toggle-cam-btn"
+              title={camOn ? "Slå kamera fra" : "Slå kamera til"}
+            >
+              {camOn ? "📹" : "🚫"}
+            </button>
+
+            <div className="h-8 w-px bg-white/15" />
+
+            <button
+              onClick={() => {
+                if (showChatInput) setShowChatInput(false);
+                else if (chatHistory.length > 0 && !displayedMessage) setShowHistory((v) => !v);
+                else { setShowChatInput(true); setShowHistory(false); setShowGiftPicker(false); }
+              }}
+              className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-xl sm:text-2xl text-white relative"
+              data-testid="chat-btn"
+              title="Skriv besked"
+            >
+              💬
+              {chatHistory.length > 0 && !displayedMessage && (
+                <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg">
+                  {chatHistory.length > 9 ? "9+" : chatHistory.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => { setShowGiftPicker((v) => !v); setShowChatInput(false); setShowHistory(false); }}
+              className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 hover:shadow-pink-500/50 hover:shadow-lg flex items-center justify-center text-xl sm:text-2xl text-white"
+              data-testid="gift-btn"
+              title="Send gave"
+            >
+              🎁
+            </button>
+
+            <button
+              onClick={() => setShowProfile(true)}
+              className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/30 hover:border-pink-400 bg-white/10"
+              data-testid="profile-btn"
+              title={`Se ${currentPartner.name}'s profil`}
+            >
+              {currentPartner.avatar ? (
+                <img src={currentPartner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg">
+                  {currentPartner.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </button>
+
+            <div className="h-8 w-px bg-white/15" />
+
+            <button
+              onClick={skipToNext}
+              disabled={skipRemaining > 0}
+              className={`dock-btn h-12 sm:h-14 rounded-full flex items-center justify-center gap-1.5 font-bold px-4 sm:px-5 ${
+                skipRemaining > 0
+                  ? "bg-white/10 text-white/40 cursor-not-allowed"
+                  : "bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-orange-500/50 hover:shadow-lg"
+              }`}
+              data-testid="skip-btn"
+              title={skipRemaining > 0 ? `Skip om ${skipRemaining}s` : "Skip til næste"}
+            >
+              <span className="text-lg sm:text-xl">⏭️</span>
+              {skipRemaining > 0 ? (
+                <span className="text-sm font-bold tabular-nums">{skipRemaining}s</span>
+              ) : (
+                <span className="text-sm hidden sm:inline">Skip</span>
+              )}
+            </button>
+
+            <button
+              onClick={handleEnd}
+              className="dock-btn h-12 sm:h-14 rounded-full bg-gradient-to-br from-red-500 to-rose-600 hover:shadow-red-500/50 hover:shadow-lg flex items-center justify-center text-white font-bold px-4 sm:px-5"
+              data-testid="end-call-btn"
+            >
+              <span className="text-sm sm:text-base">Afslut</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default VideoCallScreen;
+export { VideoCallScreen };

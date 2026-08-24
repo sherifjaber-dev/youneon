@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+Allow: /manifest.json
+Allow: /pi-app-manifest.json
+Allow: /sitemap.xml
+Disallow: /api/
+Disallow: /admin/
+
+User-agent: Pi-Ecosystem-Bot
+Allow: /
+Allow: /manifest.json
+Allow: /pi-app-manifest.json
+Allow: /sitemap.xml
+Crawl-delay: 0
+
+User-agent: Pi-Search-Bot
+Allow: /
+Allow: /manifest.json
+Allow: /pi-app-manifest.json
+Allow: /sitemap.xml
+Crawl-delay: 0
+
+User-agent: Googlebot
+Allow: /
+Allow: /manifest.json
+Allow: /pi-app-manifest.json
+
+User-agent: Bingbot
+Allow: /
+Allow: /manifest.json
+Allow: /pi-app-manifest.json
+
+Sitemap: https://youneonwtce7005.pinet.com/sitemap.xml
