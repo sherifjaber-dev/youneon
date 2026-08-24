@@ -2,7 +2,7 @@
 
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useState, useEffect } from "react";
-import { PI_SIGNIN_ONCLICK } from "@/lib/pi-signin-onclick";
+import { applyPiSigninNativeAttrs, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
 
 const LOGIN_FALLBACK_MS = 2000;
 
@@ -20,7 +20,12 @@ export function AuthLoadingScreen() {
     return () => clearTimeout(t);
   }, []);
 
-  const handleSignIn = () => {
+  const handleSignIn = (e?: { preventDefault?: () => void }) => {
+    try {
+      e?.preventDefault?.();
+    } catch {
+      /* ignore */
+    }
     try {
       const P = window.Pi;
       if (P) {
@@ -34,8 +39,8 @@ export function AuthLoadingScreen() {
       } else {
         console.log("[Pi] error: no window.Pi");
       }
-    } catch (e) {
-      console.log("[Pi] error: " + e);
+    } catch (err) {
+      console.log("[Pi] error: " + err);
     }
     if (typeof window.__youneonPiAuth === "function") {
       void window.__youneonPiAuth(true);
@@ -105,12 +110,14 @@ export function AuthLoadingScreen() {
 
         {(showLoginButton || hasError) && (
           <div
+            ref={(el) => applyPiSigninNativeAttrs(el)}
+            style={{ pointerEvents: "auto", userSelect: "none", WebkitUserSelect: "none", cursor: "pointer" }}
+            onPointerDown={handleSignIn}
+            onMouseDown={handleSignIn}
+            onTouchStart={handleSignIn}
             onClick={handleSignIn}
             dangerouslySetInnerHTML={{
-              __html:
-                '<button type="button" class="youneon-signin-btn" data-youneon-signin="1" style="width:100%;padding:16px 24px;font-size:1.125rem;font-weight:700;border-radius:16px;background-image:linear-gradient(to right,#a855f7,#ec4899);color:#ffffff;border:0;cursor:pointer;pointer-events:auto;position:relative;z-index:2147483647" onclick="' +
-                PI_SIGNIN_ONCLICK +
-                '">Sign in with Pi Network</button>',
+              __html: piSigninControlsHtml("youneon-signin-btn-auth"),
             }}
           />
         )}

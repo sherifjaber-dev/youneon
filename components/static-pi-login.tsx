@@ -1,22 +1,23 @@
-import { PI_SIGNIN_ONCLICK } from "@/lib/pi-signin-onclick";
+import {
+  PI_SIGNIN_NATIVE_ATTRS,
+  escapePiSigninAttr,
+  piSigninControlsHtml,
+} from "@/lib/pi-signin-onclick";
 
 /**
- * Server-rendered Pi login as raw HTML. React strips string `onclick` handlers,
- * so the button is injected with dangerouslySetInnerHTML — a real HTML attribute
- * that immediately calls window.Pi.authenticate in the App Studio iframe.
+ * Server-rendered Pi login as raw HTML. React strips string `on*` handlers on JSX
+ * and can hydrate a <button> into a text-selectable div/span — so the overlay and
+ * controls are injected with dangerouslySetInnerHTML and never re-rendered as JSX.
+ * The entire overlay is the hit target (click/tap anywhere = Pi.authenticate).
  */
 const OVERLAY_STYLE =
-  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#0f0117;color:#ffffff;padding:16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto";
+  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#0f0117;color:#ffffff;padding:16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:rgba(168,85,247,0.5);caret-color:transparent";
 
 const TITLE_STYLE =
-  "font-size:2rem;font-weight:800;margin:0 0 1.25rem;color:#e9d5ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:none";
+  "font-size:2rem;font-weight:800;margin:0 0 1.25rem;color:#e9d5ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer;caret-color:transparent";
 
-const BUTTON_STYLE =
-  "padding:16px 32px;font-size:1.125rem;font-weight:700;border:0;border-radius:16px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(to right,#a855f7,#ec4899);cursor:pointer;width:100%;max-width:320px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;-webkit-tap-highlight-color:transparent";
-
-function escapeAttr(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-}
+const HINT_STYLE =
+  "font-size:0.875rem;color:rgba(255,255,255,0.75);margin:12px 0 0;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer";
 
 export function StaticPiLogin({
   buttonId = "youneon-signin-btn",
@@ -25,24 +26,29 @@ export function StaticPiLogin({
   buttonId?: string;
   overlayId?: string;
 }) {
-  const idAttr = overlayId ? ' id="' + escapeAttr(overlayId) + '"' : "";
+  const idAttr = overlayId ? ' id="' + escapePiSigninAttr(overlayId) + '"' : "";
   const html =
     '<div class="youneon-static-login"' +
     idAttr +
-    ' style="' +
+    ' aria-label="Sign in with Pi Network" data-youneon-signin="1" style="' +
     OVERLAY_STYLE +
-    '">' +
+    '" ' +
+    PI_SIGNIN_NATIVE_ATTRS +
+    ">" +
     '<h1 style="' +
     TITLE_STYLE +
     '">YouNeon</h1>' +
-    '<button id="' +
-    escapeAttr(buttonId) +
-    '" type="button" class="youneon-signin-btn" data-youneon-signin="1" style="' +
-    BUTTON_STYLE +
-    '" onclick="' +
-    PI_SIGNIN_ONCLICK +
-    '">Sign in with Pi Network</button>' +
+    piSigninControlsHtml(buttonId) +
+    '<p style="' +
+    HINT_STYLE +
+    '">Tap anywhere to sign in</p>' +
     "</div>";
 
-  return <div suppressHydrationWarning dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div
+      data-youneon-login-host="1"
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }

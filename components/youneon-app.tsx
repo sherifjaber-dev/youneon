@@ -49,10 +49,12 @@ function readLocalProfileExtras(): Partial<YouNeonUser> {
 
 function hideStaticLogins() {
   try {
-    const nodes = document.querySelectorAll(".youneon-static-login");
+    const nodes = document.querySelectorAll(".youneon-static-login, [data-youneon-login-host]");
     for (let i = 0; i < nodes.length; i++) {
       (nodes[i] as HTMLElement).style.display = "none";
     }
+    const tree = document.getElementById("youneon-app-tree");
+    if (tree) tree.style.pointerEvents = "auto";
   } catch {
     /* ignore */
   }

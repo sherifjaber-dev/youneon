@@ -1,6 +1,7 @@
 "use client";
 
-import { PI_SIGNIN_ONCLICK } from "@/lib/pi-signin-onclick";
+import type { CSSProperties } from "react";
+import { applyPiSigninNativeAttrs, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -9,6 +10,34 @@ interface LoginScreenProps {
   piAvailable?: boolean;
   onGuest?: () => void;
 }
+
+const overlayStyle = {
+  position: "fixed",
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+  zIndex: 2147483647,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#0f0117",
+  minHeight: "100%",
+  padding: 16,
+  boxSizing: "border-box",
+  fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+  pointerEvents: "auto",
+  cursor: "pointer",
+  touchAction: "manipulation",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  MozUserSelect: "none",
+  msUserSelect: "none",
+  WebkitTouchCallout: "none",
+  WebkitTapHighlightColor: "rgba(168,85,247,0.5)",
+  caretColor: "transparent",
+} as CSSProperties;
 
 export function LoginScreen({
   onLogin,
@@ -20,7 +49,12 @@ export function LoginScreen({
   const showPiBrowserHint = !piAvailable;
   const showError = Boolean(errorMessage) && (piAvailable || !errorMessage?.includes("Pi Browser"));
 
-  const handleSignIn = () => {
+  const handleSignIn = (e?: { preventDefault?: () => void }) => {
+    try {
+      e?.preventDefault?.();
+    } catch {
+      /* ignore */
+    }
     try {
       const P = window.Pi;
       if (!P) {
@@ -34,8 +68,8 @@ export function LoginScreen({
           P.authenticate(["username"], function () {});
         }
       }
-    } catch (e) {
-      console.log("[Pi] error: " + e);
+    } catch (err) {
+      console.log("[Pi] error: " + err);
     }
     if (typeof window.__youneonPiAuth === "function") {
       void window.__youneonPiAuth(true);
@@ -43,29 +77,37 @@ export function LoginScreen({
     onLogin();
   };
 
+  const bindOverlay = (el: HTMLDivElement | null) => {
+    applyPiSigninNativeAttrs(el);
+  };
+
   return (
     <div
+      ref={bindOverlay}
       className="youneon-static-login"
-      style={{
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 0,
-        zIndex: 2147483647,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#0f0117",
-        minHeight: "100%",
-        padding: 16,
-        boxSizing: "border-box",
-        fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
-        pointerEvents: "auto",
-      }}
+      aria-label="Sign in with Pi Network"
+      data-youneon-signin="1"
+      style={overlayStyle}
+      onPointerDown={handleSignIn}
+      onMouseDown={handleSignIn}
+      onTouchStart={handleSignIn}
+      onClick={handleSignIn}
+      onSelect={(e) => e.preventDefault()}
     >
-      <div style={{ position: "relative", zIndex: 10, textAlign: "center", width: "100%", maxWidth: 384 }}>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 10,
+          textAlign: "center",
+          width: "100%",
+          maxWidth: 384,
+          pointerEvents: "none",
+          userSelect: "none",
+          WebkitUserSelect: "none",
+          cursor: "pointer",
+          caretColor: "transparent",
+        }}
+      >
         <h1
           style={{
             fontSize: "2.25rem",
@@ -73,43 +115,86 @@ export function LoginScreen({
             margin: "0 0 0.75rem",
             color: "#e9d5ff",
             fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+            pointerEvents: "none",
+            userSelect: "none",
           }}
         >
           YouNeon
         </h1>
-        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.9)", margin: "0 0 1.5rem" }}>
+        <p
+          style={{
+            fontSize: 14,
+            color: "rgba(255,255,255,0.9)",
+            margin: "0 0 1.5rem",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        >
           Meet the Pi Network – Live video chat with real people
         </p>
 
         {showPiBrowserHint && (
-          <p style={{ color: "#fde68a", fontSize: 12, margin: "0 0 1rem", lineHeight: 1.5 }}>
+          <p
+            style={{
+              color: "#fde68a",
+              fontSize: 12,
+              margin: "0 0 1rem",
+              lineHeight: 1.5,
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
             Pi authentication only works inside the Pi Browser. Open YouNeon in Pi Browser, then tap
             Sign in with Pi Network.
           </p>
         )}
 
         {showError && (
-          <p style={{ color: "#fecaca", fontSize: 12, margin: "0 0 1rem", lineHeight: 1.5 }}>{errorMessage}</p>
+          <p
+            style={{
+              color: "#fecaca",
+              fontSize: 12,
+              margin: "0 0 1rem",
+              lineHeight: 1.5,
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            {errorMessage}
+          </p>
         )}
 
         {isLoggingIn && (
-          <p style={{ color: "#e9d5ff", fontSize: 12, margin: "0 0 0.75rem" }}>Connecting to Pi Network…</p>
+          <p
+            style={{
+              color: "#e9d5ff",
+              fontSize: 12,
+              margin: "0 0 0.75rem",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Connecting to Pi Network…
+          </p>
         )}
 
         <div
-          onClick={handleSignIn}
+          style={{ pointerEvents: "auto", userSelect: "none", WebkitUserSelect: "none" }}
           dangerouslySetInnerHTML={{
-            __html:
-              '<button type="button" class="youneon-signin-btn" data-youneon-signin="1" style="position:relative;z-index:2147483647;width:100%;padding:16px 24px;font-size:1.125rem;font-weight:700;border-radius:16px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(to right,#a855f7,#ec4899);border:0;cursor:pointer;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto" onclick="' +
-              PI_SIGNIN_ONCLICK +
-              '">Sign in with Pi Network</button>',
+            __html: piSigninControlsHtml("youneon-signin-btn-login"),
           }}
         />
 
         {onGuest && (
           <button
             type="button"
-            onClick={onGuest}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onGuest();
+            }}
             style={{
               position: "relative",
               zIndex: 20,
@@ -123,13 +208,23 @@ export function LoginScreen({
               border: 0,
               textDecoration: "underline",
               cursor: "pointer",
+              pointerEvents: "auto",
+              userSelect: "none",
             }}
           >
             Continue as guest (demo)
           </button>
         )}
 
-        <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 24 }}>
+        <p
+          style={{
+            color: "rgba(255,255,255,0.7)",
+            fontSize: 12,
+            marginTop: 24,
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        >
           Secure • Instant • Powered by Pi Network
         </p>
       </div>

@@ -8,8 +8,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pine
 
 const CRITICAL_CSS =
   "html,body{background:#0f0117 !important;background-color:#0f0117 !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}" +
-  "#youneon-static-login,.youneon-static-login{background:#0f0117;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0}" +
-  "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important}";
+  "#youneon-static-login,.youneon-static-login,#youneon-static-login *,.youneon-static-login *{user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;caret-color:transparent !important;cursor:pointer !important}" +
+  "#youneon-static-login,.youneon-static-login{background:#0f0117;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
+  "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p{pointer-events:none !important}" +
+  "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin],input[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
+  "#youneon-app-tree{pointer-events:none;position:relative;z-index:0}";
 
 /**
  * Vanilla ES5 boot script. No async/await, no arrow functions, no template
@@ -47,6 +50,22 @@ const PI_BOOT_SCRIPT =
   "try { if (P.init) P.init({ version: '2.0', sandbox: true }); } catch (ie) {}" +
   "return callAuthenticate();" +
   "};" +
+  "function isLoginTarget(t) {" +
+  "if (!t) return false;" +
+  "if (t.nodeType === 3) t = t.parentNode;" +
+  "if (!t || !t.closest) return false;" +
+  "return !!(t.closest('.youneon-static-login') || t.closest('#youneon-static-login') || t.closest('[data-youneon-login-host]') || t.closest('[data-youneon-signin]') || t.closest('.youneon-signin-btn'));" +
+  "}" +
+  "function onLoginHit(ev) {" +
+  "if (!isLoginTarget(ev && ev.target)) return;" +
+  "try { if (ev.preventDefault) ev.preventDefault(); } catch (x) {}" +
+  "if (typeof window.__youneonPiAuth === 'function') window.__youneonPiAuth(); else callAuthenticate();" +
+  "}" +
+  "if (!window.__YOUNEON_LOGIN_HIT_BOUND__) {" +
+  "window.__YOUNEON_LOGIN_HIT_BOUND__ = true;" +
+  "var hitEv = ['pointerdown', 'mousedown', 'touchstart', 'click'];" +
+  "for (var hi = 0; hi < hitEv.length; hi++) { try { document.addEventListener(hitEv[hi], onLoginHit, true); } catch (he) {} }" +
+  "}" +
   "function runInitThenAuth() {" +
   "if (window.__YOUNEON_PI_AUTO_AUTH_STARTED__) return;" +
   "window.__YOUNEON_PI_AUTO_AUTH_STARTED__ = true;" +
@@ -167,7 +186,10 @@ export default function RootLayout({
         <script type="text/javascript" src="https://sdk.minepi.com/pi-sdk.js"></script>
         <script type="text/javascript" src="/pi-boot.js"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <div style={{ position: "relative", zIndex: 0, isolation: "isolate" }}>
+        <div
+          id="youneon-app-tree"
+          style={{ position: "relative", zIndex: 0, isolation: "isolate", pointerEvents: "none" }}
+        >
           <AppProviders>{children}</AppProviders>
         </div>
       </body>

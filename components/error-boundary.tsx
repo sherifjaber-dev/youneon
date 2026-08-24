@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { PI_SIGNIN_ONCLICK } from "@/lib/pi-signin-onclick";
+import { applyPiSigninNativeAttrs, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -28,6 +28,11 @@ const overlayStyle: React.CSSProperties = {
   textAlign: "center",
   fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
   pointerEvents: "auto",
+  cursor: "pointer",
+  touchAction: "manipulation",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  caretColor: "transparent",
 };
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -44,26 +49,63 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error("YouNeon error boundary:", error, info.componentStack);
   }
 
+  handleSignIn = (e?: { preventDefault?: () => void }) => {
+    try {
+      e?.preventDefault?.();
+    } catch {
+      /* ignore */
+    }
+    try {
+      const P = window.Pi;
+      if (!P) {
+        console.log("[Pi] error: no window.Pi");
+      } else {
+        console.log("[Pi] authenticate start");
+        if (P.init) P.init({ version: "2.0", sandbox: true });
+        try {
+          P.authenticate({ scopes: ["username"] });
+        } catch {
+          P.authenticate(["username"], function () {});
+        }
+      }
+    } catch (err) {
+      console.log("[Pi] error: " + err);
+    }
+    if (typeof window.__youneonPiAuth === "function") {
+      void window.__youneonPiAuth(true);
+    }
+  };
+
   render() {
     if (this.state.hasError) {
       return (
-        <div className="youneon-static-login" style={overlayStyle}>
+        <div
+          className="youneon-static-login"
+          aria-label="Sign in with Pi Network"
+          data-youneon-signin="1"
+          style={overlayStyle}
+          ref={(el) => applyPiSigninNativeAttrs(el)}
+          onPointerDown={this.handleSignIn}
+          onMouseDown={this.handleSignIn}
+          onTouchStart={this.handleSignIn}
+          onClick={this.handleSignIn}
+        >
           <h1
             style={{
               fontSize: "2rem",
               fontWeight: 800,
               margin: "0 0 1.25rem",
               color: "#e9d5ff",
+              pointerEvents: "none",
+              userSelect: "none",
             }}
           >
             YouNeon
           </h1>
           <div
+            style={{ pointerEvents: "auto", userSelect: "none" }}
             dangerouslySetInnerHTML={{
-              __html:
-                '<button type="button" class="youneon-signin-btn" data-youneon-signin="1" style="padding:16px 32px;font-size:1.125rem;font-weight:700;border:0;border-radius:16px;color:#ffffff;background-color:#a855f7;cursor:pointer;width:100%;max-width:320px;pointer-events:auto;position:relative;z-index:2147483647" onclick="' +
-                PI_SIGNIN_ONCLICK +
-                '">Sign in with Pi Network</button>',
+              __html: piSigninControlsHtml("youneon-signin-btn-error"),
             }}
           />
         </div>
