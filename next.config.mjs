@@ -73,7 +73,7 @@ const nextConfig = {
           },
           {
             key: 'Cache-Control',
-            value: 'no-store, max-age=0, must-revalidate',
+            value: 'no-store',
           },
         ],
       },
