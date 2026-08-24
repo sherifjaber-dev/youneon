@@ -10,7 +10,6 @@ export const PI_SDK_WAIT_MS = 2000;
 
 let initPromise: Promise<void> | null = null;
 let initSucceeded = false;
-let authInFlight: Promise<PiAuthResult> | null = null;
 
 function errorMessage(error: unknown): string {
   if (!error) return "unknown";
@@ -47,15 +46,9 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
     return true;
   }
 
-  if (typeof window.__youneonWaitForPi === "function") {
-    const found = await window.__youneonWaitForPi(timeoutMs);
-    if (found) logSdkLoaded();
-    return found;
-  }
-
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     if (window.Pi) {
       logSdkLoaded();
       return true;
@@ -68,7 +61,6 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
 export function resetPiSdkInit(): void {
   initPromise = null;
   initSucceeded = false;
-  authInFlight = null;
   if (typeof window !== "undefined") {
     window.__YOUNEON_PI_AUTH_PROMISE__ = undefined;
     window.__YOUNEON_PI_INIT_PROMISE__ = undefined;
@@ -76,8 +68,7 @@ export function resetPiSdkInit(): void {
 }
 
 /**
- * Initialize the official Pi SDK once. Concurrent callers share one Promise
- * so Pi.authenticate cannot run until Pi.init has fully settled.
+ * Initialize the official Pi SDK once. Concurrent callers share one Promise.
  */
 export async function initPiSdk(): Promise<void> {
   if (typeof window === "undefined") {
@@ -144,8 +135,9 @@ function onIncompletePaymentFound(payment: PiPaymentDTO): void {
  * Call window.Pi.authenticate directly.
  * App Studio looks for Pi.authenticate({ scopes: ['username'] }).
  * Fall back to the classic array + callback signature if the object form throws.
+ * Never skip this call — Studio detects the invocation, not success.
  */
-async function callWindowPiAuthenticate(): Promise<PiAuthResult> {
+function callWindowPiAuthenticate(): Promise<PiAuthResult> {
   if (!window.Pi) {
     throw new Error(PI_SDK_UNAVAILABLE);
   }
@@ -154,14 +146,18 @@ async function callWindowPiAuthenticate(): Promise<PiAuthResult> {
   console.log("[Pi] authenticate start");
 
   try {
-    const result = await Pi.authenticate({ scopes: ["username"] });
-    console.log("[Pi] authenticate success");
-    return result;
+    const result = Pi.authenticate({ scopes: ["username"] });
+    return Promise.resolve(result).then((authResult) => {
+      console.log("[Pi] authenticate success");
+      return authResult;
+    });
   } catch {
     try {
-      const result = await Pi.authenticate(["username"], onIncompletePaymentFound);
-      console.log("[Pi] authenticate success");
-      return result;
+      const result = Pi.authenticate(["username"], onIncompletePaymentFound);
+      return Promise.resolve(result).then((authResult) => {
+        console.log("[Pi] authenticate success");
+        return authResult;
+      });
     } catch (arrayFormError) {
       logError(arrayFormError);
       throw arrayFormError;
@@ -170,42 +166,37 @@ async function callWindowPiAuthenticate(): Promise<PiAuthResult> {
 }
 
 /**
- * Authenticate with Pi Browser. Always awaits shared initPiSdk() first.
- * Always invokes window.Pi.authenticate — required for Pi App Studio.
- * Caller must send only accessToken to the backend — never trust SDK uid/username.
+ * Authenticate with Pi Browser. Always invokes window.Pi.authenticate —
+ * required for Pi App Studio. Does not skip for cookies, guest mode, in-flight
+ * init, or missing payments scope.
+ *
+ * Official docs say await init first. If init takes >1s we still authenticate
+ * so Studio can detect the call.
  */
 export async function authenticatePi(
   _scopes: PiScope[] = PI_AUTH_SCOPES,
   _onIncompletePaymentFound: (payment: PiPaymentDTO) => void = onIncompletePaymentFound,
-  force = false
+  _force = false
 ): Promise<PiAuthResult> {
   if (typeof window !== "undefined" && typeof window.__youneonPiAuth === "function") {
-    return window.__youneonPiAuth(force);
+    const vanilla = window.__youneonPiAuth(true);
+    if (vanilla && typeof (vanilla as Promise<PiAuthResult>).then === "function") {
+      return vanilla as Promise<PiAuthResult>;
+    }
+    return callWindowPiAuthenticate();
   }
 
-  await initPiSdk();
-
-  if (!window.Pi) {
+  const available = await waitForPiSdk();
+  if (!available || !window.Pi) {
     logError(PI_SDK_UNAVAILABLE);
     throw new Error(PI_SDK_UNAVAILABLE);
   }
 
-  const existing = window.__YOUNEON_PI_AUTH_PROMISE__;
-  if (existing && !force) {
-    try {
-      return await existing;
-    } catch (error) {
-      window.__YOUNEON_PI_AUTH_PROMISE__ = undefined;
-      logError(error);
-    }
-  }
+  const initWait = initPiSdk().then(() => "init" as const, () => "init-error" as const);
+  const timeout = new Promise<"timeout">((resolve) => {
+    setTimeout(() => resolve("timeout"), 1000);
+  });
+  await Promise.race([initWait, timeout]);
 
-  if (!authInFlight || force) {
-    authInFlight = callWindowPiAuthenticate().finally(() => {
-      authInFlight = null;
-    });
-    window.__YOUNEON_PI_AUTH_PROMISE__ = authInFlight;
-  }
-
-  return authInFlight;
+  return callWindowPiAuthenticate();
 }

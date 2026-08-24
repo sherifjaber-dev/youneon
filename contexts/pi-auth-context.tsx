@@ -100,11 +100,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const authenticate = useCallback(async (force = false) => {
-    if (inFlightRef.current && !force) {
-      await inFlightRef.current;
-      if (sessionReadyRef.current) return;
-    }
-
     const run = (async () => {
       setHasError(false);
       setAuthMessage("Connecting to Pi Network...");

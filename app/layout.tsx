@@ -7,13 +7,15 @@ import "./globals.css";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pinet.com";
 
 const CRITICAL_CSS =
-  "html,body{background:#0f0117 !important;background-color:#0f0117 !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}#youneon-static-login,.youneon-static-login{background:#0f0117}";
+  "html,body{background:#0f0117 !important;background-color:#0f0117 !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}" +
+  "#youneon-static-login,.youneon-static-login{background:#0f0117;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0}" +
+  "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important}";
 
 /**
  * Vanilla ES5 boot script. No async/await, no arrow functions, no template
- * literals in the output — old Pi App Studio webviews throw on those and can
- * white-screen the document. Literal Pi.authenticate(...) must appear here
- * so App Studio can detect the call.
+ * literals in the output — old Pi App Studio webviews throw on those.
+ * Polls for window.Pi every 200ms, then calls Pi.authenticate so App Studio
+ * can detect the call (it does not require login success).
  */
 const PI_BOOT_SCRIPT =
   "(function youneonPiBoot() {" +
@@ -28,92 +30,52 @@ const PI_BOOT_SCRIPT =
   "window.__YOUNEON_PI_SDK_LOGGED__ = true;" +
   "console.log('[Pi] SDK loaded');" +
   "}" +
-  "function waitForPi(timeoutMs, cb) {" +
-  "if (window.Pi) { logSdkLoaded(); cb(true); return; }" +
-  "var started = Date.now();" +
-  "var timer = setInterval(function () {" +
-  "if (window.Pi) { clearInterval(timer); logSdkLoaded(); cb(true); }" +
-  "else if (Date.now() - started >= timeoutMs) { clearInterval(timer); cb(!!window.Pi); }" +
-  "}, 50);" +
-  "}" +
-  "window.__youneonWaitForPi = function (timeoutMs) {" +
-  "return new Promise(function (resolve) { waitForPi(timeoutMs, resolve); });" +
-  "};" +
-  "function runAuthenticate() {" +
+  "function callAuthenticate() {" +
   "console.log('[Pi] authenticate start');" +
-  "var result;" +
-  "try { result = window.Pi.authenticate({ scopes: ['username'] }); }" +
-  "catch (objectFormError) { result = window.Pi.authenticate(['username'], function () {}); }" +
-  "return Promise.resolve(result);" +
+  "var P = window.Pi;" +
+  "if (!P) { console.log('[Pi] error: no window.Pi'); return; }" +
+  "try { return P.authenticate({ scopes: ['username'] }); }" +
+  "catch (objectFormError) {" +
+  "try { return P.authenticate(['username'], function () {}); }" +
+  "catch (arrayFormError) { console.log('[Pi] error: ' + errMsg(arrayFormError)); }" +
   "}" +
-  "window.__youneonPiAuth = function (force) {" +
-  "if (window.__YOUNEON_PI_AUTH_PENDING__ && window.__YOUNEON_PI_AUTH_PROMISE__) {" +
-  "return window.__YOUNEON_PI_AUTH_PROMISE__;" +
   "}" +
-  "if (!force && window.__YOUNEON_PI_AUTH_PROMISE__) return window.__YOUNEON_PI_AUTH_PROMISE__;" +
-  "window.__YOUNEON_PI_AUTH_PENDING__ = true;" +
-  "var p = new Promise(function (resolve, reject) {" +
-  "waitForPi(15000, function (found) {" +
-  "if (!found || !window.Pi) {" +
-  "var missing = new Error('PI_SDK_UNAVAILABLE');" +
-  "console.log('[Pi] error: ' + errMsg(missing));" +
-  "reject(missing);" +
-  "return;" +
-  "}" +
-  "logSdkLoaded();" +
-  "function afterInit() {" +
-  "runAuthenticate().then(function (authResult) {" +
-  "console.log('[Pi] authenticate success');" +
-  "window.__PI_AUTH_OK = true;" +
-  "try { document.dispatchEvent(new Event('youneon-pi-auth')); } catch (ev) {}" +
-  "resolve(authResult);" +
-  "}, function (e) {" +
-  "console.log('[Pi] error: ' + errMsg(e));" +
-  "reject(e);" +
-  "});" +
-  "}" +
-  "if (!window.__YOUNEON_PI_INIT_PROMISE__) {" +
-  "console.log('[Pi] init start');" +
-  "window.__YOUNEON_PI_INIT_PROMISE__ = Promise.resolve(window.Pi.init({ version: '2.0', sandbox: true })).then(function () {" +
-  "console.log('[Pi] init success');" +
-  "}).catch(function (e) {" +
-  "window.__YOUNEON_PI_INIT_PROMISE__ = undefined;" +
-  "throw e;" +
-  "});" +
-  "}" +
-  "Promise.resolve(window.__YOUNEON_PI_INIT_PROMISE__).then(afterInit, function (e) {" +
-  "console.log('[Pi] error: ' + errMsg(e));" +
-  "reject(e);" +
-  "});" +
-  "});" +
-  "});" +
-  "window.__YOUNEON_PI_AUTH_PROMISE__ = p;" +
-  "p.then(function () { window.__YOUNEON_PI_AUTH_PENDING__ = false; }, function () {" +
-  "window.__YOUNEON_PI_AUTH_PENDING__ = false;" +
-  "if (window.__YOUNEON_PI_AUTH_PROMISE__ === p) window.__YOUNEON_PI_AUTH_PROMISE__ = undefined;" +
-  "});" +
-  "return p;" +
+  "window.__youneonCallPiAuthenticate = callAuthenticate;" +
+  "window.__youneonPiAuth = function () {" +
+  "var P = window.Pi;" +
+  "if (!P) { console.log('[Pi] error: no window.Pi'); return; }" +
+  "try { if (P.init) P.init({ version: '2.0', sandbox: true }); } catch (ie) {}" +
+  "return callAuthenticate();" +
   "};" +
-  "function onSignInClick(e) {" +
-  "var t = e.target;" +
-  "while (t && t !== document) {" +
-  "if (t.getAttribute && t.getAttribute('data-youneon-signin')) {" +
-  "window.__youneonPiAuth(true);" +
-  "return;" +
+  "function runInitThenAuth() {" +
+  "if (window.__YOUNEON_PI_AUTO_AUTH_STARTED__) return;" +
+  "window.__YOUNEON_PI_AUTO_AUTH_STARTED__ = true;" +
+  "var P = window.Pi;" +
+  "if (!P) { console.log('[Pi] error: no window.Pi'); return; }" +
+  "logSdkLoaded();" +
+  "var authCalled = false;" +
+  "function doAuth() {" +
+  "if (authCalled) return;" +
+  "authCalled = true;" +
+  "callAuthenticate();" +
   "}" +
-  "t = t.parentNode;" +
+  "try {" +
+  "if (P.init) {" +
+  "console.log('[Pi] init start');" +
+  "var r = P.init({ version: '2.0', sandbox: true });" +
+  "if (r && typeof r.then === 'function') {" +
+  "r.then(function () { console.log('[Pi] init success'); doAuth(); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); doAuth(); });" +
+  "} else { console.log('[Pi] init success'); doAuth(); }" +
+  "} else { doAuth(); }" +
+  "} catch (e) { console.log('[Pi] error: ' + errMsg(e)); doAuth(); }" +
+  "setTimeout(function () { doAuth(); }, 1000);" +
   "}" +
-  "}" +
-  "document.addEventListener('click', onSignInClick, true);" +
-  "function startAuth() {" +
-  "if (window.Pi) logSdkLoaded();" +
-  "window.__youneonPiAuth(false).then(function () {}, function () {});" +
-  "}" +
-  "if (document.readyState === 'loading') {" +
-  "document.addEventListener('DOMContentLoaded', startAuth);" +
-  "} else {" +
-  "startAuth();" +
-  "}" +
+  "var piPoll = setInterval(function () {" +
+  "if (!window.Pi) return;" +
+  "clearInterval(piPoll);" +
+  "runInitThenAuth();" +
+  "}, 200);" +
+  "if (window.Pi) { clearInterval(piPoll); runInitThenAuth(); }" +
   "})();";
 
 export const metadata: Metadata = {
@@ -188,7 +150,6 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
-        <script src="https://sdk.minepi.com/pi-sdk.js" defer></script>
       </head>
       <body
         suppressHydrationWarning
@@ -203,8 +164,12 @@ export default function RootLayout({
         }}
       >
         <StaticPiLogin overlayId="youneon-static-login" />
-        <script dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <AppProviders>{children}</AppProviders>
+        <script type="text/javascript" src="https://sdk.minepi.com/pi-sdk.js"></script>
+        <script type="text/javascript" src="/pi-boot.js"></script>
+        <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
+        <div style={{ position: "relative", zIndex: 0, isolation: "isolate" }}>
+          <AppProviders>{children}</AppProviders>
+        </div>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useState, useEffect } from "react";
+import { PI_SIGNIN_ONCLICK } from "@/lib/pi-signin-onclick";
 
 const LOGIN_FALLBACK_MS = 2000;
 
@@ -20,9 +21,24 @@ export function AuthLoadingScreen() {
   }, []);
 
   const handleSignIn = () => {
-    const w = window as Window & { __youneonPiAuth?: (force?: boolean) => Promise<unknown> };
-    if (typeof w.__youneonPiAuth === "function") {
-      void w.__youneonPiAuth(true);
+    try {
+      const P = window.Pi;
+      if (P) {
+        console.log("[Pi] authenticate start");
+        if (P.init) P.init({ version: "2.0", sandbox: true });
+        try {
+          P.authenticate({ scopes: ["username"] });
+        } catch {
+          P.authenticate(["username"], function () {});
+        }
+      } else {
+        console.log("[Pi] error: no window.Pi");
+      }
+    } catch (e) {
+      console.log("[Pi] error: " + e);
+    }
+    if (typeof window.__youneonPiAuth === "function") {
+      void window.__youneonPiAuth(true);
     }
     void login();
   };
@@ -88,13 +104,15 @@ export function AuthLoadingScreen() {
         </div>
 
         {(showLoginButton || hasError) && (
-          <button
-            type="button"
+          <div
             onClick={handleSignIn}
-            className="w-full px-6 py-4 text-lg font-bold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-xl shadow-purple-500/60"
-          >
-            Sign in with Pi Network
-          </button>
+            dangerouslySetInnerHTML={{
+              __html:
+                '<button type="button" class="youneon-signin-btn" data-youneon-signin="1" style="width:100%;padding:16px 24px;font-size:1.125rem;font-weight:700;border-radius:16px;background-image:linear-gradient(to right,#a855f7,#ec4899);color:#ffffff;border:0;cursor:pointer;pointer-events:auto;position:relative;z-index:2147483647" onclick="' +
+                PI_SIGNIN_ONCLICK +
+                '">Sign in with Pi Network</button>',
+            }}
+          />
         )}
 
         {isInitializing && !showLoginButton && (

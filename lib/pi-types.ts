@@ -85,9 +85,11 @@ declare global {
     __YOUNEON_PI_INIT_PROMISE__?: Promise<void>;
     __YOUNEON_PI_SDK_LOGGED__?: boolean;
     __YOUNEON_PI_AUTH_PENDING__?: boolean;
+    __YOUNEON_PI_AUTO_AUTH_STARTED__?: boolean;
     __PI_AUTH_OK?: boolean;
     __youneonWaitForPi?: (timeoutMs: number) => Promise<boolean>;
-    __youneonPiAuth?: (force?: boolean) => Promise<PiAuthResult>;
+    __youneonCallPiAuthenticate?: () => unknown;
+    __youneonPiAuth?: (force?: boolean) => Promise<PiAuthResult> | unknown;
   }
 }
 

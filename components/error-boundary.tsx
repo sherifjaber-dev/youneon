@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { PI_SIGNIN_ONCLICK } from "@/lib/pi-signin-onclick";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -16,7 +17,7 @@ const overlayStyle: React.CSSProperties = {
   right: 0,
   bottom: 0,
   left: 0,
-  zIndex: 2147483000,
+  zIndex: 2147483647,
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -26,6 +27,7 @@ const overlayStyle: React.CSSProperties = {
   padding: 16,
   textAlign: "center",
   fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+  pointerEvents: "auto",
 };
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -56,24 +58,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           >
             YouNeon
           </h1>
-          <button
-            type="button"
-            data-youneon-signin="1"
-            style={{
-              padding: "16px 32px",
-              fontSize: "1.125rem",
-              fontWeight: 700,
-              border: 0,
-              borderRadius: 16,
-              color: "#ffffff",
-              backgroundColor: "#a855f7",
-              cursor: "pointer",
-              width: "100%",
-              maxWidth: 320,
+          <div
+            dangerouslySetInnerHTML={{
+              __html:
+                '<button type="button" class="youneon-signin-btn" data-youneon-signin="1" style="padding:16px 32px;font-size:1.125rem;font-weight:700;border:0;border-radius:16px;color:#ffffff;background-color:#a855f7;cursor:pointer;width:100%;max-width:320px;pointer-events:auto;position:relative;z-index:2147483647" onclick="' +
+                PI_SIGNIN_ONCLICK +
+                '">Sign in with Pi Network</button>',
             }}
-          >
-            Sign in with Pi Network
-          </button>
+          />
         </div>
       );
     }
