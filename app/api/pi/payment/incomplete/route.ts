@@ -1,26 +1,39 @@
 import { NextResponse } from "next/server";
+import { resolveIncompletePayment } from "@/lib/pi-payment-server";
+import { parsePaymentId } from "@/lib/pi-platform";
 
-/**
- * Stub: incomplete Pi payments found during authenticate().
- * Logs the payment id so auth can succeed even before full payment completion is wired.
- */
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const paymentId =
-      (typeof body?.paymentId === "string" && body.paymentId) ||
-      (typeof body?.payment?.identifier === "string" && body.payment.identifier) ||
-      null;
+      parsePaymentId(body?.paymentId) ||
+      parsePaymentId(body?.payment?.identifier);
 
-    console.info("[pi/payment/incomplete]", paymentId ?? "unknown");
+    if (!paymentId) {
+      return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
+    }
+
+    console.info("[pi/payment/incomplete]", paymentId);
+    const result = await resolveIncompletePayment(paymentId);
+    if (!result.ok) {
+      return NextResponse.json(
+        { ok: false, error: result.error || "Incomplete payment failed", payment: result.payment },
+        { status: result.status }
+      );
+    }
 
     return NextResponse.json({
       ok: true,
       paymentId,
-      status: "logged",
-      message: "Incomplete payment recorded. Completion can be handled later.",
+      payment: result.payment,
+      premiumUntil: result.grant?.premiumUntil || null,
+      waiting: result.waiting || false,
     });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid request";
+    console.warn("[Pi] incomplete route error", message);
     return NextResponse.json({ ok: false, error: "Invalid request" }, { status: 400 });
   }
 }

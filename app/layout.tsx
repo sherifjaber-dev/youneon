@@ -50,8 +50,8 @@ const PI_BOOT_SCRIPT =
   "if (!P || typeof P.authenticate !== 'function') { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
   "console.log('[Pi] authenticate start');" +
   "setLast('Last: authenticate called');" +
-  "try { P.authenticate(['username'], function (payment) {}); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
-  "try { P.authenticate({ scopes: ['username'] }); } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); }" +
+  "try { P.authenticate(['username','payments'], function (payment) { try { var x = new XMLHttpRequest(); x.open('POST', '/api/pi/payment/incomplete', true); x.setRequestHeader('Content-Type', 'application/json'); x.withCredentials = true; x.send(JSON.stringify({ paymentId: payment && payment.identifier, payment: payment })); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); } }); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
+  "try { P.authenticate({ scopes: ['username','payments'] }); } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); }" +
   "}" +
   "window.__youneonFindPi = findPi;" +
   "window.__youneonCallPiAuthenticate = callAuthenticate;" +
@@ -202,7 +202,7 @@ export default function RootLayout({
       >
         <StaticPiLogin overlayId="youneon-static-login" />
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=studio-auth-2"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=studio-auth-3"></script>
         <div
           id="youneon-app-tree"
           style={{ position: "relative", zIndex: 0, isolation: "isolate", pointerEvents: "none" }}

@@ -42,6 +42,21 @@
     renderStatus();
   }
 
+  function onIncompletePaymentFound(payment) {
+    try {
+      var x = new XMLHttpRequest();
+      x.open("POST", "/api/pi/payment/incomplete", true);
+      x.setRequestHeader("Content-Type", "application/json");
+      x.withCredentials = true;
+      x.send(JSON.stringify({
+        paymentId: payment && payment.identifier ? payment.identifier : null,
+        payment: payment
+      }));
+    } catch (ie) {
+      console.log("[Pi] error: " + errMsg(ie));
+    }
+  }
+
   function callAuthenticate() {
     var P = findPi();
     if (!P || typeof P.authenticate !== "function") {
@@ -52,13 +67,13 @@
     console.log("[Pi] authenticate start");
     setLast("Last: authenticate called");
     try {
-      P.authenticate(["username"], function (payment) {});
+      P.authenticate(["username", "payments"], onIncompletePaymentFound);
     } catch (classicErr) {
       console.log("[Pi] error: " + errMsg(classicErr));
       setLast("Last: " + errMsg(classicErr));
     }
     try {
-      P.authenticate({ scopes: ["username"] });
+      P.authenticate({ scopes: ["username", "payments"] });
     } catch (objectErr) {
       console.log("[Pi] error: " + errMsg(objectErr));
     }
@@ -82,7 +97,7 @@
   };
 
   var AUTH_JS =
-    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{P.authenticate(['username'],function(payment){});}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{P.authenticate({scopes:['username']});}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
+    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}});}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{P.authenticate({scopes:['username','payments']});}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
   var CTRL_STYLE =
     "padding:16px 32px;font-size:1.125rem;font-weight:700;border:0;border-radius:16px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(to right,#a855f7,#ec4899);cursor:pointer;width:100%;max-width:320px;display:block;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(168,85,247,0.5);user-select:none;-webkit-user-select:none;caret-color:transparent";
   var STATUS_STYLE =

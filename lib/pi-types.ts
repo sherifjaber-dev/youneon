@@ -48,9 +48,9 @@ export type PiPaymentData = {
 };
 
 export type PiPaymentCallbacks = {
-  onReadyForServerApproval: (paymentId: string) => void;
-  onReadyForServerCompletion: (paymentId: string, txid: string) => void;
-  onCancel: (paymentId: string) => void;
+  onReadyForServerApproval: (paymentId: string) => void | Promise<void>;
+  onReadyForServerCompletion: (paymentId: string, txid: string) => void | Promise<void>;
+  onCancel: (paymentId: string) => void | Promise<void>;
   onError: (error: Error, payment?: PiPaymentDTO) => void;
 };
 
@@ -67,7 +67,10 @@ export type PiSDK = {
       onIncompletePaymentFound?: (payment: PiPaymentDTO) => void
     ): Promise<PiAuthResult>;
   };
-  createPayment: (paymentData: PiPaymentData, callbacks: PiPaymentCallbacks) => void;
+  createPayment: (
+    paymentData: PiPaymentData,
+    callbacks: PiPaymentCallbacks
+  ) => void | Promise<unknown>;
   nativeFeaturesList?: () => Promise<PiNativeFeature[]>;
   openShareDialog?: (title: string, message: string) => void;
   openUrlInSystemBrowser?: (url: string) => Promise<void>;

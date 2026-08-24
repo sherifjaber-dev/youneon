@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { SubscribeWithPi } from "@/components/subscribe-with-pi";
 import { NEON_PACKAGES } from "@/lib/product-config";
 import { X, Zap, Star } from "lucide-react";
 
@@ -49,7 +50,7 @@ export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#0a0a0f] border border-purple-500/40 shadow-2xl shadow-purple-500/30 max-w-[360px] rounded-3xl p-0 overflow-hidden">
+      <DialogContent className="bg-[#0a0a0f] border border-purple-500/40 shadow-2xl shadow-purple-500/30 max-w-[360px] max-h-[90vh] overflow-y-auto rounded-3xl p-0">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 px-5 py-4 relative">
@@ -64,9 +65,11 @@ export function NeonShopModal({ isOpen, onClose }: NeonShopModalProps) {
             <DialogTitle className="text-2xl font-black text-white tracking-tight">
               Neon Shop
             </DialogTitle>
-            <p className="text-white/90 text-xs mt-0.5">Buy Neon to unlock premium features</p>
+            <p className="text-white/90 text-xs mt-0.5">Subscribe or buy Neon with Pi</p>
           </div>
         </div>
+
+        <SubscribeWithPi variant="shop" />
 
         {/* Packages */}
         <div className="p-4 grid grid-cols-2 gap-3">

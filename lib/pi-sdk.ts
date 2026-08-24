@@ -1,15 +1,27 @@
 "use client";
 
+import { getSubscriptionPaymentData } from "@/lib/product-config";
 import { PI_NETWORK_CONFIG } from "@/lib/system-config";
-import type { PiAuthResult, PiPaymentDTO, PiScope, PiSDK } from "@/lib/pi-types";
+import type {
+  PiAuthResult,
+  PiPaymentCallbacks,
+  PiPaymentData,
+  PiPaymentDTO,
+  PiScope,
+  PiSDK,
+} from "@/lib/pi-types";
 
 export const PI_SDK_UNAVAILABLE = "PI_SDK_UNAVAILABLE";
-/** Username only — App Studio verification must not be blocked by payments scope. */
-export const PI_AUTH_SCOPES: PiScope[] = ["username"];
+/** App Studio + U2A payments: username identity and payments scope together. */
+export const PI_AUTH_SCOPES: PiScope[] = ["username", "payments"];
 export const PI_SDK_WAIT_MS = 2000;
 
 let initPromise: Promise<void> | null = null;
 let initSucceeded = false;
+
+export function isPiSdkInitialized(): boolean {
+  return initSucceeded && !!resolvePiSdk();
+}
 
 function errorMessage(error: unknown): string {
   if (!error) return "unknown";
@@ -170,7 +182,10 @@ function onIncompletePaymentFound(payment: PiPaymentDTO): void {
  * Call the real Pi.authenticate. Classic array+callback FIRST (App Studio wraps that),
  * then also try the object form. Never skip this call — Studio detects the invocation.
  */
-function callWindowPiAuthenticate(): Promise<PiAuthResult> {
+function callWindowPiAuthenticate(
+  scopes: PiScope[] = PI_AUTH_SCOPES,
+  incomplete: (payment: PiPaymentDTO) => void = onIncompletePaymentFound
+): Promise<PiAuthResult> {
   const Pi = resolvePiSdk();
   if (!Pi || typeof Pi.authenticate !== "function") {
     setPiStatusLast("Last: window.Pi missing", false);
@@ -183,14 +198,14 @@ function callWindowPiAuthenticate(): Promise<PiAuthResult> {
 
   let classicResult: Promise<PiAuthResult> | PiAuthResult | undefined;
   try {
-    classicResult = Pi.authenticate(["username"], onIncompletePaymentFound);
+    classicResult = Pi.authenticate(scopes, incomplete);
   } catch (classicErr) {
     logError(classicErr);
     setPiStatusLast("Last: " + errorMessage(classicErr), true);
   }
 
   try {
-    const objectResult = Pi.authenticate({ scopes: ["username"] });
+    const objectResult = Pi.authenticate({ scopes });
     return Promise.resolve(objectResult).then((authResult) => {
       console.log("[Pi] authenticate success");
       return authResult;
@@ -225,15 +240,12 @@ export function tapPiAuthenticate(): void {
 
 /**
  * Authenticate with Pi Browser. Always invokes window.Pi.authenticate —
- * required for Pi App Studio. Does not skip for cookies, guest mode, in-flight
- * init, or missing payments scope.
- *
- * Official docs say await init first. If init hangs >500ms we still authenticate
- * so Studio can detect the call.
+ * required for Pi App Studio. Awaits Pi.init before authenticate. Boot scripts
+ * still fire authenticate on a 500ms fallback so Studio can detect the call.
  */
 export async function authenticatePi(
-  _scopes: PiScope[] = PI_AUTH_SCOPES,
-  _onIncompletePaymentFound: (payment: PiPaymentDTO) => void = onIncompletePaymentFound,
+  scopes: PiScope[] = PI_AUTH_SCOPES,
+  onIncomplete: (payment: PiPaymentDTO) => void = onIncompletePaymentFound,
   _force = false
 ): Promise<PiAuthResult> {
   if (typeof window !== "undefined" && typeof window.__youneonPiAuth === "function") {
@@ -245,7 +257,7 @@ export async function authenticatePi(
     } catch (error) {
       logError(error);
     }
-    return callWindowPiAuthenticate();
+    return callWindowPiAuthenticate(scopes, onIncomplete);
   }
 
   const available = await waitForPiSdk();
@@ -255,14 +267,115 @@ export async function authenticatePi(
     throw new Error(PI_SDK_UNAVAILABLE);
   }
 
-  const initWait = initPiSdk().then(() => "init" as const, (error) => {
+  try {
+    await initPiSdk();
+  } catch (error) {
     logError(error);
-    return "init-error" as const;
-  });
-  const timeout = new Promise<"timeout">((resolve) => {
-    setTimeout(() => resolve("timeout"), 500);
-  });
-  await Promise.race([initWait, timeout]);
+  }
 
-  return callWindowPiAuthenticate();
+  return callWindowPiAuthenticate(scopes, onIncomplete);
+}
+
+export type CreatePiPaymentResult = {
+  paymentId: string;
+  txid: string;
+  payment?: PiPaymentDTO | null;
+  premiumUntil?: string | null;
+  alreadyGranted?: boolean;
+};
+
+async function postPaymentAction(
+  path: string,
+  body: Record<string, unknown>
+): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  return { ok: res.ok, status: res.status, data };
+}
+
+/**
+ * U2A payment via window.Pi.createPayment. Always awaits Pi.init first.
+ * Resolves after server-side complete; rejects on cancel or error.
+ */
+export async function createPiPayment(
+  paymentData: PiPaymentData,
+  extraCallbacks?: Partial<PiPaymentCallbacks>
+): Promise<CreatePiPaymentResult> {
+  await initPiSdk();
+  const Pi = resolvePiSdk();
+  if (!Pi || typeof Pi.createPayment !== "function") {
+    throw new Error(PI_SDK_UNAVAILABLE);
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      fn();
+    };
+
+    Pi.createPayment(paymentData, {
+      onReadyForServerApproval: async (paymentId) => {
+        extraCallbacks?.onReadyForServerApproval?.(paymentId);
+        const result = await postPaymentAction("/api/pi/payment/approve", { paymentId });
+        if (!result.ok) {
+          const error = new Error(
+            (typeof result.data.error === "string" && result.data.error) ||
+              "Payment approval failed"
+          );
+          logError(error);
+          finish(() => reject(error));
+          throw error;
+        }
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        extraCallbacks?.onReadyForServerCompletion?.(paymentId, txid);
+        const result = await postPaymentAction("/api/pi/payment/complete", {
+          paymentId,
+          txid,
+        });
+        if (!result.ok) {
+          const error = new Error(
+            (typeof result.data.error === "string" && result.data.error) ||
+              "Payment completion failed"
+          );
+          logError(error);
+          finish(() => reject(error));
+          throw error;
+        }
+        finish(() =>
+          resolve({
+            paymentId,
+            txid,
+            payment: (result.data.payment as PiPaymentDTO) || null,
+            premiumUntil:
+              typeof result.data.premiumUntil === "string" ? result.data.premiumUntil : null,
+            alreadyGranted: result.data.alreadyGranted === true,
+          })
+        );
+      },
+      onCancel: async (paymentId) => {
+        extraCallbacks?.onCancel?.(paymentId);
+        await postPaymentAction("/api/pi/payment/cancel", { paymentId }).catch(logError);
+        finish(() => reject(new Error("Payment cancelled")));
+      },
+      onError: (error, payment) => {
+        extraCallbacks?.onError?.(error, payment);
+        logError(error);
+        finish(() =>
+          reject(error instanceof Error ? error : new Error(errorMessage(error)))
+        );
+      },
+    });
+  });
+}
+
+export async function subscribeWithPi(): Promise<CreatePiPaymentResult> {
+  return createPiPayment(getSubscriptionPaymentData());
 }

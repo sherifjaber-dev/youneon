@@ -1,3 +1,26 @@
+export const SUBSCRIPTION_PLAN = {
+  id: "youneon_premium_subscribe",
+  name: "YouNeon Premium / Subscribe",
+  type: "subscription" as const,
+  amount: 3.14,
+  memo: "YouNeon Premium / Subscribe",
+  days: 30,
+};
+
+export const SUBSCRIPTION_METADATA = {
+  type: "subscription" as const,
+  product: "YouNeon Premium / Subscribe",
+  planId: SUBSCRIPTION_PLAN.id,
+};
+
+export function getSubscriptionPaymentData() {
+  return {
+    amount: SUBSCRIPTION_PLAN.amount,
+    memo: SUBSCRIPTION_PLAN.memo,
+    metadata: { ...SUBSCRIPTION_METADATA },
+  };
+}
+
 export const PRODUCT_CONFIG = {
   PRODUCT_69daaa85b91f3a5af8ec7c8a: "69daaa85b91f3a5af8ec7c8a",
   PRODUCT_69dd44520ab51ee3bfd9d1a3: "69dd44520ab51ee3bfd9d1a3",

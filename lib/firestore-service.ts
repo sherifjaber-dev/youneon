@@ -15,6 +15,8 @@ export interface UserProfile {
   interests: string[];
   avatar?: string;
   profilePicture?: string;
+  premiumUntil?: string;
+  lastPaymentId?: string;
   createdAt?: Date;
 }
 

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { ChevronRight, Zap, Globe, LogOut, Trash2, ArrowLeft } from "lucide-react";
 import { useLanguage, type Language } from "@/contexts/language-context";
 import { piAuthService } from "@/lib/pi-auth-service";
+import { SubscribeWithPi } from "@/components/subscribe-with-pi";
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -93,6 +94,8 @@ export function SettingsScreen({ onBack, onLogOut }: SettingsScreenProps) {
           </div>
           <ChevronRight size={24} className="text-yellow-600" />
         </button>
+
+        <SubscribeWithPi variant="settings" />
 
         {/* Divider */}
         <div className="h-px bg-gray-200 my-2"></div>
