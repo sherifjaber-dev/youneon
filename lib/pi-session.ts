@@ -61,8 +61,8 @@ export async function setPiSessionCookie(accessToken: string): Promise<void> {
   const token = normalizePiAccessToken(accessToken);
   store.set(PI_SESSION_COOKIE, encodeURIComponent(token), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
     path: "/",
     maxAge: COOKIE_MAX_AGE,
   });

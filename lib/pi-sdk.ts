@@ -2,6 +2,7 @@
 
 import { getSubscriptionPaymentData } from "@/lib/product-config";
 import { PI_NETWORK_CONFIG } from "@/lib/system-config";
+import { identityFromAuthResult, markPiAuthOk } from "@/lib/pi-client-session";
 import type {
   PiAuthResult,
   PiPaymentCallbacks,
@@ -204,10 +205,28 @@ function callWindowPiAuthenticate(
     setPiStatusLast("Last: " + errorMessage(classicErr), true);
   }
 
+  if (classicResult != null) {
+    void Promise.resolve(classicResult)
+      .then((authResult) => {
+        console.log("[Pi] authenticate success");
+        if (
+          identityFromAuthResult(authResult) ||
+          (authResult && (authResult as PiAuthResult).accessToken)
+        ) {
+          markPiAuthOk(authResult);
+        }
+        return authResult;
+      })
+      .catch(logError);
+  }
+
   try {
     const objectResult = Pi.authenticate({ scopes });
     return Promise.resolve(objectResult).then((authResult) => {
       console.log("[Pi] authenticate success");
+      if (identityFromAuthResult(authResult) || (authResult && (authResult as PiAuthResult).accessToken)) {
+        markPiAuthOk(authResult);
+      }
       return authResult;
     });
   } catch (objectErr) {
@@ -215,6 +234,9 @@ function callWindowPiAuthenticate(
     if (classicResult != null) {
       return Promise.resolve(classicResult).then((authResult) => {
         console.log("[Pi] authenticate success");
+        if (identityFromAuthResult(authResult) || (authResult && (authResult as PiAuthResult).accessToken)) {
+          markPiAuthOk(authResult);
+        }
         return authResult;
       });
     }
@@ -252,7 +274,12 @@ export async function authenticatePi(
     try {
       const vanilla = window.__youneonPiAuth(true);
       if (vanilla && typeof (vanilla as Promise<PiAuthResult>).then === "function") {
-        return vanilla as Promise<PiAuthResult>;
+        return Promise.resolve(vanilla).then((authResult) => {
+          if (identityFromAuthResult(authResult) || (authResult && authResult.accessToken)) {
+            markPiAuthOk(authResult);
+          }
+          return authResult as PiAuthResult;
+        });
       }
     } catch (error) {
       logError(error);

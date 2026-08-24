@@ -12,7 +12,9 @@ const CRITICAL_CSS =
   "#youneon-static-login,.youneon-static-login{background:#0f0117;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
   "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p{pointer-events:none !important}" +
   "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin],input[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
-  "#youneon-app-tree{pointer-events:none;position:relative;z-index:0}";
+  "#youneon-app-tree{pointer-events:none;position:relative;z-index:0}" +
+  "html.youneon-signed-in #youneon-static-login,html.youneon-signed-in .youneon-static-login,html.youneon-signed-in [data-youneon-login-host],html.youneon-signed-in [data-youneon-login-hidden='1']{display:none !important;visibility:hidden !important;pointer-events:none !important;z-index:0 !important}" +
+  "html.youneon-signed-in #youneon-app-tree{pointer-events:auto !important;z-index:1}";
 
 /**
  * Vanilla ES5 boot script. No async/await, no arrow functions, no template
@@ -45,13 +47,53 @@ const PI_BOOT_SCRIPT =
   "for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;" +
   "}" +
   "function setLast(text) { window.__YOUNEON_PI_LAST__ = text; renderStatus(); }" +
+  "function hideOverlays() {" +
+  "try { if (document.documentElement.classList) document.documentElement.classList.add('youneon-signed-in'); else document.documentElement.className += ' youneon-signed-in'; } catch (c) {}" +
+  "var nodes = document.querySelectorAll('.youneon-static-login, #youneon-static-login, [data-youneon-login-host]');" +
+  "for (var i = 0; i < nodes.length; i++) { nodes[i].style.display = 'none'; nodes[i].style.visibility = 'hidden'; nodes[i].style.pointerEvents = 'none'; try { nodes[i].setAttribute('data-youneon-login-hidden', '1'); } catch (a) {} }" +
+  "var tree = document.getElementById('youneon-app-tree'); if (tree) tree.style.pointerEvents = 'auto';" +
+  "}" +
+  "function showOverlays() {" +
+  "try { if (document.documentElement.classList) document.documentElement.classList.remove('youneon-signed-in'); else document.documentElement.className = String(document.documentElement.className || '').replace(/youneon-signed-in/g, ''); } catch (c) {}" +
+  "var nodes = document.querySelectorAll('.youneon-static-login, #youneon-static-login, [data-youneon-login-host]');" +
+  "for (var i = 0; i < nodes.length; i++) { nodes[i].style.display = 'flex'; nodes[i].style.visibility = 'visible'; nodes[i].style.pointerEvents = 'auto'; try { nodes[i].removeAttribute('data-youneon-login-hidden'); } catch (a) {} }" +
+  "var tree = document.getElementById('youneon-app-tree'); if (tree) tree.style.pointerEvents = 'none';" +
+  "}" +
+  "function pickUser(result) {" +
+  "var rec = result || {}; var nested = rec.user && typeof rec.user === 'object' ? rec.user : null; var source = nested || rec;" +
+  "var uid = source && source.uid ? String(source.uid) : ''; var username = source && source.username ? String(source.username) : '';" +
+  "var token = rec.accessToken ? String(rec.accessToken) : '';" +
+  "if (!(nested || uid || username) && !token) return null;" +
+  "return { uid: uid || username || 'pi_user', username: username || uid || 'pi_user', accessToken: token };" +
+  "}" +
+  "function markOk(result) {" +
+  "var picked = pickUser(result); if (!picked) return;" +
+  "if (window.__PI_AUTH_OK) { hideOverlays(); return; }" +
+  "window.__PI_AUTH_OK = true;" +
+  "try { localStorage.setItem('youneon_pi_session_lite', JSON.stringify({ uid: picked.uid, username: picked.username })); localStorage.setItem('youneon_authenticated', '1'); localStorage.setItem('youneon_pi_current_user', JSON.stringify({ uid: picked.uid, username: picked.username })); } catch (ls) {}" +
+  "hideOverlays(); setLast('Last: signed in' + (picked.username ? ' as ' + picked.username : '')); console.log('[Pi] authenticate success');" +
+  "try { window.dispatchEvent(new CustomEvent('youneon:pi-auth-ok', { detail: { uid: picked.uid, username: picked.username } })); } catch (ev) { try { window.dispatchEvent(new Event('youneon:pi-auth-ok')); } catch (ev2) {} }" +
+  "if (picked.accessToken && picked.accessToken !== 'restored') { try { var x = new XMLHttpRequest(); x.open('POST', '/api/pi/auth', true); x.setRequestHeader('Content-Type', 'application/json'); x.withCredentials = true; x.send(JSON.stringify({ accessToken: picked.accessToken })); } catch (pe) { console.log('[Pi] error: ' + errMsg(pe)); } }" +
+  "}" +
+  "function clearAuth() {" +
+  "window.__PI_AUTH_OK = false;" +
+  "try { localStorage.removeItem('youneon_pi_session_lite'); localStorage.removeItem('youneon_authenticated'); localStorage.removeItem('youneon_pi_current_user'); } catch (c) {}" +
+  "showOverlays();" +
+  "try { window.dispatchEvent(new CustomEvent('youneon:pi-auth-logout')); } catch (ev) { try { window.dispatchEvent(new Event('youneon:pi-auth-logout')); } catch (ev2) {} }" +
+  "}" +
+  "function wireAuth(p) { try { if (p && typeof p.then === 'function') p.then(function (r) { markOk(r); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); setLast('Last: ' + errMsg(e)); }); } catch (w) { console.log('[Pi] error: ' + errMsg(w)); } }" +
+  "window.__youneonMarkPiAuthOk = markOk;" +
+  "window.__youneonClearPiAuth = clearAuth;" +
+  "try { var flag = localStorage.getItem('youneon_authenticated'); var raw = localStorage.getItem('youneon_pi_session_lite') || localStorage.getItem('youneon_pi_current_user'); if (flag === '1' || raw) { var lite = {}; try { lite = JSON.parse(raw || '{}'); } catch (p) { lite = {}; } if (lite.uid || lite.username || flag === '1') markOk({ uid: lite.uid || 'pi_user', username: lite.username || lite.uid || 'pi_user' }); } } catch (rs) {}" +
   "function callAuthenticate() {" +
   "var P = findPi();" +
   "if (!P || typeof P.authenticate !== 'function') { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
   "console.log('[Pi] authenticate start');" +
   "setLast('Last: authenticate called');" +
-  "try { P.authenticate(['username','payments'], function (payment) { try { var x = new XMLHttpRequest(); x.open('POST', '/api/pi/payment/incomplete', true); x.setRequestHeader('Content-Type', 'application/json'); x.withCredentials = true; x.send(JSON.stringify({ paymentId: payment && payment.identifier, payment: payment })); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); } }); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
-  "try { P.authenticate({ scopes: ['username','payments'] }); } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); }" +
+  "var promise = null;" +
+  "try { promise = P.authenticate(['username','payments'], function (payment) { try { var x = new XMLHttpRequest(); x.open('POST', '/api/pi/payment/incomplete', true); x.setRequestHeader('Content-Type', 'application/json'); x.withCredentials = true; x.send(JSON.stringify({ paymentId: payment && payment.identifier, payment: payment })); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); } }); wireAuth(promise); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
+  "try { var objectResult = P.authenticate({ scopes: ['username','payments'] }); wireAuth(objectResult); if (!promise) promise = objectResult; } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); }" +
+  "return promise;" +
   "}" +
   "window.__youneonFindPi = findPi;" +
   "window.__youneonCallPiAuthenticate = callAuthenticate;" +
@@ -68,6 +110,7 @@ const PI_BOOT_SCRIPT =
   "return !!(t.closest('.youneon-static-login') || t.closest('#youneon-static-login') || t.closest('[data-youneon-login-host]') || t.closest('[data-youneon-signin]') || t.closest('.youneon-signin-btn'));" +
   "}" +
   "function onLoginHit(ev) {" +
+  "if (window.__PI_AUTH_OK) return;" +
   "if (!isLoginTarget(ev && ev.target)) return;" +
   "if (typeof window.__youneonPiAuth === 'function') window.__youneonPiAuth(); else callAuthenticate();" +
   "}" +
@@ -202,7 +245,7 @@ export default function RootLayout({
       >
         <StaticPiLogin overlayId="youneon-static-login" />
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=studio-auth-3"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=studio-auth-4"></script>
         <div
           id="youneon-app-tree"
           style={{ position: "relative", zIndex: 0, isolation: "isolate", pointerEvents: "none" }}

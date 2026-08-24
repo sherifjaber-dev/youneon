@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { DiscoverScreen } from "@/components/discover-screen";
 import { MessagesScreen } from "@/components/messages-screen";
 import { HistoryScreen } from "@/components/history-screen";
@@ -12,6 +12,12 @@ import { NeonShopModal } from "@/components/neon-shop-modal";
 import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory } from "@/lib/firestore-service";
 import { VideoCallScreen } from "@/components/video-call-screen";
 import { usePiAuth } from "@/contexts/pi-auth-context";
+import {
+  hideStaticLoginOverlays,
+  PI_AUTH_LOGOUT_EVENT,
+  PI_AUTH_OK_EVENT,
+  readLiteSession,
+} from "@/lib/pi-client-session";
 
 const MOCK_MATCHES = [
   { id: "sofia", name: "Sofia", avatar: "👩‍🦰", flag: "🇮🇹" },
@@ -47,24 +53,28 @@ function readLocalProfileExtras(): Partial<YouNeonUser> {
   }
 }
 
-function hideStaticLogins() {
-  try {
-    const nodes = document.querySelectorAll(".youneon-static-login, [data-youneon-login-host]");
-    for (let i = 0; i < nodes.length; i++) {
-      (nodes[i] as HTMLElement).style.display = "none";
-    }
-    const tree = document.getElementById("youneon-app-tree");
-    if (tree) tree.style.pointerEvents = "auto";
-  } catch {
-    /* ignore */
-  }
+function stubUser(uid?: string, username?: string): YouNeonUser {
+  const piUsername = username || uid || "pi_user";
+  const extras = readLocalProfileExtras();
+  return {
+    id: piUsername,
+    uid: uid || piUsername,
+    piUsername,
+    fullName: extras.fullName || piUsername,
+    age: extras.age || 18,
+    country: extras.country || "",
+    avatar: extras.avatar || "🙂",
+    profilePicture: extras.profilePicture || "",
+    languages: extras.languages || ["English"],
+    interests: extras.interests || [],
+  };
 }
 
 export function YouNeonApp() {
-  const { user, isAuthenticated } = usePiAuth();
+  const { user, isAuthenticated, sessionUnverified } = usePiAuth();
   const isGuestDemo = false;
+  const [bootAuthOk, setBootAuthOk] = useState(false);
   const [currentUser, setCurrentUser] = useState<YouNeonUser | null>(null);
-  const [profileReady, setProfileReady] = useState(false);
   const [activeTab, setActiveTab] = useState<"discover" | "messages" | "history">("discover");
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isInVideoChat, setIsInVideoChat] = useState(false);
@@ -72,12 +82,55 @@ export function YouNeonApp() {
   const [showNeonShop, setShowNeonShop] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
 
-  const showApp = (isAuthenticated && profileReady && !!currentUser) || (isGuestDemo && !!currentUser);
+  const signedIn = isAuthenticated || bootAuthOk;
+  const showApp = signedIn || (isGuestDemo && !!currentUser);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.__PI_AUTH_OK || readLiteSession()) {
+      hideStaticLoginOverlays();
+      setBootAuthOk(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    function syncFromBoot() {
+      if (typeof window === "undefined") return false;
+      if (window.__PI_AUTH_OK || readLiteSession()) {
+        hideStaticLoginOverlays();
+        setBootAuthOk(true);
+        return true;
+      }
+      return false;
+    }
+
+    const onOk = () => {
+      syncFromBoot();
+    };
+    const onLogout = () => {
+      setBootAuthOk(false);
+    };
+
+    window.addEventListener(PI_AUTH_OK_EVENT, onOk);
+    window.addEventListener(PI_AUTH_LOGOUT_EVENT, onLogout);
+    const already = syncFromBoot();
+    const poll = already
+      ? null
+      : window.setInterval(() => {
+          if (syncFromBoot()) window.clearInterval(poll!);
+        }, 200);
+
+    return () => {
+      window.removeEventListener(PI_AUTH_OK_EVENT, onOk);
+      window.removeEventListener(PI_AUTH_LOGOUT_EVENT, onLogout);
+      if (poll) window.clearInterval(poll);
+    };
+  }, []);
 
   useEffect(() => {
     if (!showApp) return;
-    hideStaticLogins();
-  }, [showApp]);
+    hideStaticLoginOverlays();
+  }, [showApp, isAuthenticated]);
 
   useEffect(() => {
     const bal = localStorage.getItem("youneon_neon_balance");
@@ -97,25 +150,26 @@ export function YouNeonApp() {
         languages: ["English"],
         interests: [],
       });
-      setProfileReady(true);
       return;
     }
 
-    if (!isAuthenticated || !user?.uid) {
+    if (!signedIn) {
       setCurrentUser(null);
-      setProfileReady(false);
       return;
     }
 
+    const lite = readLiteSession();
+    const uid = user?.uid || lite?.uid || "pi_user";
+    const piUsername = user?.username || lite?.username || uid;
     let cancelled = false;
-    setProfileReady(false);
+
+    setCurrentUser((prev) => prev || stubUser(uid, piUsername));
 
     (async () => {
-      const piUsername = user.username || user.uid;
       const extras = readLocalProfileExtras();
       let profile: YouNeonUser = {
         id: piUsername,
-        uid: user.uid,
+        uid,
         piUsername,
         fullName: extras.fullName || piUsername,
         age: extras.age || 18,
@@ -133,7 +187,7 @@ export function YouNeonApp() {
             ...profile,
             ...remote,
             id: remote.piUsername || piUsername,
-            uid: user.uid,
+            uid,
             piUsername,
             profilePicture: remote.profilePicture || extras.profilePicture || "",
           };
@@ -151,37 +205,12 @@ export function YouNeonApp() {
       if (cancelled) return;
       setCurrentUser(profile);
       localStorage.setItem("youneon_user", JSON.stringify(profile));
-      setProfileReady(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, isGuestDemo, user]);
-
-  useEffect(() => {
-    if (!isAuthenticated || isGuestDemo || profileReady) return;
-    const t = setTimeout(() => {
-      setCurrentUser((prev) => {
-        if (prev) return prev;
-        const piUsername = user?.username || user?.uid || "pi_user";
-        return {
-          id: piUsername,
-          uid: user?.uid,
-          piUsername,
-          fullName: piUsername,
-          age: 18,
-          country: "",
-          avatar: "🙂",
-          profilePicture: "",
-          languages: ["English"],
-          interests: [],
-        };
-      });
-      setProfileReady(true);
-    }, 2000);
-    return () => clearTimeout(t);
-  }, [isAuthenticated, isGuestDemo, profileReady, user]);
+  }, [signedIn, isGuestDemo, user]);
 
   const updateNeonBalance = (n: number) => {
     setNeonBalance(n);
@@ -232,7 +261,7 @@ export function YouNeonApp() {
 
   const handleEndVideoChat = async () => {
     const match = MOCK_MATCHES[Math.floor(Math.random() * MOCK_MATCHES.length)];
-    const myId = currentUser?.id || currentUser.piUsername;
+    const myId = currentUser?.id || currentUser?.piUsername;
     if (myId && !isGuestDemo) {
       try {
         await addToHistory(myId, { ...match, duration: `${Math.floor(Math.random() * 20 + 5)} min chat` });
@@ -243,19 +272,23 @@ export function YouNeonApp() {
     setIsInVideoChat(false);
   };
 
-  // Keep SSR login mounted until Pi auth (+ profile) succeeds. Render nothing.
+  const lite = typeof window !== "undefined" ? readLiteSession() : null;
+  const displayUser =
+    currentUser ||
+    stubUser(user?.uid || lite?.uid, user?.username || lite?.username);
+
   if (!showApp) {
     return null;
   }
 
-  const currentUserId = currentUser?.id || currentUser?.piUsername;
-  const hasOwnPhoto = !!(currentUser?.profilePicture && currentUser.profilePicture.length > 0);
+  const currentUserId = displayUser.id || displayUser.piUsername;
+  const hasOwnPhoto = !!(displayUser.profilePicture && displayUser.profilePicture.length > 0);
 
-  if (activeChat && currentUser) {
+  if (activeChat && displayUser) {
     return (
       <ChatScreen
         conversationId={activeChat.conversationId}
-        currentUserId={currentUserId!}
+        currentUserId={currentUserId}
         hasOwnPhoto={hasOwnPhoto}
         otherUser={activeChat.otherUser}
         onBack={() => setActiveChat(null)}
@@ -275,13 +308,18 @@ export function YouNeonApp() {
       <VideoCallScreen
         onEnd={handleEndVideoChat}
         currentUserId={currentUserId}
-        currentUserName={currentUser?.fullName}
+        currentUserName={displayUser.fullName}
       />
     );
   }
 
   return (
     <div className="min-h-screen bg-white">
+      {sessionUnverified && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-100 text-amber-950 text-xs text-center py-1.5 px-3">
+          Signed in. Pi account verification is still pending.
+        </div>
+      )}
       <TopBar
         onProfileClick={() => setShowProfileModal(true)}
         neonBalance={neonBalance}

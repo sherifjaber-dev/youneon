@@ -13,6 +13,17 @@ import React, {
 import { api, setApiAuthToken } from "@/lib/api";
 import { piAuthService } from "@/lib/pi-auth-service";
 import {
+  clearPiAuthOk,
+  hideStaticLoginOverlays,
+  identityFromAuthResult,
+  markPiAuthOk,
+  PI_AUTH_LOGOUT_EVENT,
+  PI_AUTH_OK_EVENT,
+  persistLiteSession,
+  readLiteSession,
+  type PiLiteSession,
+} from "@/lib/pi-client-session";
+import {
   authenticatePi,
   handleIncompletePayment,
   isPiAvailable,
@@ -34,6 +45,7 @@ export interface PiAuthContextType {
   isInitializing: boolean;
   hasError: boolean;
   authMessage: string;
+  sessionUnverified: boolean;
   piAvailable: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
@@ -81,82 +93,134 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   const [isInitializing, setIsInitializing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
+  const [sessionUnverified, setSessionUnverified] = useState(false);
   const [piAvailable, setPiAvailable] = useState(true);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const sessionReadyRef = useRef(false);
+  const accessTokenRef = useRef<string | null>(null);
 
-  const applyVerifiedSession = useCallback((verified: PiAuthUser, token: string | null) => {
-    sessionReadyRef.current = true;
-    setUser(verified);
-    setAccessToken(token);
-    setIsAuthenticated(true);
-    setHasError(false);
-    setAuthMessage(`Signed in as ${verified.username || "Pi user"}`);
-    if (token) setApiAuthToken(token);
-    piAuthService.setVerifiedUser({
-      username: verified.username,
-      uid: verified.uid,
-    });
-  }, []);
-
-  const authenticate = useCallback(async (force = false) => {
-    const run = (async () => {
+  const applyVerifiedSession = useCallback(
+    (verified: PiAuthUser, token: string | null, unverified = false) => {
+      sessionReadyRef.current = true;
+      setUser(verified);
+      setAccessToken(token);
+      accessTokenRef.current = token;
+      setIsAuthenticated(true);
       setHasError(false);
-      setAuthMessage("Connecting to Pi Network...");
+      setSessionUnverified(unverified);
+      setAuthMessage(
+        unverified
+          ? `Signed in as ${verified.username || "Pi user"}. Verification pending.`
+          : `Signed in as ${verified.username || "Pi user"}`
+      );
+      if (token) setApiAuthToken(token);
+      persistLiteSession(verified);
+      piAuthService.setVerifiedUser({
+        username: verified.username,
+        uid: verified.uid,
+      });
+      markPiAuthOk(verified);
+      hideStaticLoginOverlays();
+    },
+    []
+  );
 
-      let token = "";
-      try {
-        const auth = await authenticatePi(PI_AUTH_SCOPES, handleIncompletePayment, force);
-        setPiAvailable(true);
-        token = typeof auth?.accessToken === "string" ? auth.accessToken : "";
-        if (!token) {
-          throw new Error("Pi did not return an access token");
+  const verifyTokenInBackground = useCallback(
+    async (token: string, fallback: PiAuthUser) => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const { data } = await api.post<PiAuthUser>("/api/pi/auth", {
+            accessToken: token,
+          });
+          if (data?.uid) {
+            applyVerifiedSession(
+              {
+                uid: data.uid,
+                username: data.username || fallback.username,
+              },
+              token,
+              false
+            );
+            return;
+          }
+        } catch {
+          /* retry */
         }
-      } catch (error) {
-        sessionReadyRef.current = false;
-        setPiAvailable(isPiAvailable());
-        clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
-        setHasError(true);
-        setAuthMessage(messageForError(error));
-        return;
+        await new Promise((resolve) => setTimeout(resolve, 1200 * (attempt + 1)));
       }
+      setSessionUnverified(true);
+      setAuthMessage(
+        `Signed in as ${fallback.username || "Pi user"}. Account verification is still pending.`
+      );
+    },
+    [applyVerifiedSession]
+  );
 
-      setAuthMessage("Verifying your Pi account...");
-      try {
-        const { data } = await api.post<PiAuthUser>("/api/pi/auth", {
-          accessToken: token,
-        });
-        if (!data?.uid) {
-          throw new Error("Could not verify your Pi account. Please try again.");
+  const enterAppFromAuthResult = useCallback(
+    (auth: unknown, token: string) => {
+      const identity: PiLiteSession =
+        identityFromAuthResult(auth) || {
+          uid: "pi_user",
+          username: "pi_user",
+        };
+      applyVerifiedSession(identity, token || null, false);
+      markPiAuthOk(auth || identity);
+      if (token) {
+        void verifyTokenInBackground(token, identity);
+      }
+    },
+    [applyVerifiedSession, verifyTokenInBackground]
+  );
+
+  const authenticate = useCallback(
+    async (force = false, allowClearOnFailure = true) => {
+      const run = (async () => {
+        setHasError(false);
+        setAuthMessage("Connecting to Pi Network...");
+
+        let token = "";
+        let auth: unknown = null;
+        try {
+          auth = await authenticatePi(PI_AUTH_SCOPES, handleIncompletePayment, force);
+          setPiAvailable(true);
+          token = typeof (auth as { accessToken?: unknown })?.accessToken === "string"
+            ? ((auth as { accessToken: string }).accessToken)
+            : "";
+          const identity = identityFromAuthResult(auth);
+          if (!token && !identity) {
+            throw new Error("Pi did not return an access token");
+          }
+        } catch (error) {
+          setPiAvailable(isPiAvailable());
+          if (sessionReadyRef.current || (typeof window !== "undefined" && window.__PI_AUTH_OK)) {
+            return;
+          }
+          if (allowClearOnFailure) {
+            sessionReadyRef.current = false;
+            clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
+            setHasError(true);
+            setAuthMessage(messageForError(error));
+          }
+          return;
         }
-        applyVerifiedSession(
-          {
-            uid: data.uid,
-            username: data.username || "",
-          },
-          token
-        );
-      } catch (error) {
-        sessionReadyRef.current = false;
-        clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
-        setHasError(true);
-        setAuthMessage(messageForError(error));
-      }
-    })();
 
-    inFlightRef.current = run;
-    try {
-      await run;
-    } finally {
-      if (inFlightRef.current === run) inFlightRef.current = null;
-    }
-  }, [applyVerifiedSession]);
+        enterAppFromAuthResult(auth, token);
+      })();
+
+      inFlightRef.current = run;
+      try {
+        await run;
+      } finally {
+        if (inFlightRef.current === run) inFlightRef.current = null;
+      }
+    },
+    [enterAppFromAuthResult]
+  );
 
   const login = useCallback(async () => {
     setIsInitializing(true);
     try {
-      sessionReadyRef.current = false;
-      await authenticate(true);
+      await authenticate(true, true);
     } finally {
       setIsInitializing(false);
     }
@@ -164,13 +228,13 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     sessionReadyRef.current = false;
+    accessTokenRef.current = null;
     piAuthService.logout();
-    setUser(null);
-    setAccessToken(null);
-    setIsAuthenticated(false);
+    clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
+    setSessionUnverified(false);
     setHasError(false);
     setAuthMessage("Signed out. Tap Sign in with Pi Network to sign in again.");
-    setApiAuthToken(null);
+    clearPiAuthOk();
     try {
       await api.delete("/api/pi/auth");
     } catch {
@@ -185,10 +249,33 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   }, [login]);
 
   useEffect(() => {
+    const restore = readLiteSession();
+    if (restore) {
+      applyVerifiedSession(restore, null, false);
+    } else if (typeof window !== "undefined" && window.__PI_AUTH_OK) {
+      applyVerifiedSession({ uid: "pi_user", username: "pi_user" }, null, false);
+    }
+
+    const onOk = (event: Event) => {
+      const detail = "detail" in event ? (event as CustomEvent).detail : undefined;
+      const identity = identityFromAuthResult(detail) || readLiteSession();
+      if (!identity) return;
+      applyVerifiedSession(identity, accessTokenRef.current, false);
+    };
+    const onLogout = () => {
+      sessionReadyRef.current = false;
+      accessTokenRef.current = null;
+      clearLocalSession(setUser, setAccessToken, setIsAuthenticated);
+      setSessionUnverified(false);
+    };
+
+    window.addEventListener(PI_AUTH_OK_EVENT, onOk);
+    window.addEventListener(PI_AUTH_LOGOUT_EVENT, onLogout);
+
     let cancelled = false;
     (async () => {
       try {
-        await authenticate(false);
+        await authenticate(false, false);
       } catch {
         /* vanilla boot script already logs [Pi] error */
       } finally {
@@ -200,8 +287,10 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      window.removeEventListener(PI_AUTH_OK_EVENT, onOk);
+      window.removeEventListener(PI_AUTH_LOGOUT_EVENT, onLogout);
     };
-  }, [authenticate]);
+  }, [applyVerifiedSession, authenticate]);
 
   const value = useMemo<PiAuthContextType>(
     () => ({
@@ -211,6 +300,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       isInitializing,
       hasError,
       authMessage,
+      sessionUnverified,
       piAvailable,
       login,
       logout,
@@ -226,6 +316,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       isInitializing,
       hasError,
       authMessage,
+      sessionUnverified,
       piAvailable,
       login,
       logout,
@@ -243,6 +334,7 @@ const EMPTY_PI_AUTH: PiAuthContextType = {
   isInitializing: false,
   hasError: false,
   authMessage: "",
+  sessionUnverified: false,
   piAvailable: true,
   login: async () => {},
   logout: async () => {},

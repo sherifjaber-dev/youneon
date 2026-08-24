@@ -98,6 +98,8 @@ declare global {
     __youneonFindPi?: () => PiSDK | null | undefined;
     __youneonCallPiAuthenticate?: () => unknown;
     __youneonPiAuth?: (force?: boolean) => Promise<PiAuthResult> | unknown;
+    __youneonMarkPiAuthOk?: (result?: unknown) => void;
+    __youneonClearPiAuth?: () => void;
   }
 }
 

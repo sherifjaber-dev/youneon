@@ -42,6 +42,136 @@
     renderStatus();
   }
 
+  function hideOverlays() {
+    try {
+      if (document.documentElement.classList) document.documentElement.classList.add("youneon-signed-in");
+      else document.documentElement.className += " youneon-signed-in";
+    } catch (c) {}
+    var nodes = document.querySelectorAll(".youneon-static-login, #youneon-static-login, [data-youneon-login-host]");
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].style.display = "none";
+      nodes[i].style.visibility = "hidden";
+      nodes[i].style.pointerEvents = "none";
+      try { nodes[i].setAttribute("data-youneon-login-hidden", "1"); } catch (a) {}
+    }
+    var tree = document.getElementById("youneon-app-tree");
+    if (tree) tree.style.pointerEvents = "auto";
+  }
+
+  function showOverlays() {
+    try {
+      if (document.documentElement.classList) document.documentElement.classList.remove("youneon-signed-in");
+      else document.documentElement.className = String(document.documentElement.className || "").replace(/youneon-signed-in/g, "");
+    } catch (c) {}
+    var nodes = document.querySelectorAll(".youneon-static-login, #youneon-static-login, [data-youneon-login-host]");
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].style.display = "flex";
+      nodes[i].style.visibility = "visible";
+      nodes[i].style.pointerEvents = "auto";
+      try { nodes[i].removeAttribute("data-youneon-login-hidden"); } catch (a) {}
+    }
+    var tree = document.getElementById("youneon-app-tree");
+    if (tree) tree.style.pointerEvents = "none";
+  }
+
+  function persistLite(uid, username) {
+    try {
+      localStorage.setItem("youneon_pi_session_lite", JSON.stringify({ uid: uid || "", username: username || "" }));
+      localStorage.setItem("youneon_authenticated", "1");
+      localStorage.setItem("youneon_pi_current_user", JSON.stringify({ uid: uid || "", username: username || "" }));
+    } catch (ls) {}
+  }
+
+  function pickUser(result) {
+    var rec = result || {};
+    var nested = rec.user && typeof rec.user === "object" ? rec.user : null;
+    var source = nested || rec;
+    var uid = source && source.uid ? String(source.uid) : "";
+    var username = source && source.username ? String(source.username) : "";
+    var token = rec.accessToken ? String(rec.accessToken) : "";
+    var hasUser = !!(nested || uid || username);
+    if (!hasUser && !token) return null;
+    return { uid: uid || username || "pi_user", username: username || uid || "pi_user", accessToken: token };
+  }
+
+  function dispatchOk(uid, username) {
+    try {
+      window.dispatchEvent(new CustomEvent("youneon:pi-auth-ok", { detail: { uid: uid, username: username } }));
+    } catch (ev) {
+      try { window.dispatchEvent(new Event("youneon:pi-auth-ok")); } catch (ev2) {}
+    }
+  }
+
+  function postToken(token) {
+    if (!token || token === "restored") return;
+    try {
+      var x = new XMLHttpRequest();
+      x.open("POST", "/api/pi/auth", true);
+      x.setRequestHeader("Content-Type", "application/json");
+      x.withCredentials = true;
+      x.send(JSON.stringify({ accessToken: token }));
+    } catch (pe) {
+      console.log("[Pi] error: " + errMsg(pe));
+    }
+  }
+
+  function markOk(result) {
+    var picked = pickUser(result);
+    if (!picked) return;
+    if (window.__PI_AUTH_OK) {
+      hideOverlays();
+      return;
+    }
+    window.__PI_AUTH_OK = true;
+    persistLite(picked.uid, picked.username);
+    hideOverlays();
+    setLast("Last: signed in" + (picked.username ? " as " + picked.username : ""));
+    console.log("[Pi] authenticate success");
+    dispatchOk(picked.uid, picked.username);
+    postToken(picked.accessToken);
+  }
+
+  function clearAuth() {
+    window.__PI_AUTH_OK = false;
+    try {
+      localStorage.removeItem("youneon_pi_session_lite");
+      localStorage.removeItem("youneon_authenticated");
+      localStorage.removeItem("youneon_pi_current_user");
+    } catch (c) {}
+    showOverlays();
+    try {
+      window.dispatchEvent(new CustomEvent("youneon:pi-auth-logout"));
+    } catch (ev) {
+      try { window.dispatchEvent(new Event("youneon:pi-auth-logout")); } catch (ev2) {}
+    }
+  }
+
+  function restoreLiteSession() {
+    try {
+      var flag = localStorage.getItem("youneon_authenticated");
+      var raw = localStorage.getItem("youneon_pi_session_lite") || localStorage.getItem("youneon_pi_current_user");
+      if (flag !== "1" && !raw) return;
+      var lite = {};
+      try { lite = JSON.parse(raw || "{}"); } catch (p) { lite = {}; }
+      if (lite.uid || lite.username || flag === "1") {
+        markOk({ uid: lite.uid || "pi_user", username: lite.username || lite.uid || "pi_user" });
+      }
+    } catch (rs) {}
+  }
+
+  function wireAuth(p) {
+    try {
+      if (p && typeof p.then === "function") {
+        p.then(function (r) { markOk(r); }, function (e) {
+          console.log("[Pi] error: " + errMsg(e));
+          setLast("Last: " + errMsg(e));
+        });
+      }
+    } catch (w) {
+      console.log("[Pi] error: " + errMsg(w));
+    }
+  }
+
   function onIncompletePaymentFound(payment) {
     try {
       var x = new XMLHttpRequest();
@@ -66,21 +196,28 @@
     }
     console.log("[Pi] authenticate start");
     setLast("Last: authenticate called");
+    var promise = null;
     try {
-      P.authenticate(["username", "payments"], onIncompletePaymentFound);
+      promise = P.authenticate(["username", "payments"], onIncompletePaymentFound);
+      wireAuth(promise);
     } catch (classicErr) {
       console.log("[Pi] error: " + errMsg(classicErr));
       setLast("Last: " + errMsg(classicErr));
     }
     try {
-      P.authenticate({ scopes: ["username", "payments"] });
+      var objectResult = P.authenticate({ scopes: ["username", "payments"] });
+      wireAuth(objectResult);
+      if (!promise) promise = objectResult;
     } catch (objectErr) {
       console.log("[Pi] error: " + errMsg(objectErr));
     }
+    return promise;
   }
 
   window.__youneonFindPi = findPi;
   window.__youneonCallPiAuthenticate = callAuthenticate;
+  window.__youneonMarkPiAuthOk = markOk;
+  window.__youneonClearPiAuth = clearAuth;
   window.__youneonPiAuth = function () {
     var P = findPi();
     if (!P) {
@@ -97,7 +234,7 @@
   };
 
   var AUTH_JS =
-    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}});}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{P.authenticate({scopes:['username','payments']});}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
+    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{wireAuth(P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}}));}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{wireAuth(P.authenticate({scopes:['username','payments']}));}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
   var CTRL_STYLE =
     "padding:16px 32px;font-size:1.125rem;font-weight:700;border:0;border-radius:16px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(to right,#a855f7,#ec4899);cursor:pointer;width:100%;max-width:320px;display:block;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(168,85,247,0.5);user-select:none;-webkit-user-select:none;caret-color:transparent";
   var STATUS_STYLE =
@@ -122,6 +259,7 @@
     );
   }
   function onLoginHit(ev) {
+    if (window.__PI_AUTH_OK) return;
     if (!isLoginTarget(ev && ev.target)) return;
     if (typeof window.__youneonPiAuth === "function") window.__youneonPiAuth();
     else callAuthenticate();
@@ -147,6 +285,10 @@
     try { el.setAttribute("unselectable", "on"); } catch (u) { console.log("[Pi] error: " + errMsg(u)); }
   }
   function restoreSigninControls() {
+    if (window.__PI_AUTH_OK) {
+      hideOverlays();
+      return;
+    }
     if (window.__YOUNEON_RESTORING_SIGNIN__) return;
     window.__YOUNEON_RESTORING_SIGNIN__ = true;
     try {
@@ -240,6 +382,7 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
+  restoreLiteSession();
   bindLoginHits();
   restoreSigninControls();
   setTimeout(restoreSigninControls, 0);
