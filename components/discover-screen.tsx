@@ -7,6 +7,7 @@ import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, Tim
 import { AdBanner, AdInterstitial } from "@/components/ad-placements";
 import { PremiumBadge } from "@/components/premium-badge";
 import type { Announcement } from "@/lib/announcements";
+import { COUNTRY_OPTIONS } from "@/lib/countries";
 
 interface DiscoverScreenProps {
   onStartVideo: () => void;
@@ -39,16 +40,7 @@ export function DiscoverScreen({
     { value: "both", label: "Both", cost: 0 },
   ];
 
-  const countries = [
-    "Worldwide", "United States", "United Kingdom", "Germany", "France", "Brazil",
-    "India", "Saudi Arabia", "Egypt", "Nigeria", "South Africa", "China", "Japan",
-    "South Korea", "Turkey", "Sweden", "Denmark", "Netherlands", "Spain", "Italy",
-    "Canada", "Australia", "Indonesia", "Thailand", "Vietnam", "Pakistan", "Kenya",
-    "Ghana", "Morocco", "United Arab Emirates", "Mexico", "Argentina", "Colombia",
-    "Chile", "Peru", "Russia", "Poland", "Greece", "Portugal", "Belgium",
-    "Switzerland", "Austria", "Ireland", "Finland", "Czech Republic", "Hungary",
-    "Singapore", "Malaysia", "Philippines", "Bangladesh", "Iran", "Iraq", "Syria", "Yemen",
-  ];
+  const countries = ["Worldwide", ...COUNTRY_OPTIONS];
 
   const genderCost = isPremium ? 0 : genderOptions.find((g) => g.value === selectedGender)?.cost || 0;
   const countryCost = isPremium || selectedCountry === "Worldwide" ? 0 : 5;

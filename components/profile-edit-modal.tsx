@@ -1,18 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, MapPin, X } from "lucide-react";
+import { Camera, ChevronDown, MapPin, X } from "lucide-react";
 import { PremiumBadge } from "@/components/premium-badge";
 import { AnnouncementsAdmin } from "@/components/announcements-admin";
 import { isCurrentUserAdmin } from "@/lib/admin";
 import { compressImageFile } from "@/lib/compress-image";
+import { COUNTRY_OPTIONS, isCountryOption } from "@/lib/countries";
 import type { Announcement } from "@/lib/announcements";
+
+export const GENDER_OPTIONS = ["Man", "Woman", "Prefer not to say"] as const;
+export type ProfileGender = (typeof GENDER_OPTIONS)[number];
 
 export type ProfileSavePayload = {
   fullName: string;
   age: number;
   country: string;
   location: string;
+  gender: ProfileGender | "";
   bio: string;
   interests: string[];
   languages: string[];
@@ -24,6 +29,7 @@ export type ProfileModalUser = {
   age?: number;
   country?: string;
   location?: string;
+  gender?: string;
   bio?: string;
   interests?: string[];
   languages?: string[];
@@ -49,6 +55,10 @@ const INTEREST_OPTIONS = [
 const FIELD =
   "h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3.5 text-[14px] text-white placeholder:text-white/35 outline-none transition-colors focus:border-purple-400/55 focus:ring-1 focus:ring-purple-400/35";
 
+function isProfileGender(value: string): value is ProfileGender {
+  return (GENDER_OPTIONS as readonly string[]).includes(value);
+}
+
 function readStoredProfile(): ProfileModalUser {
   try {
     const stored = localStorage.getItem("youneon_user_profile");
@@ -65,6 +75,7 @@ function emptyForm(): ProfileSavePayload {
     age: 18,
     country: "",
     location: "",
+    gender: "",
     bio: "",
     interests: [],
     languages: ["English"],
@@ -75,12 +86,15 @@ function emptyForm(): ProfileSavePayload {
 function formFromSources(user?: ProfileModalUser | null): ProfileSavePayload {
   const stored = typeof window !== "undefined" ? readStoredProfile() : {};
   const src = { ...stored, ...user };
-  const location = src.location || src.country || "";
+  const rawPlace = src.country || src.location || "";
+  const country = isCountryOption(rawPlace) ? rawPlace : "";
+  const gender = src.gender && isProfileGender(src.gender) ? src.gender : "";
   return {
     fullName: src.fullName || "",
     age: typeof src.age === "number" && src.age > 0 ? src.age : 18,
-    country: src.country || location,
-    location,
+    country,
+    location: country,
+    gender,
     bio: src.bio || "",
     interests: Array.isArray(src.interests) ? src.interests : [],
     languages: Array.isArray(src.languages) && src.languages.length > 0 ? src.languages : ["English"],
@@ -102,13 +116,11 @@ export function ProfileEditModal({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const [savedHint, setSavedHint] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     setFormData(formFromSources(currentUser));
     setError("");
-    setSavedHint(false);
     setSaving(false);
     setUploading(false);
   }, [isOpen, currentUser]);
@@ -143,6 +155,10 @@ export function ProfileEditModal({
     });
   };
 
+  const setCountry = (country: string) => {
+    setFormData((prev) => ({ ...prev, country, location: country }));
+  };
+
   const handleSave = async () => {
     const fullName = formData.fullName.trim();
     if (!fullName) {
@@ -154,13 +170,22 @@ export function ProfileEditModal({
       setError("Age must be between 18 and 99.");
       return;
     }
+    if (!isCountryOption(formData.country)) {
+      setError("Please select your country.");
+      return;
+    }
+    if (!isProfileGender(formData.gender)) {
+      setError("Please select gender.");
+      return;
+    }
 
     const payload: ProfileSavePayload = {
       ...formData,
       fullName,
       age,
-      location: formData.location.trim(),
-      country: formData.country.trim() || formData.location.trim(),
+      country: formData.country,
+      location: formData.country,
+      gender: formData.gender,
       bio: formData.bio.trim(),
       profilePicture: formData.profilePicture || "",
     };
@@ -170,8 +195,7 @@ export function ProfileEditModal({
     try {
       localStorage.setItem("youneon_user_profile", JSON.stringify(payload));
       await onSave?.(payload);
-      setFormData(payload);
-      setSavedHint(true);
+      onClose();
     } catch {
       setError("Saved on this device. Cloud sync failed — try again later.");
     } finally {
@@ -270,18 +294,55 @@ export function ProfileEditModal({
               />
             </label>
 
+            <div>
+              <span className="mb-1.5 block text-[12px] font-medium uppercase tracking-wide text-white/50">
+                Gender
+              </span>
+              <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.04] p-0.5">
+                {GENDER_OPTIONS.map((option) => {
+                  const selected = formData.gender === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, gender: option })}
+                      className={`flex h-11 flex-1 items-center justify-center rounded-[10px] px-1 text-center text-[12px] font-semibold leading-tight transition-all sm:text-[13px] ${
+                        selected
+                          ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_2px_10px_rgba(168,85,247,0.28)]"
+                          : "bg-transparent text-white/70 hover:text-white"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <label className="block">
               <span className="mb-1.5 flex items-center gap-1 text-[12px] font-medium uppercase tracking-wide text-white/50">
                 <MapPin size={12} /> Location
               </span>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value, country: e.target.value })}
-                className={FIELD}
-                placeholder="City, country"
-                maxLength={60}
-              />
+              <span className="relative block">
+                <select
+                  value={isCountryOption(formData.country) ? formData.country : ""}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className={`${FIELD} appearance-none pr-10`}
+                >
+                  <option value="" disabled>
+                    Select country
+                  </option>
+                  {COUNTRY_OPTIONS.map((country) => (
+                    <option key={country} value={country} className="bg-[#16101f] text-white">
+                      {country}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={16}
+                  className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-white/45"
+                />
+              </span>
             </label>
 
             <label className="block">
@@ -327,9 +388,6 @@ export function ProfileEditModal({
 
           {error && (
             <p className="mt-4 text-center text-[13px] text-pink-300">{error}</p>
-          )}
-          {savedHint && !error && (
-            <p className="mt-4 text-center text-[13px] text-emerald-300">Profile saved.</p>
           )}
         </div>
 

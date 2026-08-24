@@ -11,12 +11,13 @@ export interface UserProfile {
   fullName: string;
   age: number;
   country: string;
+  location?: string;
+  gender?: string;
   languages: string[];
   interests: string[];
   avatar?: string;
   profilePicture?: string;
   bio?: string;
-  location?: string;
   premiumUntil?: string;
   lastPaymentId?: string;
   neonBalance?: number;

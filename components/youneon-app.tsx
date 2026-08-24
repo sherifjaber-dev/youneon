@@ -49,12 +49,13 @@ type YouNeonUser = {
   fullName: string;
   age: number;
   country: string;
+  location?: string;
+  gender?: string;
   avatar: string;
   profilePicture: string;
   languages: string[];
   interests: string[];
   bio?: string;
-  location?: string;
   premiumUntil?: string;
 };
 
@@ -79,13 +80,14 @@ function stubUser(uid?: string, username?: string): YouNeonUser {
     piUsername,
     fullName: extras.fullName || piUsername,
     age: extras.age || 18,
-    country: extras.country || "",
+    country: extras.country || extras.location || "",
+    location: extras.location || extras.country || "",
+    gender: extras.gender || "",
     avatar: extras.avatar || "🙂",
     profilePicture: extras.profilePicture || "",
     languages: extras.languages || ["English"],
     interests: extras.interests || [],
     bio: extras.bio || "",
-    location: extras.location || extras.country || "",
   };
 }
 
@@ -194,12 +196,13 @@ export function YouNeonApp() {
         fullName: "Guest (demo)",
         age: 18,
         country: "",
+        location: "",
+        gender: "",
         avatar: "🙂",
         profilePicture: "",
         languages: ["English"],
         interests: [],
         bio: "",
-        location: "",
       });
       return;
     }
@@ -225,13 +228,14 @@ export function YouNeonApp() {
         piUsername,
         fullName: extras.fullName || piUsername,
         age: extras.age || 18,
-        country: extras.country || "",
+        country: extras.country || extras.location || "",
+        location: extras.location || extras.country || "",
+        gender: extras.gender || "",
         avatar: extras.avatar || "🙂",
         profilePicture: extras.profilePicture || "",
         languages: extras.languages || ["English"],
         interests: extras.interests || [],
         bio: extras.bio || "",
-        location: extras.location || extras.country || "",
       };
 
       try {
@@ -245,7 +249,9 @@ export function YouNeonApp() {
             piUsername,
             profilePicture: remote.profilePicture || extras.profilePicture || "",
             bio: remote.bio || extras.bio || "",
-            location: remote.location || extras.location || extras.country || "",
+            country: remote.country || remote.location || extras.country || extras.location || "",
+            location: remote.location || remote.country || extras.location || extras.country || "",
+            gender: remote.gender || extras.gender || "",
             premiumUntil: remote.premiumUntil || extras.premiumUntil || readStoredPremiumUntil() || undefined,
           };
           if (remote.premiumUntil) {
@@ -279,6 +285,7 @@ export function YouNeonApp() {
                 age: prev.age,
                 country: prev.country,
                 location: prev.location,
+                gender: prev.gender,
                 bio: prev.bio,
                 interests: prev.interests,
                 languages: prev.languages,
@@ -307,12 +314,14 @@ export function YouNeonApp() {
   const handleProfileSaved = async (saved: ProfileSavePayload) => {
     const lite = readLiteSession();
     const base = currentUser || stubUser(user?.uid || lite?.uid, user?.username || lite?.username);
+    const place = saved.country || saved.location || base.country || "";
     const merged: YouNeonUser = {
       ...base,
       fullName: saved.fullName || base.fullName,
       age: saved.age || base.age,
-      country: saved.country || saved.location || base.country,
-      location: saved.location || saved.country || base.location || "",
+      country: place,
+      location: place,
+      gender: saved.gender || "",
       bio: saved.bio || "",
       interests: saved.interests || base.interests,
       languages: saved.languages?.length ? saved.languages : base.languages,
@@ -335,6 +344,8 @@ export function YouNeonApp() {
         fullName: merged.fullName,
         age: merged.age,
         country: merged.country,
+        location: merged.location,
+        gender: merged.gender,
         languages: merged.languages,
         interests: merged.interests,
         profilePicture: merged.profilePicture,
@@ -347,19 +358,24 @@ export function YouNeonApp() {
     }
 
     if (!isGuestDemo) {
-      await saveUserProfile({
-        piUsername: merged.piUsername,
-        uid: merged.uid,
-        fullName: merged.fullName,
-        age: merged.age,
-        country: merged.country,
-        languages: merged.languages,
-        interests: merged.interests,
-        avatar: merged.avatar,
-        profilePicture: merged.profilePicture,
-        bio: merged.bio,
-        location: merged.location,
-      });
+      try {
+        await saveUserProfile({
+          piUsername: merged.piUsername,
+          uid: merged.uid,
+          fullName: merged.fullName,
+          age: merged.age,
+          country: merged.country,
+          location: merged.location,
+          gender: merged.gender,
+          languages: merged.languages,
+          interests: merged.interests,
+          avatar: merged.avatar,
+          profilePicture: merged.profilePicture,
+          bio: merged.bio,
+        });
+      } catch (e) {
+        console.warn("Profile cloud save failed", e);
+      }
     }
   };
 

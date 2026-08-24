@@ -21,6 +21,8 @@ export interface UserProfile {
   fullName: string;
   age: number;
   country: string;
+  location?: string;
+  gender?: string;
   languages: string[];
   interests: string[];
   profilePicture?: string;
