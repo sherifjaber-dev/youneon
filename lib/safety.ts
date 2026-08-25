@@ -11,6 +11,7 @@ import {
 import { db } from "@/lib/firebase";
 import { profileCompleteness } from "@/lib/profile-catalog";
 import { isPremiumActive } from "@/lib/premium";
+import { isRealPiUsername } from "@/lib/real-pi-user";
 
 export const AGE_GATE_MIN = 18;
 export const REPORT_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -146,7 +147,7 @@ export function badgeFromUserDoc(data: Record<string, unknown> | null | undefine
 }
 
 export async function ensureCreatedAt(username: string) {
-  if (!username || username === "anon") return;
+  if (!isRealPiUsername(username)) return;
   try {
     const ref = doc(db, "users", username);
     const snap = await getDoc(ref);
@@ -159,7 +160,7 @@ export async function ensureCreatedAt(username: string) {
 }
 
 export async function refreshYouNeonBadge(username: string): Promise<boolean> {
-  if (!username || username === "anon") return false;
+  if (!isRealPiUsername(username)) return false;
   try {
     const snap = await getDoc(doc(db, "users", username));
     if (!snap.exists()) return false;

@@ -65,6 +65,7 @@ import {
   type ChatUnlocks,
 } from "@/lib/chat-unlock";
 import { ChatUnlockModal, type ChatUnlockTarget } from "@/components/chat-unlock-modal";
+import { isRealPiUsername } from "@/lib/real-pi-user";
 
 type VideoSession = {
   mode: "random" | "direct";
@@ -160,7 +161,7 @@ function userFromRemote(
 }
 
 function stubUser(uid?: string, username?: string): YouNeonUser {
-  const piUsername = username || uid || "pi_user";
+  const piUsername = username || uid || "";
   const extras = readLocalProfileExtras(piUsername);
   return {
     id: piUsername,
@@ -188,7 +189,6 @@ function stubUser(uid?: string, username?: string): YouNeonUser {
 export function YouNeonApp() {
   const { user, isAuthenticated, sessionUnverified, logout } = usePiAuth();
   const { setLanguage } = useLanguage();
-  const isGuestDemo = false;
   const [bootAuthOk, setBootAuthOk] = useState(false);
   const [currentUser, setCurrentUser] = useState<YouNeonUser | null>(null);
   const [accountBanned, setAccountBanned] = useState(false);
@@ -210,7 +210,7 @@ export function YouNeonApp() {
   const userIdRef = useRef("");
 
   const signedIn = isAuthenticated || bootAuthOk;
-  const showApp = signedIn || (isGuestDemo && !!currentUser);
+  const showApp = signedIn;
   userIdRef.current = currentUser?.piUsername || user?.username || "";
 
   useLayoutEffect(() => {
@@ -295,24 +295,6 @@ export function YouNeonApp() {
   }, []);
 
   useEffect(() => {
-    if (isGuestDemo) {
-      setCurrentUser({
-        id: "guest_demo",
-        piUsername: "guest_demo",
-        fullName: "Guest (demo)",
-        age: 18,
-        country: "",
-        location: "",
-        gender: "",
-        avatar: "🙂",
-        profilePicture: "",
-        languages: ["English"],
-        interests: [],
-        bio: "",
-      });
-      return;
-    }
-
     if (!signedIn) {
       setCurrentUser(null);
       setAccountBanned(false);
@@ -320,8 +302,12 @@ export function YouNeonApp() {
     }
 
     const lite = readLiteSession();
-    const uid = user?.uid || lite?.uid || "pi_user";
+    const uid = user?.uid || lite?.uid || "";
     const piUsername = user?.username || lite?.username || uid;
+    if (!isRealPiUsername(piUsername)) {
+      setCurrentUser(null);
+      return;
+    }
     let cancelled = false;
 
     setCurrentUser((prev) => prev || stubUser(uid, piUsername));
@@ -422,13 +408,13 @@ export function YouNeonApp() {
     return () => {
       cancelled = true;
     };
-  }, [signedIn, isGuestDemo, user]);
+  }, [signedIn, user]);
 
   useEffect(() => {
-    if (isGuestDemo || !signedIn) return;
+    if (!signedIn) return;
     const lite = readLiteSession();
     const id = user?.username || lite?.username;
-    if (!id) return;
+    if (!isRealPiUsername(id)) return;
     return subscribeToUserProfile(id, (remote) => {
       if (!remote) return;
       setChatUnlocks(normalizeChatUnlocks(remote.chatUnlocks));
@@ -475,7 +461,7 @@ export function YouNeonApp() {
         };
       });
     });
-  }, [signedIn, isGuestDemo, user?.username]);
+  }, [signedIn, user?.username]);
 
   useEffect(() => {
     const syncItems = () => setTimedItems(readLocalItems());
@@ -546,28 +532,26 @@ export function YouNeonApp() {
       /* non-critical */
     }
 
-    if (!isGuestDemo) {
-      try {
-        await saveUserProfile({
-          piUsername: merged.piUsername,
-          uid: merged.uid,
-          fullName: merged.fullName,
-          age: merged.age,
-          country: merged.country,
-          location: merged.location,
-          gender: merged.gender,
-          languages: merged.languages,
-          interests: merged.interests,
-          avatar: merged.avatar,
-          profilePicture: merged.profilePicture,
-          photos: merged.photos || [],
-          bio: merged.bio,
-          nameChangeMonth: merged.nameChangeMonth,
-          nameChangeCount: merged.nameChangeCount,
-        });
-      } catch (e) {
-        console.warn("Profile cloud save failed", e);
-      }
+    try {
+      await saveUserProfile({
+        piUsername: merged.piUsername,
+        uid: merged.uid,
+        fullName: merged.fullName,
+        age: merged.age,
+        country: merged.country,
+        location: merged.location,
+        gender: merged.gender,
+        languages: merged.languages,
+        interests: merged.interests,
+        avatar: merged.avatar,
+        profilePicture: merged.profilePicture,
+        photos: merged.photos || [],
+        bio: merged.bio,
+        nameChangeMonth: merged.nameChangeMonth,
+        nameChangeCount: merged.nameChangeCount,
+      });
+    } catch (e) {
+      console.warn("Profile cloud save failed", e);
     }
   };
 
@@ -688,7 +672,7 @@ export function YouNeonApp() {
   }) => {
     const partner = info?.partner;
     const myId = currentUser?.id || currentUser?.piUsername;
-    if (myId && !isGuestDemo && partner?.name && partner.name !== "Partner") {
+    if (isRealPiUsername(myId) && partner?.name && partner.name !== "Partner") {
       const secs = Math.max(0, Math.floor(info?.durationSeconds || 0));
       try {
         await addToHistory(myId, {
@@ -710,11 +694,12 @@ export function YouNeonApp() {
   };
 
   const lite = typeof window !== "undefined" ? readLiteSession() : null;
+  const signedUsername = user?.username || lite?.username || user?.uid || lite?.uid || "";
   const displayUser =
     currentUser ||
-    stubUser(user?.uid || lite?.uid, user?.username || lite?.username);
+    (isRealPiUsername(signedUsername) ? stubUser(user?.uid || lite?.uid, signedUsername) : null);
 
-  if (!showApp) {
+  if (!showApp || !displayUser) {
     return null;
   }
 

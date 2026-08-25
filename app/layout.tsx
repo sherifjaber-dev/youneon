@@ -66,8 +66,8 @@ const PI_BOOT_SCRIPT =
   "var rec = result || {}; var nested = rec.user && typeof rec.user === 'object' ? rec.user : null; var source = nested || rec;" +
   "var uid = source && source.uid ? String(source.uid) : ''; var username = source && source.username ? String(source.username) : '';" +
   "var token = rec.accessToken ? String(rec.accessToken) : '';" +
-  "if (!(nested || uid || username) && !token) return null;" +
-  "return { uid: uid || username || 'pi_user', username: username || uid || 'pi_user', accessToken: token };" +
+  "if (!(uid || username)) return null;" +
+  "return { uid: uid || username, username: username || uid, accessToken: token };" +
   "}" +
   "function markOk(result) {" +
   "var picked = pickUser(result); if (!picked) return;" +

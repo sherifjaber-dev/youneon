@@ -9,6 +9,7 @@ import {
 import { db } from "@/lib/firebase";
 import { addBlockedUserId, readBlockedUserIds } from "@/lib/match-queue";
 import { persistNeonBalance, persistPremiumUntil } from "@/lib/premium";
+import { isRealPiUsername } from "@/lib/real-pi-user";
 
 export const SETTINGS_CHANGED_EVENT = "youneon:settings-changed";
 
@@ -195,7 +196,7 @@ export async function patchUserSettings(
   username: string,
   patch: Record<string, unknown>
 ) {
-  if (!username || username === "anon") return;
+  if (!isRealPiUsername(username)) return;
   await setDoc(
     doc(db, "users", username),
     { ...patch, updatedAt: Timestamp.now() },
@@ -211,7 +212,7 @@ export async function ensureNeonId(username: string, existing?: string | null): 
     } catch {
       /* ignore */
     }
-    if (!existing && username && username !== "anon") {
+    if (!existing && isRealPiUsername(username)) {
       void patchUserSettings(username, { neonId: local }).catch(() => {});
     }
     return local;
@@ -222,7 +223,7 @@ export async function ensureNeonId(username: string, existing?: string | null): 
   } catch {
     /* ignore */
   }
-  if (username && username !== "anon") {
+  if (isRealPiUsername(username)) {
     try {
       const snap = await getDoc(doc(db, "users", username));
       const remote = snap.exists() ? String(snap.data()?.neonId || "") : "";
@@ -407,7 +408,7 @@ export async function consumeFreeMessageItem(
   const next = items.filter((_, index) => index !== promo[0].index);
   persistItems(next);
   emitSettingsChanged();
-  if (username && username !== "anon") {
+  if (isRealPiUsername(username)) {
     try {
       await patchUserSettings(username, { items: next });
     } catch {
@@ -459,7 +460,7 @@ export async function claimPromoCode(
 export async function cancelPremiumLocally(username: string, uid?: string) {
   const expired = new Date().toISOString();
   persistPremiumUntil(expired);
-  if (username && username !== "anon") {
+  if (isRealPiUsername(username)) {
     await patchUserSettings(username, { premiumUntil: expired });
   }
   if (uid) {

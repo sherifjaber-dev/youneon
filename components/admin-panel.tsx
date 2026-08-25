@@ -10,7 +10,7 @@ import type { PromoCodeRecord } from "@/lib/promo-codes";
 import type { AdminUserSummary } from "@/lib/admin-moderation";
 import type { Announcement } from "@/lib/announcements";
 
-type Tab = "promos" | "reports" | "search" | "reported" | "announcements";
+type Tab = "promos" | "reports" | "search" | "reported" | "announcements" | "cleanup";
 
 type LiveReport = {
   id: string;
@@ -52,6 +52,8 @@ export function AdminPanel({
   const [searchBusy, setSearchBusy] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState("");
+  const [cleanupBusy, setCleanupBusy] = useState(false);
+  const [cleanupResult, setCleanupResult] = useState("");
 
   const loadCodes = async () => {
     try {
@@ -144,6 +146,32 @@ export function AdminPanel({
     setSearchBusy(false);
   };
 
+  const runCleanup = async () => {
+    if (cleanupBusy) return;
+    const confirmed = window.confirm(
+      "Delete only docs marked isTest / isDemo / seed, or reserved fake ids (guest_demo, pi_user, anon, test_*, demo_*). Real Pi users are kept."
+    );
+    if (!confirmed) return;
+    setCleanupBusy(true);
+    setCleanupResult("");
+    try {
+      const { data } = await api.post<{
+        deleted?: Record<string, number>;
+        error?: string;
+      }>("/api/admin/cleanup-test-data");
+      const deleted = data.deleted || {};
+      setCleanupResult(
+        `Removed ${deleted.users || 0} users, ${deleted.presence || 0} presence, ${deleted.matchQueue || 0} matchQueue, ${deleted.conversations || 0} conversations.`
+      );
+    } catch (error) {
+      setCleanupResult(
+        (error as { data?: { error?: string } })?.data?.error ||
+          "Cleanup failed. If Firebase Admin is not on this host, use the Firebase Console steps shown here."
+      );
+    }
+    setCleanupBusy(false);
+  };
+
   const runUserAction = async (id: string, action: string) => {
     setActionMsg("");
     try {
@@ -168,6 +196,7 @@ export function AdminPanel({
     { id: "reported", label: "Reported users" },
     { id: "search", label: "User search" },
     { id: "announcements", label: "Announcements" },
+    { id: "cleanup", label: "Test data" },
   ];
 
   return (
@@ -408,6 +437,31 @@ export function AdminPanel({
       ) : null}
 
       {tab === "announcements" ? <AnnouncementsAdmin announcements={announcements} compact /> : null}
+
+      {tab === "cleanup" ? (
+        <section className="rounded-2xl border border-black/6 bg-white p-4 shadow-sm">
+          <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-yn-text">Remove test / demo data</h2>
+          <p className="mt-2 text-[14px] leading-6 text-yn-muted">
+            One-shot cleanup. Deletes only documents marked <code>isTest</code>, <code>isDemo</code>, or <code>seed</code>,
+            or reserved fake ids such as <code>guest_demo</code>, <code>pi_user</code>, <code>anon</code>, and <code>test_*</code>.
+            Real Pi accounts are not mass-deleted.
+          </p>
+          <p className="mt-3 text-[13px] leading-6 text-yn-muted">
+            Needs Firebase Admin credentials on the host. If this action fails, in Firebase Console delete matching docs from
+            <strong> presence</strong> and <strong> matchQueue</strong> first (same flags / fake ids), then only those same ids under
+            <strong> users</strong> and any <strong> conversations</strong> whose participants include them.
+          </p>
+          <button
+            type="button"
+            disabled={cleanupBusy}
+            onClick={() => void runCleanup()}
+            className="mt-4 h-11 rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-600 px-5 text-[14px] font-semibold text-white disabled:opacity-60"
+          >
+            {cleanupBusy ? "Cleaning…" : "Delete marked test data"}
+          </button>
+          {cleanupResult ? <p className="mt-3 text-[13px] leading-5 text-yn-muted">{cleanupResult}</p> : null}
+        </section>
+      ) : null}
 
       <ProfilePreviewSheet
         open={!!previewId}

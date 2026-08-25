@@ -89,9 +89,8 @@
     var uid = source && source.uid ? String(source.uid) : "";
     var username = source && source.username ? String(source.username) : "";
     var token = rec.accessToken ? String(rec.accessToken) : "";
-    var hasUser = !!(nested || uid || username);
-    if (!hasUser && !token) return null;
-    return { uid: uid || username || "pi_user", username: username || uid || "pi_user", accessToken: token };
+    if (!(uid || username)) return null;
+    return { uid: uid || username, username: username || uid, accessToken: token };
   }
 
   function dispatchOk(uid, username) {

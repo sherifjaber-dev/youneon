@@ -4,6 +4,7 @@ import {
   type MatchFilters as QueueFilters,
   type QueueProfile,
 } from "./match-queue";
+import { isRealPiUsername } from "./real-pi-user";
 
 export interface MatchFilters {
   gender: string;
@@ -46,6 +47,9 @@ export async function findRandomMatch(
   filters: MatchFilters,
   options?: { isPremium?: boolean; profile?: QueueProfile; blockedIds?: string[] }
 ): Promise<MatchResult> {
+  if (!isRealPiUsername(userId)) {
+    throw new Error("Sign in with Pi Network to start a video chat.");
+  }
   const session = await enqueueOrMatch({
     userId,
     profile: options?.profile || { userId, name: "User" },

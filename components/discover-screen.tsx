@@ -10,6 +10,7 @@ import { PremiumBadge } from "@/components/premium-badge";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
+import { isFakeUserRecord, isRealPiUsername } from "@/lib/real-pi-user";
 
 interface DiscoverScreenProps {
   onStartVideo: (filters: { gender: "women" | "men" | "both"; country: string }) => void;
@@ -54,7 +55,7 @@ export function DiscoverScreen({
 
   // ============ Real-time online counter ============
   useEffect(() => {
-    if (!db || !currentUserId) return;
+    if (!db || !isRealPiUsername(currentUserId)) return;
 
     const updatePresence = async () => {
       try {
@@ -78,6 +79,7 @@ export function DiscoverScreen({
       let count = 0;
       snap.forEach((d) => {
         const data = d.data() as any;
+        if (isFakeUserRecord(d.id, data)) return;
         const ts = data?.lastSeen?.toMillis?.();
         if (ts && now - ts < 60_000) count++;
       });

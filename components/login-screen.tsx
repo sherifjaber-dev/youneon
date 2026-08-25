@@ -10,7 +10,6 @@ interface LoginScreenProps {
   isLoggingIn?: boolean;
   errorMessage?: string | null;
   piAvailable?: boolean;
-  onGuest?: () => void;
 }
 
 const overlayStyle = {
@@ -46,7 +45,6 @@ export function LoginScreen({
   isLoggingIn = false,
   errorMessage,
   piAvailable = true,
-  onGuest,
 }: LoginScreenProps) {
   const showPiBrowserHint = !piAvailable;
   const showError = Boolean(errorMessage) && (piAvailable || !errorMessage?.includes("Pi Browser"));
@@ -140,37 +138,6 @@ export function LoginScreen({
           >
             Connecting to Pi Network…
           </p>
-        )}
-
-        {onGuest && (
-          <button
-            type="button"
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              onGuest();
-            }}
-            style={{
-              position: "relative",
-              zIndex: 20,
-              marginTop: 8,
-              display: "block",
-              marginLeft: "auto",
-              marginRight: "auto",
-              fontSize: 14,
-              color: "rgba(255,255,255,0.5)",
-              background: "transparent",
-              border: 0,
-              textDecoration: "underline",
-              cursor: "pointer",
-              pointerEvents: "auto",
-              userSelect: "none",
-            }}
-          >
-            Continue as guest (demo)
-          </button>
         )}
       </div>
     </div>

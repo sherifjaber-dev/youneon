@@ -13,6 +13,7 @@ import {
   type MatchFilters,
   type QueueProfile,
 } from "@/lib/match-queue";
+import { isRealPiUsername } from "@/lib/real-pi-user";
 import { blockUserForMe, readLocalBackgroundPlay, readLocalHideGender } from "@/lib/user-settings";
 import { playGiftSound } from "@/lib/gift-sounds";
 import {
@@ -455,8 +456,8 @@ function VideoCallScreen({
       if (hadRemoteRef.current && matchOptsRef.current.matchMode === "random") {
         hadRemoteRef.current = false;
         setPartner(null);
-        const uid = matchOptsRef.current.currentUserId || "anon";
-        requeueSameRoom(uid).catch(() => {});
+        const uid = matchOptsRef.current.currentUserId || "";
+        if (isRealPiUsername(uid)) requeueSameRoom(uid).catch(() => {});
       }
     }
   }, []);
@@ -466,9 +467,15 @@ function VideoCallScreen({
     let cancelled = false;
     let unsubMatch: (() => void) | undefined;
     const opts = matchOptsRef.current;
-    const userId = opts.currentUserId || "anon";
+    const userId = opts.currentUserId || "";
     sessionStartedRef.current = Date.now();
     hadRemoteRef.current = false;
+
+    if (opts.matchMode === "random" && !isRealPiUsername(userId)) {
+      setPermission("error");
+      setErrorMsg("Sign in with Pi Network to start a video chat.");
+      return;
+    }
 
     const stopPreview = () => {
       if (previewStreamRef.current) {

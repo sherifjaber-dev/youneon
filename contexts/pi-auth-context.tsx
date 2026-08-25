@@ -23,6 +23,7 @@ import {
   readLiteSession,
   type PiLiteSession,
 } from "@/lib/pi-client-session";
+import { isRealPiUsername } from "@/lib/real-pi-user";
 import {
   authenticatePi,
   handleIncompletePayment,
@@ -102,6 +103,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   const applyVerifiedSession = useCallback(
     (verified: PiAuthUser, token: string | null, unverified = false) => {
+      if (!isRealPiUsername(verified.username) && !isRealPiUsername(verified.uid)) return;
       sessionReadyRef.current = true;
       setUser(verified);
       setAccessToken(token);
@@ -133,7 +135,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
           const { data } = await api.post<PiAuthUser>("/api/pi/auth", {
             accessToken: token,
           });
-          if (data?.uid) {
+          if (data?.uid && (data.username || fallback.username)) {
             applyVerifiedSession(
               {
                 uid: data.uid,
@@ -159,15 +161,13 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   const enterAppFromAuthResult = useCallback(
     (auth: unknown, token: string) => {
-      const identity: PiLiteSession =
-        identityFromAuthResult(auth) || {
-          uid: "pi_user",
-          username: "pi_user",
-        };
-      applyVerifiedSession(identity, token || null, false);
-      markPiAuthOk(auth || identity);
+      const identity: PiLiteSession | null = identityFromAuthResult(auth);
+      if (identity) {
+        applyVerifiedSession(identity, token || null, false);
+        markPiAuthOk(auth || identity);
+      }
       if (token) {
-        void verifyTokenInBackground(token, identity);
+        void verifyTokenInBackground(token, identity || { uid: "", username: "" });
       }
     },
     [applyVerifiedSession, verifyTokenInBackground]
@@ -252,7 +252,8 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const adoptThisSessionAuth = () => {
       if (typeof window === "undefined" || !window.__PI_AUTH_OK) return;
-      const identity = readLiteSession() || { uid: "pi_user", username: "pi_user" };
+      const identity = readLiteSession();
+      if (!identity) return;
       applyVerifiedSession(identity, accessTokenRef.current, false);
     };
 

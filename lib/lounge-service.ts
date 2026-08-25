@@ -15,6 +15,7 @@ import {
 import { db } from "./firebase";
 import { badgeFromUserDoc } from "@/lib/safety";
 import type { UserProfile } from "./firestore-service";
+import { isFakeUserRecord, isRealPiUsername } from "./real-pi-user";
 
 export const LOUNGE_RECENT_MS = 72 * 60 * 60 * 1000;
 export const LOUNGE_AGE_WINDOW = 6;
@@ -175,6 +176,7 @@ function personFromUserDoc(
   data: Record<string, unknown>,
   lastSeenMs: number
 ): LoungePerson | null {
+  if (isFakeUserRecord(id, data)) return null;
   const name =
     (typeof data.fullName === "string" && data.fullName.trim()) ||
     (typeof data.piUsername === "string" && data.piUsername.trim()) ||
@@ -230,6 +232,7 @@ async function hydratePeople(
   const unique = new Map<string, number>();
   rows.forEach((row) => {
     if (!row.id || row.id === meId) return;
+    if (!isRealPiUsername(row.id)) return;
     const prev = unique.get(row.id) || 0;
     if (row.lastSeenMs > prev) unique.set(row.id, row.lastSeenMs);
   });
@@ -254,7 +257,7 @@ async function hydratePeople(
 }
 
 export async function touchLoungePresence(userId: string) {
-  if (!userId || !db) return;
+  if (!isRealPiUsername(userId) || !db) return;
   try {
     await setDoc(
       doc(db, "presence", userId),
@@ -270,7 +273,7 @@ export function subscribeToLoungePeople(
   currentUserId: string,
   cb: (people: LoungePerson[]) => void
 ): Unsubscribe {
-  if (!currentUserId || !db) {
+  if (!isRealPiUsername(currentUserId) || !db) {
     cb([]);
     return () => {};
   }
@@ -296,7 +299,7 @@ export function subscribeToLoungePeople(
         const uid = String(d.data.userId || d.id);
         return { id: uid, lastSeenMs };
       })
-      .filter((row) => row.id && row.id !== currentUserId && now - row.lastSeenMs <= LOUNGE_RECENT_MS);
+      .filter((row) => row.id && row.id !== currentUserId && isRealPiUsername(row.id) && now - row.lastSeenMs <= LOUNGE_RECENT_MS);
     const people = await hydratePeople(rows, currentUserId);
     if (!cancelled) cb(people);
   };
@@ -419,7 +422,7 @@ export function storeLoungeFilters(filters: LoungeFilters) {
 }
 
 export function startLoungePresenceHeartbeat(userId: string): () => void {
-  if (!userId) return () => {};
+  if (!isRealPiUsername(userId)) return () => {};
   void touchLoungePresence(userId);
   const timer = window.setInterval(() => {
     void touchLoungePresence(userId);

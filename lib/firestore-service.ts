@@ -5,6 +5,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { GIFT_TO_REACTION } from "@/lib/profile-catalog";
+import { isFakeDisplayName, isFakeUserRecord, isRealPiUsername } from "@/lib/real-pi-user";
 
 export interface UserProfile {
   id?: string;
@@ -79,10 +80,13 @@ export const PAID_CALL_COST = 20;
 export const STARTING_NEON_BALANCE = 100;
 
 function isPersistableUsername(piUsername: string | undefined | null): piUsername is string {
-  return !!piUsername && piUsername !== "anon" && piUsername !== "pi_user" && piUsername !== "guest_demo";
+  return isRealPiUsername(piUsername);
 }
 
 export const saveUserProfile = async (profile: UserProfile) => {
+  if (!isPersistableUsername(profile.piUsername)) {
+    throw new Error("invalid username");
+  }
   const { neonBalance: _neon, premiumUntil: _until, lastPaymentId: _pay, ...rest } = profile;
   const ref = doc(db, "users", profile.piUsername);
   await setDoc(
@@ -142,7 +146,8 @@ export const loadOrCreateUserProfile = async (
 };
 
 export const persistUserNeonBalance = async (piUsername: string, balance: number) => {
-  if (!isPersistableUsername(piUsername)) return;
+  if (!isRealPiUsername(currentUserId) || !isRealPiUsername(match.id)) return;
+  if (isFakeDisplayName(match.name)) return;
   await setDoc(
     doc(db, "users", piUsername),
     { neonBalance: Math.max(0, Math.floor(balance)), updatedAt: Timestamp.now() },
@@ -245,6 +250,9 @@ export const getOrCreateConversation = async (
   me: { id: string; name: string; avatar: string; flag?: string; photo?: string },
   other: { id: string; name: string; avatar: string; flag?: string; photo?: string }
 ) => {
+  if (!isRealPiUsername(me.id) || !isRealPiUsername(other.id)) {
+    throw new Error("Chat is only available between real Pi accounts.");
+  }
   const cid = getConversationId(me.id, other.id);
   const ref = doc(db, "conversations", cid);
   const snap = await getDoc(ref);
@@ -398,7 +406,17 @@ export const cleanupOldReadMessages = async (conversationId: string) => {
 export const subscribeToConversations = (userId: string, cb: (convs: any[]) => void) => {
   const q = query(collection(db, "conversations"), where("participants", "array-contains", userId));
   return onSnapshot(q, (snap) => {
-    const convs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const convs = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((conv: any) => {
+        if (isFakeUserRecord(conv.id, conv)) return false;
+        const participants = Array.isArray(conv.participants) ? conv.participants : [];
+        const otherId = participants.find((p: string) => p !== userId);
+        if (!isRealPiUsername(otherId)) return false;
+        const names = (conv.participantNames || {}) as Record<string, string>;
+        if (isFakeDisplayName(names[otherId])) return false;
+        return true;
+      });
     convs.sort((a: any, b: any) => (b.lastMessageTime?.toMillis?.() || 0) - (a.lastMessageTime?.toMillis?.() || 0));
     cb(convs);
   });
@@ -427,6 +445,8 @@ export const addToHistory = async (
     languages?: string[];
   }
 ) => {
+  if (!isRealPiUsername(currentUserId) || !isRealPiUsername(match.id)) return;
+  if (isFakeDisplayName(match.name)) return;
   const durationSeconds =
     typeof match.durationSeconds === "number" && Number.isFinite(match.durationSeconds)
       ? Math.max(0, Math.floor(match.durationSeconds))
@@ -461,7 +481,18 @@ export const addToHistory = async (
 
 export const subscribeToHistory = (userId: string, cb: (items: any[]) => void) => {
   const q = query(collection(db, "users", userId, "history"), orderBy("timestamp", "desc"));
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+  return onSnapshot(q, (snap) =>
+    cb(
+      snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((item: any) => {
+          const matchId = String(item.matchId || item.id || "");
+          if (!isRealPiUsername(matchId)) return false;
+          if (isFakeDisplayName(item.name)) return false;
+          return !isFakeUserRecord(matchId, item);
+        })
+    )
+  );
 };
 
 export default {};

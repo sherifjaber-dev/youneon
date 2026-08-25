@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { isUserBanned } from "./firestore-service";
+import { isFakeQueuePeer, isRealPiUsername } from "./real-pi-user";
 
 const QUEUE = "matchQueue";
 const WAIT_WINDOW_MS = 60_000;
@@ -125,6 +126,9 @@ export async function enqueueOrMatch(opts: {
   isPremium?: boolean;
 }): Promise<MatchSession> {
   const { userId, profile, filters, blockedIds = [], isPremium = false } = opts;
+  if (!isRealPiUsername(userId)) {
+    throw new Error("Sign in with Pi Network to start a video chat.");
+  }
   if (await isUserBanned(userId)) {
     throw new Error("This account cannot join video chat.");
   }
@@ -138,7 +142,9 @@ export async function enqueueOrMatch(opts: {
     if (d.id === userId) return;
     const data = d.data() as Record<string, unknown>;
     if (!isRecent(data.createdAt)) return;
+    if (isFakeQueuePeer(d.id, data)) return;
     const peerId = String(data.userId || d.id);
+    if (!isRealPiUsername(peerId)) return;
     if (blocked.has(peerId) || blocked.has(d.id)) return;
     if (data.banned === true) return;
     const peerAge = Number(data.age);
@@ -171,6 +177,7 @@ export async function enqueueOrMatch(opts: {
         const peer = peerSnap.data() as Record<string, unknown>;
         if (peer.status !== "waiting" || !peer.roomUrl) return null;
         if (!isRecent(peer.createdAt)) return null;
+        if (isFakeQueuePeer(cand.id, peer)) return null;
 
         const myPayload = {
           userId,

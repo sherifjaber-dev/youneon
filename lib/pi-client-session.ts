@@ -1,5 +1,7 @@
 "use client";
 
+import { isRealPiUsername } from "./real-pi-user";
+
 export const PI_AUTH_OK_EVENT = "youneon:pi-auth-ok";
 export const PI_AUTH_LOGOUT_EVENT = "youneon:pi-auth-logout";
 export const LITE_SESSION_KEY = "youneon_pi_session_lite";
@@ -23,15 +25,15 @@ export function identityFromAuthResult(result: unknown): PiLiteSession | null {
   const source = nested || rec;
   const uid = typeof source.uid === "string" ? source.uid.trim() : "";
   const username = typeof source.username === "string" ? source.username.trim() : "";
-  const token = typeof rec.accessToken === "string" ? rec.accessToken.trim() : "";
-  const hasUserObject = nested != null || !!uid || !!username;
 
-  if (!hasUserObject && !token) return null;
+  if (!uid && !username) return null;
 
-  return {
-    uid: uid || username || "pi_user",
-    username: username || uid || "pi_user",
+  const identity = {
+    uid: uid || username,
+    username: username || uid,
   };
+  if (!isRealPiUsername(identity.username) && !isRealPiUsername(identity.uid)) return null;
+  return identity;
 }
 
 export function readLiteSession(): PiLiteSession | null {
@@ -43,7 +45,9 @@ export function readLiteSession(): PiLiteSession | null {
       const uid = typeof data?.uid === "string" ? data.uid : "";
       const username = typeof data?.username === "string" ? data.username : "";
       if (uid || username) {
-        return { uid: uid || username, username: username || uid };
+        const session = { uid: uid || username, username: username || uid };
+        if (!isRealPiUsername(session.username) && !isRealPiUsername(session.uid)) return null;
+        return session;
       }
     }
     const legacy = localStorage.getItem(LEGACY_USER_KEY);
@@ -52,11 +56,10 @@ export function readLiteSession(): PiLiteSession | null {
       const uid = typeof data?.uid === "string" ? data.uid : "";
       const username = typeof data?.username === "string" ? data.username : "";
       if (uid || username) {
-        return { uid: uid || username, username: username || uid };
+        const session = { uid: uid || username, username: username || uid };
+        if (!isRealPiUsername(session.username) && !isRealPiUsername(session.uid)) return null;
+        return session;
       }
-    }
-    if (localStorage.getItem(AUTH_FLAG_KEY) === "1") {
-      return { uid: "pi_user", username: "pi_user" };
     }
   } catch {
     /* ignore */
@@ -66,6 +69,7 @@ export function readLiteSession(): PiLiteSession | null {
 
 export function persistLiteSession(user: PiLiteSession): void {
   if (typeof window === "undefined") return;
+  if (!isRealPiUsername(user.username) && !isRealPiUsername(user.uid)) return;
   try {
     localStorage.setItem(
       LITE_SESSION_KEY,

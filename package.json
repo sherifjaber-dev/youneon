@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "cleanup:test-users": "node scripts/cleanup-test-users.mjs"
   },
   "dependencies": {
     "@daily-co/daily-js": "^0.90.0",
