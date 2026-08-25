@@ -1,4 +1,9 @@
 import { api } from "./api";
+import {
+  enqueueOrMatch,
+  type MatchFilters as QueueFilters,
+  type QueueProfile,
+} from "./match-queue";
 
 export interface MatchFilters {
   gender: string;
@@ -22,43 +27,63 @@ export interface UserProfile {
 export interface MatchResult {
   matchId: string;
   user: UserProfile;
+  roomUrl: string;
   startedAt: Date;
 }
 
+function toQueueGender(gender: string): QueueFilters["gender"] {
+  const g = (gender || "both").toLowerCase();
+  if (g === "women" || g === "woman" || g === "female") return "women";
+  if (g === "men" || g === "man" || g === "male") return "men";
+  return "both";
+}
+
 /**
- * Find a random match based on filters
- * Simulates finding an available user from the pool
+ * Find a random match: join an existing waiting peer's Daily room, or create one.
  */
 export async function findRandomMatch(
   userId: string,
   filters: MatchFilters,
-  options?: { isPremium?: boolean }
+  options?: { isPremium?: boolean; profile?: QueueProfile; blockedIds?: string[] }
 ): Promise<MatchResult> {
-  try {
-    const response = await api.post<{
-      matchId: string;
-      user: UserProfile;
-    }>("/api/matches/find", {
-      userId,
-      filters,
-      priority: !!options?.isPremium,
-      isPremium: !!options?.isPremium,
-    });
+  const session = await enqueueOrMatch({
+    userId,
+    profile: options?.profile || { userId, name: "User" },
+    filters: {
+      gender: toQueueGender(filters.gender),
+      country: filters.country || "Worldwide",
+    },
+    blockedIds: options?.blockedIds,
+    isPremium: !!options?.isPremium,
+  });
 
-    return {
-      matchId: response.data.matchId,
-      user: response.data.user,
-      startedAt: new Date(),
-    };
-  } catch (error) {
-    console.error("Error finding match:", error);
-    return getMockMatchedUser();
-  }
+  const partner = session.partner;
+  return {
+    matchId: session.queueId,
+    roomUrl: session.roomUrl,
+    user: partner
+      ? {
+          id: partner.userId,
+          nickname: partner.name,
+          age: partner.age || 0,
+          gender: partner.gender || "",
+          country: partner.country || "",
+          bio: partner.bio,
+          profileImage: partner.avatar,
+          interests: partner.interests || [],
+        }
+      : {
+          id: "",
+          nickname: "Waiting",
+          age: 0,
+          gender: "",
+          country: "",
+          interests: [],
+        },
+    startedAt: new Date(),
+  };
 }
 
-/**
- * End a current match/call
- */
 export async function endMatch(matchId: string, durationSeconds: number) {
   try {
     await api.post("/api/matches/end", {
@@ -70,9 +95,6 @@ export async function endMatch(matchId: string, durationSeconds: number) {
   }
 }
 
-/**
- * Save match filters for future use
- */
 export async function saveMatchFilters(userId: string, filters: MatchFilters) {
   try {
     await api.post("/api/user/filters", {
@@ -84,14 +106,9 @@ export async function saveMatchFilters(userId: string, filters: MatchFilters) {
   }
 }
 
-/**
- * Get user's saved filters
- */
 export async function getMatchFilters(userId: string): Promise<MatchFilters> {
   try {
-    const response = await api.get<MatchFilters>(
-      `/api/user/${userId}/filters`
-    );
+    const response = await api.get<MatchFilters>(`/api/user/${userId}/filters`);
     return response.data;
   } catch (error) {
     console.error("Error fetching filters:", error);
@@ -105,9 +122,6 @@ export async function getMatchFilters(userId: string): Promise<MatchFilters> {
   }
 }
 
-/**
- * Report a user during or after a call
- */
 export async function reportUser(reportedUserId: string, reason: string) {
   try {
     await api.post("/api/reports", {
@@ -120,9 +134,6 @@ export async function reportUser(reportedUserId: string, reason: string) {
   }
 }
 
-/**
- * Block a user
- */
 export async function blockUser(blockedUserId: string) {
   try {
     await api.post("/api/user/blocks", {
@@ -131,65 +142,4 @@ export async function blockUser(blockedUserId: string) {
   } catch (error) {
     console.error("Error blocking user:", error);
   }
-}
-
-/**
- * Mock matched user for demo/fallback
- */
-function getMockMatchedUser(): MatchResult {
-  const mockUsers: UserProfile[] = [
-    {
-      id: "mock1",
-      nickname: "Alex",
-      age: 24,
-      gender: "male",
-      country: "USA",
-      bio: "Love traveling and meeting new people!",
-      interests: ["Travel", "Gaming", "Music"],
-    },
-    {
-      id: "mock2",
-      nickname: "Sofia",
-      age: 22,
-      gender: "female",
-      country: "Brazil",
-      bio: "Artist and language enthusiast",
-      interests: ["Art", "Language Exchange", "Travel"],
-    },
-    {
-      id: "mock3",
-      nickname: "Jordan",
-      age: 26,
-      gender: "non-binary",
-      country: "Canada",
-      bio: "Tech enthusiast and fitness lover",
-      interests: ["Technology", "Fitness", "Sports"],
-    },
-    {
-      id: "mock4",
-      nickname: "Maya",
-      age: 23,
-      gender: "female",
-      country: "India",
-      bio: "Dancer and foodie",
-      interests: ["Music", "Cooking", "Friends"],
-    },
-    {
-      id: "mock5",
-      nickname: "Chris",
-      age: 25,
-      gender: "male",
-      country: "UK",
-      bio: "Photographer and travel blogger",
-      interests: ["Travel", "Art", "Technology"],
-    },
-  ];
-
-  const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-
-  return {
-    matchId: `match_${Date.now()}`,
-    user: randomUser,
-    startedAt: new Date(),
-  };
 }

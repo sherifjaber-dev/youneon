@@ -10,7 +10,7 @@ import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 
 interface DiscoverScreenProps {
-  onStartVideo: () => void;
+  onStartVideo: (filters: { gender: "women" | "men" | "both"; country: string }) => void;
   neonBalance: number;
   onUpdateBalance: (newBalance: number) => void;
   currentUserId?: string;
@@ -91,7 +91,7 @@ export function DiscoverScreen({
     if (!hasEnoughNeon) { setShowInsufficientModal(true); return; }
     const newBalance = neonBalance - totalCost;
     onUpdateBalance(newBalance);
-    onStartVideo();
+    onStartVideo({ gender: selectedGender, country: selectedCountry });
   };
 
   return (

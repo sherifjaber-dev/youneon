@@ -33,14 +33,17 @@ import {
   type Announcement,
 } from "@/lib/announcements";
 
-const MOCK_MATCHES = [
-  { id: "sofia", name: "Sofia", avatar: "👩‍🦰", flag: "🇮🇹" },
-  { id: "marcus", name: "Marcus", avatar: "👨‍🎤", flag: "🇸🇪" },
-  { id: "emma", name: "Emma", avatar: "👩‍💻", flag: "🇩🇪" },
-  { id: "lucas", name: "Lucas", avatar: "👨‍🎓", flag: "🇲🇽" },
-  { id: "ava", name: "Ava", avatar: "👩‍🎨", flag: "🇫🇷" },
-  { id: "james", name: "James", avatar: "👨‍💼", flag: "🇬🇧" },
-];
+type VideoSession = {
+  mode: "random" | "direct";
+  filters?: { gender: "women" | "men" | "both"; country: string };
+  roomKey?: string;
+  partner?: {
+    userId?: string;
+    name: string;
+    avatar?: string;
+    countryFlag?: string;
+  };
+};
 
 type YouNeonUser = {
   id: string;
@@ -98,7 +101,7 @@ export function YouNeonApp() {
   const [currentUser, setCurrentUser] = useState<YouNeonUser | null>(null);
   const [activeTab, setActiveTab] = useState<"discover" | "messages" | "history">("discover");
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [isInVideoChat, setIsInVideoChat] = useState(false);
+  const [videoSession, setVideoSession] = useState<VideoSession | null>(null);
   const [neonBalance, setNeonBalance] = useState(100);
   const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -404,17 +407,24 @@ export function YouNeonApp() {
     }
   };
 
-  const handleEndVideoChat = async () => {
-    const match = MOCK_MATCHES[Math.floor(Math.random() * MOCK_MATCHES.length)];
+  const handleEndVideoChat = async (info?: { partner: { userId?: string; name: string; avatar?: string; countryFlag?: string } | null; durationSeconds: number }) => {
+    const partner = info?.partner;
     const myId = currentUser?.id || currentUser?.piUsername;
-    if (myId && !isGuestDemo) {
+    if (myId && !isGuestDemo && partner?.name && partner.name !== "Partner") {
+      const mins = Math.max(1, Math.round((info?.durationSeconds || 0) / 60));
       try {
-        await addToHistory(myId, { ...match, duration: `${Math.floor(Math.random() * 20 + 5)} min chat` });
+        await addToHistory(myId, {
+          id: partner.userId || partner.name,
+          name: partner.name,
+          avatar: partner.avatar || "🙂",
+          flag: partner.countryFlag,
+          duration: `${mins} min chat`,
+        });
       } catch (e) {
         console.warn("History save failed:", e);
       }
     }
-    setIsInVideoChat(false);
+    setVideoSession(null);
   };
 
   const lite = typeof window !== "undefined" ? readLiteSession() : null;
@@ -440,8 +450,20 @@ export function YouNeonApp() {
           otherUser={activeChat.otherUser}
           onBack={() => setActiveChat(null)}
           onCall={() => {
+            const chat = activeChat;
             setActiveChat(null);
-            setIsInVideoChat(true);
+            setVideoSession({
+              mode: "direct",
+              roomKey: chat?.conversationId,
+              partner: chat?.otherUser
+                ? {
+                    userId: chat.otherUser.id,
+                    name: chat.otherUser.name,
+                    avatar: chat.otherUser.photo || chat.otherUser.avatar,
+                    countryFlag: chat.otherUser.countryFlag,
+                  }
+                : undefined,
+            });
           }}
           neonBalance={neonBalance}
           onUpdateBalance={updateNeonBalance}
@@ -458,13 +480,25 @@ export function YouNeonApp() {
     );
   }
 
-  if (isInVideoChat) {
+  if (videoSession) {
     return (
       <VideoCallScreen
         onEnd={handleEndVideoChat}
         currentUserId={currentUserId}
         currentUserName={displayUser.fullName}
+        currentUserProfile={{
+          age: displayUser.age,
+          country: displayUser.country || displayUser.location,
+          gender: displayUser.gender,
+          avatar: displayUser.profilePicture || displayUser.avatar,
+          bio: displayUser.bio,
+          interests: displayUser.interests,
+        }}
         isPremium={isPremium}
+        matchMode={videoSession.mode}
+        filters={videoSession.filters}
+        roomKey={videoSession.roomKey}
+        partnerProfile={videoSession.partner}
       />
     );
   }
@@ -488,7 +522,7 @@ export function YouNeonApp() {
         {activeTab === "discover" && (
           <div className="h-full">
             <DiscoverScreen
-              onStartVideo={() => setIsInVideoChat(true)}
+              onStartVideo={(filters) => setVideoSession({ mode: "random", filters })}
               neonBalance={neonBalance}
               onUpdateBalance={updateNeonBalance}
               currentUserId={currentUserId}

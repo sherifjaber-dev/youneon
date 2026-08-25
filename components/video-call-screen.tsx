@@ -2,8 +2,20 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import DailyIframe, { DailyCall, DailyParticipant } from "@daily-co/daily-js";
+import {
+  enqueueOrMatch,
+  subscribeToMatch,
+  leaveMatchQueue,
+  requeueSameRoom,
+  createOrGetNamedRoom,
+  readBlockedUserIds,
+  addBlockedUserId,
+  type MatchFilters,
+  type QueueProfile,
+} from "@/lib/match-queue";
 
 interface PartnerProfile {
+  userId?: string;
   name: string;
   avatar?: string;
   age?: number;
@@ -11,15 +23,27 @@ interface PartnerProfile {
   countryFlag?: string;
   bio?: string;
   interests?: string[];
+  gender?: string;
 }
 
 interface VideoCallScreenProps {
-  onEnd: () => void;
+  onEnd: (info?: { partner: PartnerProfile | null; durationSeconds: number }) => void;
   partnerName?: string;
   partnerProfile?: PartnerProfile;
   currentUserId?: string;
   currentUserName?: string;
+  currentUserProfile?: {
+    age?: number;
+    country?: string;
+    gender?: string;
+    avatar?: string;
+    bio?: string;
+    interests?: string[];
+  };
   isPremium?: boolean;
+  matchMode?: "random" | "direct";
+  filters?: MatchFilters;
+  roomKey?: string;
 }
 
 type PermissionState = "checking" | "granted" | "denied" | "not-found" | "in-use" | "error";
@@ -37,24 +61,25 @@ const GIFTS = [
   { id: "teddy", emoji: "🧸", label: "Teddy" },
 ];
 
-const MOCK_PARTNERS: PartnerProfile[] = [
-  { name: "Sofia", age: 26, country: "Spain", countryFlag: "🇪🇸", bio: "Sun, sea, and laughter ☀️", interests: ["Dance", "Food", "Beach"] },
-  { name: "Liam", age: 30, country: "USA", countryFlag: "🇺🇸", bio: "Musician from New York 🎸", interests: ["Rock", "Film", "Coffee"] },
-  { name: "Yuki", age: 24, country: "Japan", countryFlag: "🇯🇵", bio: "Anime + ramen = happiness 🍜", interests: ["Anime", "Drawing", "Tech"] },
-  { name: "Pierre", age: 28, country: "France", countryFlag: "🇫🇷", bio: "Chef and travel lover 🥐", interests: ["Cooking", "Wine", "Travel"] },
-  { name: "Anna", age: 22, country: "Germany", countryFlag: "🇩🇪", bio: "Student and bookworm 📚", interests: ["Books", "Yoga", "Art"] },
-  { name: "Diego", age: 27, country: "Brazil", countryFlag: "🇧🇷", bio: "Football and samba 🕺", interests: ["Sport", "Music", "Party"] },
-];
-
 const SKIP_COOLDOWN_MS = 5000;
-const PREVIEW_DURATION_MS = 3000;
 
 const NSFW_PORN_THRESHOLD = 0.7;
 const NSFW_HENTAI_THRESHOLD = 0.7;
 const NSFW_SEXY_THRESHOLD = 0.85;
 const NSFW_CHECK_INTERVAL_MS = 2000;
 
-function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, currentUserName, isPremium = false }: VideoCallScreenProps) {
+function VideoCallScreen({
+  onEnd,
+  partnerName,
+  partnerProfile,
+  currentUserId,
+  currentUserName,
+  currentUserProfile,
+  isPremium = false,
+  matchMode = "random",
+  filters,
+  roomKey,
+}: VideoCallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -63,6 +88,29 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
   const previewStreamRef = useRef<MediaStream | null>(null);
   const nsfwModelRef = useRef<any>(null);
   const nsfwIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionStartedRef = useRef(Date.now());
+  const hadRemoteRef = useRef(false);
+  const partnerRef = useRef<PartnerProfile | null>(partnerProfile || (partnerName ? { name: partnerName } : null));
+  const matchOptsRef = useRef({
+    currentUserId,
+    currentUserName,
+    currentUserProfile,
+    isPremium,
+    matchMode,
+    filters,
+    roomKey,
+    partnerProfile,
+  });
+  matchOptsRef.current = {
+    currentUserId,
+    currentUserName,
+    currentUserProfile,
+    isPremium,
+    matchMode,
+    filters,
+    roomKey,
+    partnerProfile,
+  };
 
   const [permission, setPermission] = useState<PermissionState>("checking");
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -70,14 +118,15 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [camOn, setCamOn] = useState(true);
   const [remoteName, setRemoteName] = useState<string>("");
+  const [partner, setPartner] = useState<PartnerProfile | null>(
+    partnerProfile || (partnerName ? { name: partnerName } : null)
+  );
 
   const [sessionId, setSessionId] = useState(0);
-  const [partnerIndex, setPartnerIndex] = useState(0);
   const [skipRemaining, setSkipRemaining] = useState(SKIP_COOLDOWN_MS / 1000);
 
-  const currentPartner: PartnerProfile = partnerProfile
-    ? partnerProfile
-    : MOCK_PARTNERS[partnerIndex % MOCK_PARTNERS.length];
+  const currentPartner: PartnerProfile = partner || { name: "Partner" };
+  partnerRef.current = partner;
 
   const [showChatInput, setShowChatInput] = useState(false);
   const [chatInputValue, setChatInputValue] = useState("");
@@ -116,13 +165,12 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
       if (name === "NotAllowedError" || name === "PermissionDeniedError") setPermission("denied");
       else if (name === "NotFoundError" || name === "DevicesNotFoundError") setPermission("not-found");
       else if (name === "NotReadableError" || name === "TrackStartError") setPermission("in-use");
-      else { setPermission("error"); setErrorMsg(err?.message || "Ukendt fejl"); }
+      else { setPermission("error"); setErrorMsg(err?.message || "Unknown error"); }
     }
   };
 
   useEffect(() => { checkPermissions(); }, []);
 
-  // ============ Load NSFW AI model from CDN (no webpack bundling) ============
   useEffect(() => {
     let cancelled = false;
     const loadScript = (src: string) =>
@@ -246,8 +294,8 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         let triggered: string | null = null;
         for (const p of predictions) {
           if (p.className === "Porn" && p.probability > NSFW_PORN_THRESHOLD) triggered = "nudity";
-          else if (p.className === "Hentai" && p.probability > NSFW_HENTAI_THRESHOLD) triggered = "eksplicit tegning";
-          else if (p.className === "Sexy" && p.probability > NSFW_SEXY_THRESHOLD) triggered = "let seksuelt indhold";
+          else if (p.className === "Hentai" && p.probability > NSFW_HENTAI_THRESHOLD) triggered = "explicit drawing";
+          else if (p.className === "Sexy" && p.probability > NSFW_SEXY_THRESHOLD) triggered = "suggestive content";
         }
         if (triggered) {
           setNsfwReason(triggered);
@@ -290,30 +338,83 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         }
       }
     });
-    setCallStatus(remoteCount === 0 ? "waiting" : "joined");
+    if (remoteCount > 0) {
+      hadRemoteRef.current = true;
+      setCallStatus("joined");
+    } else {
+      setCallStatus("waiting");
+      if (hadRemoteRef.current && matchOptsRef.current.matchMode === "random") {
+        hadRemoteRef.current = false;
+        setPartner(null);
+        const uid = matchOptsRef.current.currentUserId || "anon";
+        requeueSameRoom(uid).catch(() => {});
+      }
+    }
   }, []);
 
   useEffect(() => {
     if (permission !== "granted") return;
     let cancelled = false;
+    let unsubMatch: (() => void) | undefined;
+    const opts = matchOptsRef.current;
+    const userId = opts.currentUserId || "anon";
+    sessionStartedRef.current = Date.now();
+    hadRemoteRef.current = false;
+
+    const stopPreview = () => {
+      if (previewStreamRef.current) {
+        previewStreamRef.current.getTracks().forEach((t) => t.stop());
+        previewStreamRef.current = null;
+      }
+    };
+
     const start = async () => {
       try {
         setCallStatus("preview");
         setSkipRemaining(SKIP_COOLDOWN_MS / 1000);
         setNsfwBlur(false);
         setBypassNsfw(false);
-        await new Promise((r) => setTimeout(r, PREVIEW_DURATION_MS));
-        if (cancelled) return;
-        if (previewStreamRef.current) {
-          previewStreamRef.current.getTracks().forEach((t) => t.stop());
-          previewStreamRef.current = null;
+        setRemoteName("");
+        if (opts.matchMode === "direct" && opts.partnerProfile) setPartner(opts.partnerProfile);
+        else if (opts.matchMode === "random") setPartner(opts.partnerProfile || null);
+
+        let url = "";
+        if (opts.matchMode === "direct") {
+          setCallStatus("joining");
+          const room = await createOrGetNamedRoom(opts.roomKey || `direct-${userId}`);
+          url = room.url;
+        } else {
+          const match = await enqueueOrMatch({
+            userId,
+            profile: {
+              userId,
+              name: opts.currentUserName || "Me",
+              avatar: opts.currentUserProfile?.avatar,
+              age: opts.currentUserProfile?.age,
+              country: opts.currentUserProfile?.country,
+              gender: opts.currentUserProfile?.gender,
+              bio: opts.currentUserProfile?.bio,
+              interests: opts.currentUserProfile?.interests,
+            } satisfies QueueProfile,
+            filters: opts.filters || { gender: "both", country: "Worldwide" },
+            blockedIds: readBlockedUserIds(userId),
+            isPremium: opts.isPremium,
+          });
+          if (cancelled) {
+            await leaveMatchQueue(userId);
+            return;
+          }
+          url = match.roomUrl;
+          if (match.partner) setPartner(match.partner);
+          unsubMatch = subscribeToMatch(userId, (update) => {
+            if (update.partner) setPartner(update.partner);
+          });
         }
-        setCallStatus("joining");
-        const res = await fetch("/api/daily", { method: "POST" });
-        if (!res.ok) throw new Error(`API returned ${res.status}`);
-        const data = await res.json();
-        if (!data?.url) throw new Error("No room URL");
+        if (!url) throw new Error("No room URL");
         if (cancelled) return;
+
+        stopPreview();
+        setCallStatus("joining");
         const callObject = DailyIframe.createCallObject({ audioSource: true, videoSource: true });
         callRef.current = callObject;
         const refresh = () => updateMediaElements(callObject);
@@ -333,19 +434,21 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
             });
           } else if (d.type === "gift" && d.emoji) {
             triggerFallingGift(String(d.emoji));
-            saveReceivedGift(d.giftId || "unknown", String(d.emoji), currentPartner.name);
+            saveReceivedGift(d.giftId || "unknown", String(d.emoji), partnerRef.current?.name || "Partner");
           }
         });
-        await callObject.join({ url: data.url, userName: currentUserName || "Mig" });
+        await callObject.join({ url, userName: opts.currentUserName || "Me" });
         refresh();
       } catch (err: any) {
         console.error("Daily start failed:", err);
-        if (!cancelled) { setPermission("error"); setErrorMsg(err?.message || "Kunne ikke starte"); }
+        if (!cancelled) { setPermission("error"); setErrorMsg(err?.message || "Could not start video"); }
       }
     };
     start();
     return () => {
       cancelled = true;
+      unsubMatch?.();
+      if (opts.matchMode === "random") leaveMatchQueue(userId).catch(() => {});
       setDisplayedMessage(null); setChatHistory([]); setFloatingGifts([]);
       setShowChatInput(false); setShowHistory(false); setShowGiftPicker(false);
       setShowProfile(false); setRemoteName(""); setNsfwBlur(false); setBypassNsfw(false);
@@ -355,12 +458,9 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         callRef.current.destroy().catch(() => {});
         callRef.current = null;
       }
-      if (previewStreamRef.current) {
-        previewStreamRef.current.getTracks().forEach((t) => t.stop());
-        previewStreamRef.current = null;
-      }
+      stopPreview();
     };
-  }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerFallingGift, saveReceivedGift, currentPartner.name, currentUserName]);
+  }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerFallingGift, saveReceivedGift]);
 
   useEffect(() => {
     if (callStatus !== "joined" && callStatus !== "waiting") {
@@ -406,13 +506,19 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
   const skipToNext = () => {
     if (skipRemaining > 0) return;
     if (callStatus !== "joined" && callStatus !== "waiting") return;
-    setPartnerIndex((i) => i + 1);
+    if (matchMode === "direct") return;
+    setPartner(null);
     setSessionId((s) => s + 1);
   };
 
   const handleEnd = async () => {
+    const userId = currentUserId || "anon";
+    if (matchMode === "random") await leaveMatchQueue(userId).catch(() => {});
     if (callRef.current) await callRef.current.leave().catch(() => {});
-    onEnd();
+    onEnd({
+      partner: partnerRef.current,
+      durationSeconds: Math.max(0, Math.floor((Date.now() - sessionStartedRef.current) / 1000)),
+    });
   };
 
   const handleSeeAnyway = () => {
@@ -423,15 +529,21 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
   };
 
   const handleBlock = () => {
+    const userId = currentUserId || "anon";
+    const blockedId = partnerRef.current?.userId;
+    if (blockedId) addBlockedUserId(userId, blockedId);
     try {
-      const userId = currentUserId || "anon";
       const key = `younn-blocked-${userId}`;
       const blocked = JSON.parse(localStorage.getItem(key) || "[]");
-      blocked.push({ name: currentPartner.name, timestamp: Date.now(), reason: nsfwReason });
+      blocked.push({ name: currentPartner.name, id: blockedId, timestamp: Date.now(), reason: nsfwReason });
       localStorage.setItem(key, JSON.stringify(blocked));
     } catch (e) { /* ignore */ }
     setNsfwBlur(false);
-    setPartnerIndex((i) => i + 1);
+    if (matchMode === "direct") {
+      handleEnd();
+      return;
+    }
+    setPartner(null);
     setSessionId((s) => s + 1);
   };
 
@@ -450,7 +562,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               <div className="text-center mb-5">
                 <div className="text-5xl mb-3">🎥🚫</div>
                 <h2 className="text-2xl font-bold mb-2">Camera blocked</h2>
-                <p className="text-white/80 text-sm">Your browser is blocking camera and microphone access.</p>
+                <p className="text-white/80 text-sm">Your browser is blocking camera and microphone access. In Pi Browser, allow camera and microphone for this site.</p>
               </div>
               <div className="bg-black/30 rounded-xl p-4 mb-5 text-sm">
                 {browser === "edge" && (
@@ -474,12 +586,12 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
                   </>
                 )}
                 {(browser === "firefox" || browser === "other") && (
-                  <p>Open site settings and allow camera + microphone.</p>
+                  <p>Open site settings and allow camera + microphone. In Pi Browser, use the lock icon or site permissions.</p>
                 )}
               </div>
               <div className="flex gap-2">
                 <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Try again</button>
-                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Cancel</button>
+                <button onClick={() => onEnd()} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Cancel</button>
               </div>
             </>
           )}
@@ -500,7 +612,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               </div>
               <div className="flex gap-2">
                 <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Try again</button>
-                <button onClick={onEnd} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Close</button>
+                <button onClick={() => onEnd()} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Close</button>
               </div>
             </>
           )}
@@ -517,24 +629,18 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
           <div className="absolute inset-0 rounded-full bg-pink-500/30 animate-ping" />
           <div className="absolute inset-0 rounded-full bg-purple-500/30 animate-pulse" />
           <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden border-4 border-white/80 shadow-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-            {currentPartner.avatar ? (
-              <img src={currentPartner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-7xl font-bold text-white">{currentPartner.name.charAt(0).toUpperCase()}</span>
-            )}
+            <span className="text-5xl">🎥</span>
           </div>
         </div>
         <div className="text-center text-white max-w-sm">
-          <p className="text-sm text-white/60 uppercase tracking-widest mb-1">Connecting you with</p>
-          <h2 className="text-4xl font-bold mb-2">{currentPartner.name}{currentPartner.age && <span className="text-white/80">, {currentPartner.age}</span>}</h2>
-          {currentPartner.country && <p className="text-lg text-white/80 mb-4">{currentPartner.countryFlag} {currentPartner.country}</p>}
-          {currentPartner.bio && <p className="text-sm text-white/70 italic mb-6">"{currentPartner.bio}"</p>}
+          <p className="text-sm text-white/60 uppercase tracking-widest mb-1">Random video chat</p>
+          <h2 className="text-3xl font-bold mb-4">Finding a match…</h2>
           <div className="inline-flex items-center gap-2 text-white/80">
             <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-sm">Preparing video call…</span>
+            <span className="text-sm">Looking for someone in the same room…</span>
           </div>
         </div>
-        <button onClick={onEnd} className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 text-sm font-medium border border-white/20">Cancel</button>
+        <button onClick={() => onEnd()} className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 text-sm font-medium border border-white/20">Cancel</button>
       </div>
     );
   }
@@ -671,7 +777,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         </div>
       )}
 
-      {showProfile && (
+      {showProfile && partner && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowProfile(false)}>
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 max-w-sm w-full border border-white/10 shadow-2xl text-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-center mb-4">
@@ -715,8 +821,8 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
                 Priority matching
               </p>
             )}
-            <p className="text-xl font-semibold mb-2">Waiting for {currentPartner.name}…</p>
-            <p className="text-sm text-white/70">{isPremium ? "You are in the priority queue." : "Connecting…"}</p>
+            <p className="text-xl font-semibold mb-2">Waiting for match…</p>
+            <p className="text-sm text-white/70">{isPremium ? "You are in the priority queue." : "Stay on this screen — the next person joins the same room."}</p>
           </div>
         </div>
       )}
@@ -724,7 +830,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
         <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none z-10">
           <div className="text-center">
             <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white mb-4" />
-            <p className="text-lg">Starter video…</p>
+            <p className="text-lg">Starting video…</p>
           </div>
         </div>
       )}
@@ -732,14 +838,14 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
       {callStatus === "joined" && nsfwModelRef.current && !nsfwBlur && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-1.5 border border-white/10">
           <span className="text-sm">🛡️</span>
-          <span className="text-[11px] text-white/80 font-medium">AI-beskyttelse aktiv</span>
+          <span className="text-[11px] text-white/80 font-medium">AI protection on</span>
           <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
         </div>
       )}
 
-      {callStatus === "joined" && remoteName && !showProfile && !displayedMessage && (
+      {callStatus === "joined" && (remoteName || partner?.name) && !showProfile && !displayedMessage && (
         <div className="absolute top-16 right-4 bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium z-10">
-          {remoteName}
+          {remoteName || partner?.name}
         </div>
       )}
 
@@ -766,7 +872,7 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
               }}
               className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-xl sm:text-2xl text-white relative"
               data-testid="chat-btn"
-              title="Skriv besked"
+              title="Send a message"
             >
               💬
               {chatHistory.length > 0 && !displayedMessage && (
@@ -786,40 +892,42 @@ function VideoCallScreen({ onEnd, partnerName, partnerProfile, currentUserId, cu
             </button>
 
             <button
-              onClick={() => setShowProfile(true)}
+              onClick={() => partner && setShowProfile(true)}
               className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/30 hover:border-pink-400 bg-white/10"
               data-testid="profile-btn"
-              title={`Se ${currentPartner.name}'s profil`}
+              title={partner ? `View ${currentPartner.name}'s profile` : "Waiting for match"}
             >
-              {currentPartner.avatar ? (
-                <img src={currentPartner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
+              {partner?.avatar ? (
+                <img src={partner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg">
-                  {currentPartner.name.charAt(0).toUpperCase()}
+                  {partner ? currentPartner.name.charAt(0).toUpperCase() : "?"}
                 </div>
               )}
             </button>
 
             <div className="h-8 w-px bg-white/15" />
 
-            <button
-              onClick={skipToNext}
-              disabled={skipRemaining > 0}
-              className={`dock-btn h-12 sm:h-14 rounded-full flex items-center justify-center gap-1.5 font-bold px-4 sm:px-5 ${
-                skipRemaining > 0
-                  ? "bg-white/10 text-white/40 cursor-not-allowed"
-                  : "bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-orange-500/50 hover:shadow-lg"
-              }`}
-              data-testid="skip-btn"
-              title={skipRemaining > 0 ? `Skip in ${skipRemaining}s` : "Skip to next"}
-            >
-              <span className="text-lg sm:text-xl">⏭️</span>
-              {skipRemaining > 0 ? (
-                <span className="text-sm font-bold tabular-nums">{skipRemaining}s</span>
-              ) : (
-                <span className="text-sm hidden sm:inline">Skip</span>
-              )}
-            </button>
+            {matchMode !== "direct" && (
+              <button
+                onClick={skipToNext}
+                disabled={skipRemaining > 0}
+                className={`dock-btn h-12 sm:h-14 rounded-full flex items-center justify-center gap-1.5 font-bold px-4 sm:px-5 ${
+                  skipRemaining > 0
+                    ? "bg-white/10 text-white/40 cursor-not-allowed"
+                    : "bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-orange-500/50 hover:shadow-lg"
+                }`}
+                data-testid="skip-btn"
+                title={skipRemaining > 0 ? `Skip in ${skipRemaining}s` : "Skip to next"}
+              >
+                <span className="text-lg sm:text-xl">⏭️</span>
+                {skipRemaining > 0 ? (
+                  <span className="text-sm font-bold tabular-nums">{skipRemaining}s</span>
+                ) : (
+                  <span className="text-sm hidden sm:inline">Skip</span>
+                )}
+              </button>
+            )}
 
             <button
               onClick={handleEnd}
