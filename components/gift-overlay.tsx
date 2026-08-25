@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { GiftSoundId } from "@/lib/gift-sounds";
 
 export type GiftId = GiftSoundId;
@@ -47,11 +47,22 @@ export function resolveGiftId(giftId?: unknown, emoji?: unknown): GiftId | null 
   return fromEmoji || null;
 }
 
-function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: number; variant?: "pick" | "burst" }) {
-  const uid = `yn-ga-${id}-${variant}-${size}`;
+function GiftArt({
+  id,
+  size = 56,
+  variant = "pick",
+  instance = "0",
+}: {
+  id: GiftId;
+  size?: number;
+  variant?: "pick" | "burst" | "rain";
+  instance?: string;
+}) {
+  const uid = `yn-ga-${id}-${variant}-${size}-${instance}`;
   const g = `${uid}-g`;
   const glow = `${uid}-glow`;
   const accent = ACCENT[id];
+  const withGlow = variant !== "rain";
 
   return (
     <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true" className="yn-gift-art">
@@ -66,17 +77,19 @@ function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: numbe
           <stop offset="0.28" stopColor={accent.a} stopOpacity="0.95" />
           <stop offset="1" stopColor={accent.c} />
         </radialGradient>
-        <filter id={glow} x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="1.15" result="b" />
-          <feMerge>
-            <feMergeNode in="b" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
+        {withGlow && (
+          <filter id={glow} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="1.15" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        )}
       </defs>
 
       {id === "rose" && (
-        <g filter={`url(#${glow})`} fill="none" stroke={`url(#${g})`} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M32 58c0-8 .4-16 .6-22" />
           <path d="M32 44c-7-1.5-11-7-6.5-9.5 2.2 2.4 5 5.2 6.5 9.5z" fill={`url(#${g}-fill)`} stroke="none" opacity="0.85" />
           <path d="M32 44c7-1.5 11-7 6.5-9.5-2.2 2.4-5 5.2-6.5 9.5z" fill={`url(#${g}-fill)`} stroke="none" opacity="0.85" />
@@ -89,7 +102,7 @@ function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: numbe
       )}
 
       {id === "heart" && (
-        <g filter={`url(#${glow})`}>
+        <g filter={withGlow ? `url(#${glow})` : undefined}>
           <path
             d="M32 54C32 54 8.5 37.2 8.5 22.4 8.5 13.6 16.2 9 24.6 12.8 28.4 14.6 32 20.2 32 20.2s3.6-5.6 7.4-7.4C47.8 9 55.5 13.6 55.5 22.4 55.5 37.2 32 54 32 54z"
             fill={`url(#${g}-fill)`}
@@ -101,7 +114,7 @@ function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: numbe
       )}
 
       {id === "bouquet" && (
-        <g filter={`url(#${glow})`}>
+        <g filter={withGlow ? `url(#${glow})` : undefined}>
           <path d="M32 58c-1-8 0-16 0-22" fill="none" stroke={`url(#${g})`} strokeWidth="1.6" strokeLinecap="round" />
           <path d="M32 42c-8 2-12 8-10 12 4-1 8-6 10-12z" fill={`url(#${g})`} opacity="0.35" />
           <path d="M32 42c8 2 12 8 10 12-4-1-8-6-10-12z" fill={`url(#${g})`} opacity="0.35" />
@@ -115,7 +128,7 @@ function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: numbe
       )}
 
       {id === "diamond" && (
-        <g filter={`url(#${glow})`} stroke={`url(#${g})`} strokeWidth="1.35" strokeLinejoin="round">
+        <g filter={withGlow ? `url(#${glow})` : undefined} stroke={`url(#${g})`} strokeWidth="1.35" strokeLinejoin="round">
           <polygon points="32,6 54,24 32,58 10,24" fill={`url(#${g}-fill)`} />
           <polygon points="10,24 22,10 32,6 42,10 54,24 32,24" fill="#fff" fillOpacity="0.22" />
           <polyline points="10,24 32,24 54,24" fill="none" />
@@ -126,7 +139,7 @@ function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: numbe
       )}
 
       {id === "gift" && (
-        <g filter={`url(#${glow})`}>
+        <g filter={withGlow ? `url(#${glow})` : undefined}>
           <rect x="12" y="28" width="40" height="26" rx="4" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.3" />
           <rect x="10" y="20" width="44" height="10" rx="3" fill={`url(#${g})`} opacity="0.95" />
           <rect x="29" y="20" width="6" height="34" fill="#fff" fillOpacity="0.28" />
@@ -136,7 +149,7 @@ function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: numbe
       )}
 
       {id === "teddy" && (
-        <g filter={`url(#${glow})`} fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.35">
+        <g filter={withGlow ? `url(#${glow})` : undefined} fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.35">
           <circle cx="18" cy="18" r="8" />
           <circle cx="46" cy="18" r="8" />
           <circle cx="18" cy="18" r="4.2" fill="#fff" fillOpacity="0.22" stroke="none" />
@@ -153,22 +166,23 @@ function GiftArt({ id, size = 56, variant = "pick" }: { id: GiftId; size?: numbe
   );
 }
 
-function burstParticles(seed: string, giftId: GiftId) {
+function rainParticles(seed: string, count: number) {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
-  const accent = ACCENT[giftId];
-  const colors = [accent.a, accent.b, accent.c, "#ffffff"];
-  return Array.from({ length: 20 }, (_, i) => {
+  return Array.from({ length: count }, (_, i) => {
     h = (Math.imul(1664525, h) + 1013904223) | 0;
-    const angle = (i / 20) * Math.PI * 2 + (h % 100) / 220;
-    const dist = 88 + (Math.abs(h) % 70);
+    const lane = (i + 0.5) / count;
+    const jitter = ((h % 1000) / 1000 - 0.5) * 5.5;
     return {
       i,
-      dx: Math.cos(angle) * dist,
-      dy: Math.sin(angle) * dist,
-      delay: (i % 7) * 0.05,
-      size: 3 + (i % 4),
-      color: colors[i % colors.length],
+      x: 5 + lane * 90 + jitter,
+      delay: i * 0.052,
+      duration: 2.38 + (Math.abs(h) % 22) / 100,
+      drift: ((h % 17) - 8) * 0.28,
+      fall: 78 + (Math.abs(h >> 8) % 10),
+      size: 22 + (i % 3) * 4,
+      rot: (h % 13) - 6,
+      rotEnd: ((h >> 4) % 15) - 7,
     };
   });
 }
@@ -183,40 +197,54 @@ export function GiftBurstOverlay({
   onDone: () => void;
 }) {
   const gift = CALL_GIFTS.find((g) => g.id === giftId) || CALL_GIFTS[0];
-  const particles = useMemo(() => burstParticles(burstKey, giftId), [burstKey, giftId]);
+  const [reduceMotion] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+  const particles = useMemo(
+    () => rainParticles(burstKey, reduceMotion ? 0 : 18),
+    [burstKey, reduceMotion]
+  );
   const accent = ACCENT[giftId];
 
   useEffect(() => {
-    const t = window.setTimeout(onDone, 2300);
+    const t = window.setTimeout(onDone, reduceMotion ? 1800 : 3400);
     return () => window.clearTimeout(t);
-  }, [burstKey, onDone]);
+  }, [burstKey, onDone, reduceMotion]);
 
   return (
     <div className="yn-gift-burst" key={burstKey} aria-live="polite" aria-label={`${gift.label} sent`}>
       <div
         className="yn-gift-bloom"
         style={{
-          background: `radial-gradient(circle, ${accent.a}66 0%, ${accent.b}33 32%, transparent 68%)`,
+          background: `radial-gradient(circle, ${accent.a}66 0%, ${accent.b}33 34%, transparent 70%)`,
         }}
       />
-      {particles.map((p) => (
-        <span
-          key={p.i}
-          className="yn-gift-particle"
-          style={{
-            width: p.size,
-            height: p.size,
-            background: p.color,
-            boxShadow: `0 0 10px ${p.color}`,
-            animationDelay: `${p.delay}s`,
-            ["--dx" as string]: `${p.dx}px`,
-            ["--dy" as string]: `${p.dy}px`,
-          }}
-        />
-      ))}
+      {particles.length > 0 && (
+        <div className="yn-gift-rain" aria-hidden="true">
+          {particles.map((p) => (
+            <span
+              key={p.i}
+              className="yn-gift-rain-item"
+              style={{
+                width: p.size,
+                height: p.size,
+                animationDelay: `${p.delay}s`,
+                animationDuration: `${p.duration}s`,
+                ["--x" as string]: `${p.x}vw`,
+                ["--drift" as string]: `${p.drift}vw`,
+                ["--fall" as string]: `${p.fall}vh`,
+                ["--rot" as string]: `${p.rot}deg`,
+                ["--rot-end" as string]: `${p.rotEnd}deg`,
+              }}
+            >
+              <GiftArt id={giftId} size={p.size} variant="rain" instance={String(p.i)} />
+            </span>
+          ))}
+        </div>
+      )}
       <div className="yn-gift-fly">
         <div className="yn-gift-fly-core">
-          <GiftArt id={giftId} size={152} variant="burst" />
+          <GiftArt id={giftId} size={236} variant="burst" />
         </div>
         <p className="yn-gift-fly-label">{gift.label}</p>
       </div>
