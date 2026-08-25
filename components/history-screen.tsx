@@ -1,14 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, MessageCircle, SlidersHorizontal, Video } from "lucide-react";
+import { Check, MessageCircle, PencilLine, SlidersHorizontal, Sparkles, Video } from "lucide-react";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
-import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
+import { NeonAvatar } from "@/components/neon-avatar";
 import { getUserProfile, subscribeToHistory, type UserProfile } from "@/lib/firestore-service";
 import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
-import { CountryLabel } from "@/components/country-flag";
+import { CountryFlag } from "@/components/country-flag";
 import { subscribeToProfileViews, type ProfileView } from "@/lib/profile-views";
 import {
   displayDuration,
@@ -37,6 +37,8 @@ interface HistoryScreenProps {
 type HistoryTab = "recent" | "viewed";
 type StatusFilter = "all" | "online";
 type SortFilter = "recent" | "long";
+type ActivityKind = "perfect" | "updated" | "chat";
+type ActionTone = "outline" | "fill";
 
 type HistoryRow = {
   id: string;
@@ -115,6 +117,26 @@ function filterLabel(filter: AppliedFilter): string {
   return parts.length ? parts.join(" · ") : "All";
 }
 
+function formatTimeAgo(ts: unknown): string {
+  const ms = typeof ts === "number" && Number.isFinite(ts) ? ts : toMillis(ts);
+  if (!ms) return "Just now";
+  const diff = Math.max(0, Date.now() - ms);
+  if (diff < 45_000) return "Just now";
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 60) return `${Math.max(1, minutes)}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatHistoryWhen(ts);
+}
+
+function chatDescription(row: HistoryRow): string {
+  const dur = displayDuration(row);
+  if (dur && dur !== "—") return `Video chat · ${dur}`;
+  return "Video chat";
+}
+
 function GenderArt({ kind }: { kind: "all" | "female" | "male" }) {
   if (kind === "all") {
     return (
@@ -143,54 +165,18 @@ function GenderArt({ kind }: { kind: "all" | "female" | "male" }) {
   );
 }
 
-function SquarePhoto({
-  src,
-  name,
-  size,
-  showPhoto,
-}: {
-  src?: string;
-  name: string;
-  size: number;
-  showPhoto: boolean;
-}) {
-  const photo = showPhoto && isPhotoSrc(src);
-  return (
-    <div
-      className="relative shrink-0 overflow-hidden rounded-[18px] bg-yn-nav"
-      style={{ width: size, height: size }}
-    >
-      {photo ? (
-        <img src={src} alt="" className="h-full w-full object-cover" />
-      ) : (
-        <div
-          className="flex h-full w-full items-center justify-center"
-          style={{
-            background:
-              "linear-gradient(160deg, #e879f9 0%, #a855f7 40%, #ec4899 78%, #6d28d9 100%)",
-          }}
-        >
-          <span className="text-[22px] font-bold text-white drop-shadow-[0_2px_10px_rgba(88,28,135,0.55)]">
-            {neonInitial(name)}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function FollowMessageActions({
   following,
   busy,
   onFollow,
   onMessage,
-  followWidth = "wide",
+  tone = "fill",
 }: {
   following: boolean;
   busy?: boolean;
   onFollow: () => void;
   onMessage: () => void;
-  followWidth?: "wide" | "compact";
+  tone?: ActionTone;
 }) {
   return (
     <div className="flex shrink-0 items-center gap-1.5">
@@ -198,13 +184,7 @@ function FollowMessageActions({
         type="button"
         disabled={busy}
         onClick={onFollow}
-        className={`flex h-11 items-center justify-center gap-1 rounded-full px-3.5 text-[13px] font-semibold transition active:scale-[0.98] disabled:opacity-55 ${
-          followWidth === "wide" ? "min-w-[92px]" : "min-w-[84px]"
-        } ${
-          following
-            ? "border border-black/10 bg-yn-bg text-yn-muted"
-            : "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(192,38,211,0.22)]"
-        }`}
+        className={`yn-history-follow ${tone === "outline" ? "is-outline" : ""} ${following ? "is-on" : ""}`}
       >
         {following ? <Check size={14} strokeWidth={2.4} /> : null}
         {following ? "Following" : "Follow"}
@@ -212,11 +192,111 @@ function FollowMessageActions({
       <button
         type="button"
         onClick={onMessage}
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-black/8 bg-yn-card text-yn-text shadow-sm transition active:scale-[0.96]"
+        className={`yn-history-msg ${tone === "outline" ? "is-outline" : ""}`}
         aria-label="Message"
       >
         <MessageCircle size={16} />
       </button>
+    </div>
+  );
+}
+
+function ActivityKindLabel({ kind }: { kind: ActivityKind }) {
+  if (kind === "perfect") {
+    return (
+      <span className="yn-history-kind is-perfect">
+        <Sparkles size={12} strokeWidth={2.2} />
+        Perfect match
+      </span>
+    );
+  }
+  if (kind === "updated") {
+    return (
+      <span className="yn-history-kind is-updated">
+        <PencilLine size={12} strokeWidth={2.2} />
+        Profile updated
+      </span>
+    );
+  }
+  return (
+    <span className="yn-history-kind is-chat">
+      <Video size={12} strokeWidth={2.2} />
+      Video chat
+    </span>
+  );
+}
+
+function HistoryPersonCard({
+  name,
+  photo,
+  country,
+  showPhoto,
+  online,
+  timeLabel,
+  kind,
+  description,
+  viewed,
+  following,
+  busy,
+  tone,
+  onOpenProfile,
+  onFollow,
+  onMessage,
+}: {
+  name: string;
+  photo?: string;
+  country?: string;
+  showPhoto: boolean;
+  online?: boolean;
+  timeLabel: string;
+  kind?: ActivityKind;
+  description: string;
+  viewed?: boolean;
+  following: boolean;
+  busy?: boolean;
+  tone: ActionTone;
+  onOpenProfile: () => void;
+  onFollow: () => void;
+  onMessage: () => void;
+}) {
+  return (
+    <div className="yn-history-row">
+      <button
+        type="button"
+        className="shrink-0"
+        onClick={onOpenProfile}
+        aria-label={`View ${name}'s profile`}
+      >
+        <NeonAvatar
+          className="yn-history-ring"
+          src={photo}
+          name={name}
+          size={56}
+          showPhoto={showPhoto}
+          online={online}
+        />
+      </button>
+      <button type="button" className="yn-history-body" onClick={onOpenProfile}>
+        <span className="yn-history-name">
+          <span className="truncate">{name}</span>
+          {country ? (
+            <CountryFlag country={country} size={14} className="shadow-none ring-1 ring-white/15" />
+          ) : null}
+        </span>
+        {kind ? <ActivityKindLabel kind={kind} /> : null}
+        {viewed ? <span className="yn-history-viewed">Viewed your profile</span> : null}
+        {description ? <span className="yn-history-desc">{description}</span> : null}
+      </button>
+      <div className="yn-history-aside">
+        <span className="yn-history-time">{timeLabel}</span>
+        <FollowMessageActions
+          following={following}
+          busy={busy}
+          tone={tone}
+          onFollow={onFollow}
+          onMessage={onMessage}
+        />
+      </div>
     </div>
   );
 }
@@ -349,6 +429,36 @@ export function HistoryScreen({
     return rows;
   }, [enriched, applied, online, updatedFocus, blockedIds]);
 
+  const perfectRowIds = useMemo(() => new Set(perfectMatches.map((u) => u.id)), [perfectMatches]);
+  const perfectMatchIds = useMemo(
+    () => new Set(perfectMatches.map((u) => u.matchId)),
+    [perfectMatches]
+  );
+  const listWithoutCarouselDupes = useMemo(
+    () => filteredList.filter((u) => !perfectRowIds.has(u.id)),
+    [filteredList, perfectRowIds]
+  );
+  const visibleMatchIds = useMemo(() => {
+    const ids = new Set(perfectMatchIds);
+    listWithoutCarouselDupes.forEach((u) => ids.add(u.matchId));
+    return ids;
+  }, [perfectMatchIds, listWithoutCarouselDupes]);
+  const extraUpdated = useMemo(
+    () => profileUpdated.filter((person) => !visibleMatchIds.has(person.id)),
+    [profileUpdated, visibleMatchIds]
+  );
+  const updatedRowIds = useMemo(() => {
+    const seen = new Set<string>();
+    const ids = new Set<string>();
+    listWithoutCarouselDupes.forEach((u) => {
+      if (seen.has(u.matchId)) return;
+      if (!profileUpdated.some((person) => person.id === u.matchId)) return;
+      seen.add(u.matchId);
+      ids.add(u.id);
+    });
+    return ids;
+  }, [listWithoutCarouselDupes, profileUpdated]);
+
   const openChat = useCallback(
     (user: { id: string; name: string; photo?: string; country?: string; countryFlag?: string }) => {
       if (!user.id) return;
@@ -384,366 +494,241 @@ export function HistoryScreen({
   };
 
   return (
-    <div className="min-h-full bg-yn-bg pb-8 text-yn-text">
-      <div className="px-4 pt-3">
-        <h1 className="text-[22px] font-bold tracking-tight">History</h1>
+    <div className="yn-history">
+      <div className="yn-history-head">
+        <h1>History</h1>
       </div>
 
-      <div className="sticky top-0 z-10 mt-2 bg-yn-bg/92 backdrop-blur-md">
-        <div className="flex px-2">
-          {(
-            [
-              { id: "recent", label: "Recent activity" },
-              { id: "viewed", label: "Viewed me" },
-            ] as const
-          ).map((item) => {
-            const active = tab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`relative flex h-12 flex-1 items-center justify-center px-2 text-[15px] font-semibold transition ${
-                  active ? "text-yn-text" : "text-yn-muted"
-                }`}
-                data-testid={`history-tab-${item.id}`}
-              >
-                {item.label}
-                {active ? (
-                  <span className="absolute inset-x-6 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-fuchsia-500 to-pink-500" />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-        <div className="h-px bg-black/8" />
+      <div className="yn-history-tabs">
+        {(
+          [
+            { id: "recent", label: "Recent activity" },
+            { id: "viewed", label: "Viewed me" },
+          ] as const
+        ).map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTab(item.id)}
+              className={`yn-history-tab ${active ? "is-on" : ""}`}
+              data-testid={`history-tab-${item.id}`}
+            >
+              {item.label}
+              {active ? <span className="yn-history-tab-line" /> : null}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "recent" ? (
         <div>
           {history.length === 0 ? (
-            <div className="px-6 py-16 text-center">
-              <p className="text-[16px] font-semibold text-yn-text">No video chats yet</p>
-              <p className="mt-1.5 text-sm text-yn-muted">Start a random chat from Video Chat</p>
+            <div className="yn-history-empty">
+              <p className="yn-history-empty-title">No video chats yet</p>
+              <p className="yn-history-empty-sub">Start a random chat from Video Chat</p>
             </div>
           ) : (
             <>
-              {perfectMatches.length > 0 ? (
-                <section className="pt-4">
-                  <h2 className="px-4 text-[16px] font-bold tracking-tight">A perfect match for you!</h2>
-                  <div className="mt-3 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {perfectMatches.map((u) => {
-                      const following = followingIds.has(u.matchId);
-                      const photo = hasOwnPhoto && isPhotoSrc(u.photo);
-                      return (
-                        <article
-                          key={`perfect-${u.id}`}
-                          className="w-[210px] shrink-0 overflow-hidden rounded-[22px] border border-black/6 bg-yn-card shadow-[0_8px_24px_rgba(88,28,135,0.08)]"
-                        >
-                          <button
-                            type="button"
-                            className="relative aspect-[3/4] w-full overflow-hidden"
-                            onClick={() => setPreviewUserId(u.matchId)}
-                            aria-label={`View ${u.name}'s profile`}
-                          >
-                            {photo ? (
-                              <img src={u.photo} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <div
-                                className="flex h-full w-full items-center justify-center"
-                                style={{
-                                  background:
-                                    "linear-gradient(160deg, #e879f9 0%, #a855f7 40%, #ec4899 78%, #6d28d9 100%)",
-                                }}
-                              >
-                                <span className="text-[42px] font-bold text-white">
-                                  {neonInitial(u.name)}
-                                </span>
-                              </div>
-                            )}
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-3 pb-3 pt-10">
-                              <p className="truncate text-[15px] font-bold text-white">
-                                {u.name}
-                              </p>
-                              {u.country || u.countryFlag ? (
-                                <CountryLabel
-                                  country={u.country || u.countryFlag}
-                                  size={16}
-                                  className="mt-0.5 text-[11px] font-medium text-white/90"
-                                />
-                              ) : null}
-                              <p className="mt-0.5 text-[11px] text-white/75">
-                                {formatHistoryWhen(u.timestamp)}
-                              </p>
-                              <p className="mt-1 flex items-center gap-1 text-[12px] text-white/85">
-                                <Video size={13} />
-                                {displayDuration(u)}
-                              </p>
-                            </div>
-                          </button>
-                          <div className="flex items-center gap-1.5 px-2.5 py-2.5">
-                            <button
-                              type="button"
-                              disabled={busyId === u.matchId || !me.id}
-                              onClick={() =>
-                                followPerson(u.matchId, u.name, u.photo, u.country || u.countryFlag)
-                              }
-                              className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full text-[12px] font-semibold transition active:scale-[0.98] disabled:opacity-55 ${
-                                following
-                                  ? "border border-black/10 bg-yn-bg text-yn-muted"
-                                  : "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white"
-                              }`}
-                            >
-                              {following ? <Check size={13} /> : <span className="text-[15px]">+</span>}
-                              {following ? "Following" : "Follow"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openChat({
-                                  id: u.matchId,
-                                  name: u.name,
-                                  photo: u.photo,
-                                  country: u.country,
-                                  countryFlag: u.countryFlag,
-                                })
-                              }
-                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-yn-bg text-yn-text"
-                              aria-label="Message"
-                            >
-                              <MessageCircle size={16} />
-                            </button>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </section>
-              ) : null}
-
-              {profileUpdated.length > 0 ? (
-                <section className="mt-5">
-                  <h2 className="px-4 text-[16px] font-bold tracking-tight">Profile Updated</h2>
-                  <div className="mt-3 flex gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="yn-history-toolbar">
+                <div className="flex min-w-0 items-center gap-2">
+                  {profileUpdated.length > 0 ? (
                     <button
                       type="button"
                       onClick={() => setUpdatedFocus("all")}
-                      className="flex w-[58px] shrink-0 flex-col items-center gap-1.5"
+                      className={`yn-history-all ${updatedFocus === "all" ? "is-on" : ""}`}
                     >
-                      <span
-                        className={`flex h-[54px] w-[54px] items-center justify-center rounded-full text-[17px] font-bold ${
-                          updatedFocus === "all"
-                            ? "bg-gradient-to-br from-fuchsia-500 to-pink-500 text-white shadow-[0_4px_16px_rgba(192,38,211,0.22)]"
-                            : "bg-yn-card text-yn-muted shadow-sm"
-                        }`}
-                      >
-                        {profileUpdated.length}
-                      </span>
-                      <span className="text-[12px] font-semibold text-yn-muted">All</span>
+                      All · {profileUpdated.length}
                     </button>
-                    {profileUpdated.map((person) => (
-                      <button
-                        key={person.id}
-                        type="button"
-                        onClick={() => setPreviewUserId(person.id)}
-                        className="flex w-[58px] shrink-0 flex-col items-center gap-1.5"
-                        aria-label={`View ${person.name}'s profile`}
-                      >
-                        <span className="relative">
-                          <NeonAvatar
-                            src={person.photo}
-                            name={person.name}
-                            size={54}
-                            showPhoto={hasOwnPhoto}
-                          />
-                          {updatedFocus === person.id ? (
-                            <span className="absolute -inset-0.5 rounded-full ring-2 ring-pink-400" />
-                          ) : (
-                            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 shadow-[0_0_0_2px_var(--yn-bg)]" />
-                          )}
-                        </span>
-                        <span className="w-full truncate text-center text-[12px] font-medium text-yn-muted">
-                          {person.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              <div className="mt-5 flex h-12 items-center justify-between px-4">
-                <p className="text-[15px] font-semibold text-yn-muted">{filterLabel(applied)}</p>
+                  ) : null}
+                  <p className="yn-history-filter-label">{filterLabel(applied)}</p>
+                </div>
                 <button
                   type="button"
                   onClick={openFilter}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-yn-muted transition active:scale-95"
+                  className="yn-history-filter-btn"
                   aria-label="Filter recent activity"
                   data-testid="history-filter-btn"
                 >
-                  <SlidersHorizontal size={20} />
+                  <SlidersHorizontal size={18} />
                 </button>
               </div>
 
-              <div className="space-y-1 px-3">
-                {filteredList.length === 0 ? (
-                  <p className="py-10 text-center text-sm text-yn-muted">No chats match this filter</p>
-                ) : (
-                  filteredList.map((u) => {
-                    const following = followingIds.has(u.matchId);
-                    return (
-                      <div
-                        key={u.id}
-                        className="flex items-center gap-3 rounded-2xl px-1 py-2.5"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setPreviewUserId(u.matchId)}
-                          aria-label={`View ${u.name}'s profile`}
-                          className="shrink-0"
-                        >
-                          <SquarePhoto
-                            src={u.photo}
-                            name={u.name}
-                            size={82}
-                            showPhoto={hasOwnPhoto}
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          className="min-w-0 flex-1 text-left"
-                          onClick={() => setPreviewUserId(u.matchId)}
-                        >
-                          <p className="truncate text-[16px] font-bold text-yn-text">
-                            {u.name}
-                          </p>
-                          {u.country || u.countryFlag ? (
-                            <CountryLabel
-                              country={u.country || u.countryFlag}
-                              size={16}
-                              className="mt-0.5 text-[12px] text-yn-muted"
-                            />
-                          ) : null}
-                          <p className="mt-0.5 text-[12px] text-yn-muted">
-                            {formatHistoryWhen(u.timestamp)}
-                          </p>
-                          <p className="mt-1 flex items-center gap-1 text-[12px] text-yn-muted">
-                            <Video size={13} />
-                            {displayDuration(u)}
-                          </p>
-                        </button>
-                        <FollowMessageActions
-                          following={following}
-                          busy={busyId === u.matchId || !me.id}
-                          followWidth="compact"
-                          onFollow={() =>
-                            followPerson(u.matchId, u.name, u.photo, u.country || u.countryFlag)
-                          }
-                          onMessage={() =>
-                            openChat({
-                              id: u.matchId,
-                              name: u.name,
-                              photo: u.photo,
-                              country: u.country,
-                              countryFlag: u.countryFlag,
-                            })
-                          }
-                        />
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+              {perfectMatches.map((u) => {
+                const dur = displayDuration(u);
+                const description =
+                  dur && dur !== "—"
+                    ? `You and ${u.name} matched · ${dur}`
+                    : `You and ${u.name} matched`;
+                return (
+                  <HistoryPersonCard
+                    key={`perfect-${u.id}`}
+                    name={u.name}
+                    photo={u.photo}
+                    country={u.country || u.countryFlag}
+                    showPhoto={hasOwnPhoto}
+                    online={online[u.matchId]}
+                    timeLabel={formatTimeAgo(u.timestamp)}
+                    kind="perfect"
+                    description={description}
+                    following={followingIds.has(u.matchId)}
+                    busy={busyId === u.matchId || !me.id}
+                    tone="outline"
+                    onOpenProfile={() => setPreviewUserId(u.matchId)}
+                    onFollow={() =>
+                      followPerson(u.matchId, u.name, u.photo, u.country || u.countryFlag)
+                    }
+                    onMessage={() =>
+                      openChat({
+                        id: u.matchId,
+                        name: u.name,
+                        photo: u.photo,
+                        country: u.country,
+                        countryFlag: u.countryFlag,
+                      })
+                    }
+                  />
+                );
+              })}
+
+              {extraUpdated.map((person) => {
+                const live = liveById[person.id];
+                const row = enriched.find((r) => r.matchId === person.id);
+                const country = live?.country || row?.country || row?.countryFlag;
+                return (
+                  <HistoryPersonCard
+                    key={`updated-${person.id}`}
+                    name={person.name}
+                    photo={person.photo}
+                    country={country}
+                    showPhoto={hasOwnPhoto}
+                    online={online[person.id]}
+                    timeLabel={formatTimeAgo(live?.lastProfileUpdateMs)}
+                    kind="updated"
+                    description="Recently updated their profile"
+                    following={followingIds.has(person.id)}
+                    busy={busyId === person.id || !me.id}
+                    tone="outline"
+                    onOpenProfile={() => setPreviewUserId(person.id)}
+                    onFollow={() => followPerson(person.id, person.name, person.photo, country)}
+                    onMessage={() =>
+                      openChat({
+                        id: person.id,
+                        name: person.name,
+                        photo: person.photo,
+                        country,
+                      })
+                    }
+                  />
+                );
+              })}
+
+              {listWithoutCarouselDupes.length === 0 &&
+              perfectMatches.length === 0 &&
+              extraUpdated.length === 0 ? (
+                <p className="yn-history-empty-sub py-10 text-center">No chats match this filter</p>
+              ) : (
+                listWithoutCarouselDupes.map((u) => {
+                  const updated = updatedRowIds.has(u.id);
+                  return (
+                    <HistoryPersonCard
+                      key={u.id}
+                      name={u.name}
+                      photo={u.photo}
+                      country={u.country || u.countryFlag}
+                      showPhoto={hasOwnPhoto}
+                      online={online[u.matchId]}
+                      timeLabel={formatTimeAgo(u.timestamp)}
+                      kind={updated ? "updated" : "chat"}
+                      description={
+                        updated ? "Recently updated their profile" : chatDescription(u)
+                      }
+                      following={followingIds.has(u.matchId)}
+                      busy={busyId === u.matchId || !me.id}
+                      tone="outline"
+                      onOpenProfile={() => setPreviewUserId(u.matchId)}
+                      onFollow={() =>
+                        followPerson(u.matchId, u.name, u.photo, u.country || u.countryFlag)
+                      }
+                      onMessage={() =>
+                        openChat({
+                          id: u.matchId,
+                          name: u.name,
+                          photo: u.photo,
+                          country: u.country,
+                          countryFlag: u.countryFlag,
+                        })
+                      }
+                    />
+                  );
+                })
+              )}
             </>
           )}
         </div>
       ) : (
-        <div className="px-4 pt-4">
-          <h2 className="text-[16px] font-bold tracking-tight">Last 30 days</h2>
+        <div>
           {views.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-[16px] font-semibold text-yn-text">No profile views yet</p>
-              <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
+            <div className="yn-history-empty">
+              <p className="yn-history-empty-title">No profile views yet</p>
+              <p className="yn-history-empty-sub">
                 When someone opens your profile in a call, they will show up here.
               </p>
             </div>
           ) : (
-            <div className="mt-2 divide-y divide-black/6">
-              {views.map((view) => {
-                const live = liveById[view.viewerId];
-                const name = live?.name || view.name || view.viewerId;
-                const photo = live?.photo || view.photo;
-                const country = live?.country || view.country;
-                const language = (live?.languages?.[0] || view.languages?.[0] || "").trim();
-                const following = followingIds.has(view.viewerId);
-                return (
-                  <div key={view.id} className="flex items-center gap-3 py-3">
-                    <button
-                      type="button"
-                      className="shrink-0"
-                      onClick={() => setPreviewUserId(view.viewerId)}
-                      aria-label={`View ${name}'s profile`}
-                    >
-                      <NeonAvatar
-                        src={photo}
-                        name={name}
-                        size={56}
-                        showPhoto={hasOwnPhoto}
-                        online={online[view.viewerId] || false}
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      className="min-w-0 flex-1 text-left"
-                      onClick={() => setPreviewUserId(view.viewerId)}
-                    >
-                      <p className="truncate text-[16px] font-bold text-yn-text">{name}</p>
-                      <p className="mt-0.5 truncate text-[12px] text-yn-muted">
-                        {country ? (
-                          <CountryLabel country={country} size={16} className="text-[12px] text-yn-muted" />
-                        ) : null}
-                        {country && language ? <span> · </span> : null}
-                        {language || (!country ? "Recent viewer" : "")}
-                      </p>
-                    </button>
-                    <FollowMessageActions
-                      following={following}
-                      busy={busyId === view.viewerId || !me.id}
-                      followWidth="compact"
-                      onFollow={() => followPerson(view.viewerId, name, photo, country)}
-                      onMessage={() =>
-                        openChat({
-                          id: view.viewerId,
-                          name,
-                          photo,
-                          country,
-                        })
-                      }
-                    />
-                  </div>
-                );
-              })}
-            </div>
+            views.map((view) => {
+              const live = liveById[view.viewerId];
+              const name = live?.name || view.name || view.viewerId;
+              const photo = live?.photo || view.photo;
+              const country = live?.country || view.country;
+              const following = followingIds.has(view.viewerId);
+              return (
+                <HistoryPersonCard
+                  key={view.id}
+                  name={name}
+                  photo={photo}
+                  country={country}
+                  showPhoto={hasOwnPhoto}
+                  online={online[view.viewerId] || false}
+                  timeLabel={formatTimeAgo(view.at)}
+                  description=""
+                  viewed
+                  following={following}
+                  busy={busyId === view.viewerId || !me.id}
+                  tone="fill"
+                  onOpenProfile={() => setPreviewUserId(view.viewerId)}
+                  onFollow={() => followPerson(view.viewerId, name, photo, country)}
+                  onMessage={() =>
+                    openChat({
+                      id: view.viewerId,
+                      name,
+                      photo,
+                      country,
+                    })
+                  }
+                />
+              );
+            })
           )}
         </div>
       )}
 
       {filterOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-end bg-black/40 backdrop-blur-[2px]"
+          className="yn-history-sheet-scrim"
           onClick={() => setFilterOpen(false)}
         >
           <div
-            className="w-full rounded-t-[28px] border-t border-black/6 bg-yn-card px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_40px_rgba(31,31,35,0.12)]"
+            className="yn-history-sheet"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label="Filter"
           >
-            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-black/15" />
-            <h3 className="text-[26px] font-bold tracking-tight">Filter</h3>
+            <div className="yn-history-sheet-handle" />
+            <h3>Filter</h3>
 
-            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-yn-muted">
-              Preferred Gender
-            </p>
+            <p className="yn-history-sheet-label">Preferred Gender</p>
             <div className="mt-2.5 grid grid-cols-3 gap-2.5">
               {(
                 [
@@ -758,26 +743,16 @@ export function HistoryScreen({
                     key={opt.id}
                     type="button"
                     onClick={() => setDraft((d) => ({ ...d, gender: opt.id }))}
-                    className={`flex h-[118px] flex-col items-center justify-center rounded-2xl border transition ${
-                      selected
-                        ? "border-pink-400 bg-pink-50 shadow-[0_4px_14px_rgba(219,39,119,0.12)]"
-                        : "border-black/8 bg-yn-bg"
-                    }`}
+                    className={`yn-history-gender ${selected ? "is-on" : ""}`}
                   >
                     <GenderArt kind={opt.id} />
-                    <span
-                      className={`mt-1 text-[14px] font-semibold ${
-                        selected ? "text-yn-text" : "text-yn-muted"
-                      }`}
-                    >
-                      {opt.label}
-                    </span>
+                    <span>{opt.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-yn-muted">Status</p>
+            <p className="yn-history-sheet-label">Status</p>
             <div className="mt-2.5 flex gap-2">
               {(
                 [
@@ -791,11 +766,7 @@ export function HistoryScreen({
                     key={opt.id}
                     type="button"
                     onClick={() => setDraft((d) => ({ ...d, status: opt.id }))}
-                    className={`h-11 min-w-[72px] rounded-full px-5 text-[14px] font-semibold ${
-                      selected
-                        ? "border border-pink-400 bg-pink-50 text-yn-text"
-                        : "border border-transparent bg-yn-bg text-yn-muted"
-                    }`}
+                    className={`yn-history-chip ${selected ? "is-on" : ""}`}
                   >
                     {opt.label}
                   </button>
@@ -803,7 +774,7 @@ export function HistoryScreen({
               })}
             </div>
 
-            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-yn-muted">Sort</p>
+            <p className="yn-history-sheet-label">Sort</p>
             <div className="mt-1">
               {(
                 [
@@ -817,28 +788,18 @@ export function HistoryScreen({
                     key={opt.id}
                     type="button"
                     onClick={() => setDraft((d) => ({ ...d, sort: opt.id }))}
-                    className="flex h-12 w-full items-center gap-3"
+                    className="yn-history-sort"
                   >
-                    <span
-                      className={`flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 ${
-                        selected ? "border-pink-500" : "border-black/20"
-                      }`}
-                    >
-                      {selected ? <span className="h-2.5 w-2.5 rounded-full bg-pink-500" /> : null}
+                    <span className={`yn-history-radio ${selected ? "is-on" : ""}`}>
+                      {selected ? <span /> : null}
                     </span>
-                    <span className={`text-[16px] ${selected ? "font-semibold text-yn-text" : "text-yn-muted"}`}>
-                      {opt.label}
-                    </span>
+                    <span className={selected ? "is-on" : ""}>{opt.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={applyFilter}
-              className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-500 text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(192,38,211,0.22)]"
-            >
+            <button type="button" onClick={applyFilter} className="yn-history-apply">
               Apply
             </button>
           </div>

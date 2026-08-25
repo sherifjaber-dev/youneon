@@ -809,7 +809,7 @@ export function YouNeonApp() {
   }
 
   return (
-    <div className={`min-h-dvh ${activeTab === "discover" || activeTab === "messages" ? "bg-[#07040f] text-white" : "bg-yn-bg text-yn-text"}`}>
+    <div className={`min-h-dvh ${activeTab === "discover" || activeTab === "messages" || activeTab === "history" ? "bg-[#07040f] text-white" : "bg-yn-bg text-yn-text"}`}>
       {sessionUnverified && (
         <div className="fixed left-0 right-0 top-[calc(var(--yn-topbar-inner)+env(safe-area-inset-top))] z-40 bg-amber-100/95 px-3 py-1 text-center text-[11px] text-amber-950">
           Signed in. Pi account verification is still pending.
