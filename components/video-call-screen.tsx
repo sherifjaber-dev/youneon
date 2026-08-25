@@ -15,6 +15,11 @@ import {
 } from "@/lib/match-queue";
 import { playGiftSound } from "@/lib/gift-sounds";
 import {
+  incrementGiftsReceived,
+  subscribeToUserProfile,
+  type UserProfile as FirestoreUserProfile,
+} from "@/lib/firestore-service";
+import {
   GiftBurstOverlay,
   GiftPickerPanel,
   CALL_GIFTS,
@@ -22,6 +27,11 @@ import {
   type CallGift,
   type GiftId,
 } from "@/components/gift-overlay";
+import {
+  RemoteProfileAvatar,
+  RemoteProfileModal,
+  mergeRemoteProfile,
+} from "@/components/call-remote-profile";
 
 interface PartnerProfile {
   userId?: string;
@@ -240,6 +250,7 @@ function VideoCallScreen({
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [giftBurst, setGiftBurst] = useState<{ key: string; giftId: GiftId } | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [remoteUserDoc, setRemoteUserDoc] = useState<FirestoreUserProfile | null>(null);
 
   const [nsfwBlur, setNsfwBlur] = useState(false);
   const [nsfwReason, setNsfwReason] = useState<string>("");
@@ -395,6 +406,17 @@ function VideoCallScreen({
       } else {
         remoteCount++;
         setRemoteName(p.user_name || "Partner");
+        const remoteUserId = (p.userData as { userId?: string } | undefined)?.userId;
+        if (remoteUserId) {
+          setPartner((prev) => {
+            if (prev?.userId === remoteUserId) return prev;
+            return {
+              name: prev?.name || p.user_name || "Partner",
+              ...prev,
+              userId: prev?.userId || remoteUserId,
+            };
+          });
+        }
         const videoTrack = p.tracks.video?.persistentTrack;
         const audioTrack = p.tracks.audio?.persistentTrack;
         if (videoTrack && remoteVideoRef.current) {
@@ -515,7 +537,11 @@ function VideoCallScreen({
             saveReceivedGift(giftId, meta?.emoji || String(d.emoji || ""), partnerRef.current?.name || "Partner");
           }
         });
-        await callObject.join({ url, userName: opts.currentUserName || "Me" });
+        await callObject.join({
+          url,
+          userName: opts.currentUserName || "Me",
+          userData: { userId },
+        });
         refresh();
       } catch (err: any) {
         console.error("Daily start failed:", err);
@@ -529,7 +555,7 @@ function VideoCallScreen({
       if (opts.matchMode === "random") leaveMatchQueue(userId).catch(() => {});
       setDisplayedMessage(null); setChatHistory([]); setGiftBurst(null);
       setShowChatInput(false); setShowHistory(false); setShowGiftPicker(false);
-      setShowProfile(false); setRemoteName(""); setNsfwBlur(false); setBypassNsfw(false);
+      setShowProfile(false); setRemoteUserDoc(null); setRemoteName(""); setNsfwBlur(false); setBypassNsfw(false);
       if (bypassTimerRef.current) clearTimeout(bypassTimerRef.current);
       if (callRef.current) {
         callRef.current.leave().catch(() => {});
@@ -539,6 +565,22 @@ function VideoCallScreen({
       stopPreview();
     };
   }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerGiftBurst, saveReceivedGift]);
+
+  useEffect(() => {
+    const userId = partner?.userId;
+    if (!userId || userId === "anon") {
+      setRemoteUserDoc(null);
+      return;
+    }
+    return subscribeToUserProfile(userId, setRemoteUserDoc);
+  }, [partner?.userId]);
+
+  useEffect(() => {
+    if (!partner) {
+      setShowProfile(false);
+      setRemoteUserDoc(null);
+    }
+  }, [partner]);
 
   useEffect(() => {
     if (callStatus !== "joined" && callStatus !== "waiting") {
@@ -575,7 +617,19 @@ function VideoCallScreen({
     }
     triggerGiftBurst(gift.id);
     setShowGiftPicker(false);
+    const recipientId = partnerRef.current?.userId;
+    if (recipientId) incrementGiftsReceived(recipientId);
   };
+
+  const closeProfile = useCallback(() => setShowProfile(false), []);
+  const openProfile = useCallback(() => {
+    setShowProfile(true);
+    setShowGiftPicker(false);
+    setShowChatInput(false);
+    setShowHistory(false);
+  }, []);
+
+  const remotePreview = mergeRemoteProfile(remoteUserDoc, partner, remoteName);
 
   const toggleCam = () => {
     if (!callRef.current) return;
@@ -868,40 +922,13 @@ function VideoCallScreen({
         <GiftPickerPanel onSelect={sendGift} onClose={() => setShowGiftPicker(false)} />
       )}
 
-      {showProfile && partner && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowProfile(false)}>
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 max-w-sm w-full border border-white/10 shadow-2xl text-white" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-center mb-4">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-pink-500 shadow-lg mb-3 bg-white/10">
-                {currentPartner.avatar ? (
-                  <img src={currentPartner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl font-bold">{currentPartner.name.charAt(0).toUpperCase()}</div>
-                )}
-              </div>
-              <h3 className="text-2xl font-bold">{currentPartner.name}{currentPartner.age ? `, ${currentPartner.age}` : ""}</h3>
-              {currentPartner.country && <p className="text-white/70 text-sm mt-1">{currentPartner.countryFlag} {currentPartner.country}</p>}
-            </div>
-            {currentPartner.bio && (
-              <div className="bg-white/5 rounded-2xl p-3 mb-3">
-                <p className="text-xs text-white/50 mb-1 font-semibold">ABOUT</p>
-                <p className="text-sm">{currentPartner.bio}</p>
-              </div>
-            )}
-            {currentPartner.interests && currentPartner.interests.length > 0 && (
-              <div className="bg-white/5 rounded-2xl p-3 mb-4">
-                <p className="text-xs text-white/50 mb-2 font-semibold">INTERESTS</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {currentPartner.interests.map((i) => (
-                    <span key={i} className="bg-pink-500/20 text-pink-200 text-xs px-2.5 py-1 rounded-full border border-pink-400/30">{i}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <button onClick={() => setShowProfile(false)} className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 h-11 font-semibold">Back to chat</button>
-          </div>
-        </div>
-      )}
+      <RemoteProfileModal
+        open={showProfile}
+        onClose={closeProfile}
+        firestoreUser={remoteUserDoc}
+        hint={partner}
+        dailyName={remoteName}
+      />
 
       {callStatus === "waiting" && (
         <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-white pointer-events-none">
@@ -928,17 +955,13 @@ function VideoCallScreen({
         </div>
       )}
 
-      {callStatus === "joined" && (remoteName || partner?.name) && !showProfile && !displayedMessage && (
-        <button
-          type="button"
-          onClick={() => partner && setShowProfile(true)}
-          className="yn-call-glass absolute right-4 z-10 rounded-full px-4 py-1.5 text-sm font-medium text-white"
-          style={{ top: "max(48px, calc(env(safe-area-inset-top) + 36px))" }}
-          data-testid="profile-btn"
-          aria-label={partner ? `View ${currentPartner.name}'s profile` : "Waiting for match"}
-        >
-          {remoteName || partner?.name}
-        </button>
+      {callStatus === "joined" && (
+        <RemoteProfileAvatar
+          photo={remotePreview.heroPhoto}
+          name={remotePreview.name}
+          initials={remotePreview.initials}
+          onOpen={openProfile}
+        />
       )}
 
       <div className="yn-call-dock">

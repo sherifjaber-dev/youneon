@@ -1,6 +1,6 @@
 import {
   collection, addDoc, getDocs, getDoc, setDoc, updateDoc, doc, deleteDoc,
-  query, where, orderBy, onSnapshot, serverTimestamp, Timestamp,
+  query, where, orderBy, onSnapshot, serverTimestamp, Timestamp, increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -17,10 +17,12 @@ export interface UserProfile {
   interests: string[];
   avatar?: string;
   profilePicture?: string;
+  photos?: string[];
   bio?: string;
   premiumUntil?: string;
   lastPaymentId?: string;
   neonBalance?: number;
+  giftsReceivedCount?: number;
   createdAt?: Date;
 }
 
@@ -47,6 +49,42 @@ export const getUserProfile = async (piUsername: string) => {
   const snap = await getDoc(ref);
   if (snap.exists()) return { id: snap.id, ...snap.data() } as UserProfile;
   return null;
+};
+
+export const subscribeToUserProfile = (
+  userId: string,
+  cb: (profile: UserProfile | null) => void
+) => {
+  if (!userId || userId === "anon") {
+    cb(null);
+    return () => {};
+  }
+  const ref = doc(db, "users", userId);
+  return onSnapshot(
+    ref,
+    (snap) => {
+      if (!snap.exists()) {
+        cb(null);
+        return;
+      }
+      cb({ id: snap.id, ...(snap.data() as object) } as UserProfile);
+    },
+    () => cb(null)
+  );
+};
+
+/** All-time gifts received. Call when a gift is successfully sent to this user. */
+export const incrementGiftsReceived = async (recipientUserId: string) => {
+  if (!recipientUserId || recipientUserId === "anon") return;
+  try {
+    await setDoc(
+      doc(db, "users", recipientUserId),
+      { giftsReceivedCount: increment(1), updatedAt: Timestamp.now() },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn("incrementGiftsReceived failed", e);
+  }
 };
 
 const getConversationId = (a: string, b: string) => [a, b].sort().join("__");
