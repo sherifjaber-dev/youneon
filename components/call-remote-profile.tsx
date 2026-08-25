@@ -624,7 +624,7 @@ export function ProfilePreviewSheet({
 
       {showReport ? (
         <div className="yn-preview-report" onClick={(e) => e.stopPropagation()}>
-          <CallReportSheet>
+          <CallReportSheet
             userName={profile.name === "—" ? "this person" : profile.name}
             submitting={reporting}
             onClose={() => setShowReport(false)}
