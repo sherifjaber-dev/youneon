@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Crown, Globe, Video } from "lucide-react";
+import { ChevronDown, ChevronRight, Crown, Globe } from "lucide-react";
 import { db } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AdInterstitial } from "@/components/ad-placements";
 import { CountryLabel } from "@/components/country-flag";
 import { PremiumBadge } from "@/components/premium-badge";
 import { NeonAvatar } from "@/components/neon-avatar";
-import { DottedWorldMap } from "@/components/dotted-world-map";
 import { PremiumGem } from "@/components/premium-gem";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
@@ -26,29 +25,12 @@ interface DiscoverScreenProps {
   announcements?: Announcement[];
 }
 
-const RING_COLORS = ["#38bdf8", "#f472b6", "#c084fc", "#38bdf8"];
-const DOT_COLORS = ["#38bdf8", "#f472b6", "#a78bfa", "#22d3ee"];
-
-function BothGenderMark() {
-  return (
-    <svg viewBox="0 0 18 18" width="13" height="13" className="yn-gender-symbol inline-block align-[-1px]" aria-hidden>
-      <circle cx="8" cy="10.2" r="3.6" fill="none" stroke="currentColor" strokeWidth="1.55" />
-      <path d="M8 13.8v3.1M6.4 15.4h3.2" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" />
-      <path d="M10.6 7.6L14.8 3.4M12.2 3.4h2.6v2.6" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function LiveWaveIcon() {
-  return (
-    <svg viewBox="0 0 14 12" width="12" height="11" aria-hidden fill="none">
-      <circle cx="3.2" cy="6" r="1.35" fill="white" />
-      <path d="M5.6 3.7a3.4 3.4 0 0 1 0 4.6" stroke="white" strokeWidth="1.25" strokeLinecap="round" />
-      <path d="M8.1 2.1a5.6 5.6 0 0 1 0 7.8" stroke="white" strokeWidth="1.25" strokeLinecap="round" />
-      <path d="M10.6 0.8a7.6 7.6 0 0 1 0 10.4" stroke="white" strokeWidth="1.2" strokeLinecap="round" opacity="0.85" />
-    </svg>
-  );
-}
+const LIVE_RINGS = [
+  { left: "18.26%", top: "78.3%" },
+  { left: "38.77%", top: "78.3%" },
+  { left: "59.33%", top: "78.3%" },
+  { left: "79.20%", top: "78.3%" },
+];
 
 export function DiscoverScreen({
   onStartVideo,
@@ -69,13 +51,13 @@ export function DiscoverScreen({
   const genderOptions: {
     value: "women" | "men" | "both";
     label: string;
-    symbol: string;
+    icon: string;
     cost: number;
     tone: "pink" | "blue" | "purple";
   }[] = [
-    { value: "women", label: "Women", symbol: "♀", cost: 10, tone: "pink" },
-    { value: "men", label: "Men", symbol: "♂", cost: 10, tone: "blue" },
-    { value: "both", label: "Both", symbol: "⚥", cost: 0, tone: "purple" },
+    { value: "women", label: "Women", icon: "/youneon/gender-women.png", cost: 10, tone: "pink" },
+    { value: "men", label: "Men", icon: "/youneon/gender-men.png", cost: 10, tone: "blue" },
+    { value: "both", label: "Both", icon: "/youneon/gender-both.png", cost: 0, tone: "purple" },
   ];
 
   const countries = ["Worldwide", ...COUNTRY_OPTIONS];
@@ -130,47 +112,31 @@ export function DiscoverScreen({
 
   return (
     <div className="yn-discover flex h-full min-h-0 flex-col gap-3.5 overflow-y-auto px-4 pb-4 pt-3">
-      <div className="yn-live-card relative min-h-[210px] flex-[1.08] overflow-hidden">
-        <DottedWorldMap className="absolute inset-0 h-full w-full" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#05050d]/10 via-transparent to-[#05050d]/80" />
-
-        <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-[#ef4444] px-2.5 py-0.5 shadow-[0_0_16px_rgba(239,68,68,0.85)]">
-          <LiveWaveIcon />
-          <span className="text-[10px] font-bold tracking-[0.14em] text-white">LIVE</span>
-        </div>
-
-        <div className="relative z-10 flex h-full min-h-[210px] flex-col items-center justify-center px-4 pb-4 pt-8">
-          <p className="text-center text-[24px] font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.55)]">
+      <div className="yn-live-card relative flex-[1.08] overflow-hidden">
+        <div className="yn-live-banner-stage relative w-full">
+          <img
+            src="/youneon/live-banner.png"
+            alt=""
+            draggable={false}
+            className="yn-live-banner-img"
+          />
+          <p className="yn-live-title">
             Start Random{" "}
             <span className="text-[#ff4fd8] drop-shadow-[0_0_16px_rgba(255,78,200,0.95)]">Video Chat</span>
           </p>
-
-          {liveAvatars.length > 0 && (
-            <div className="mt-5 flex items-center justify-center gap-3.5">
-              {liveAvatars.map((person, i) => (
-                <div
-                  key={person.id}
-                  className="relative rounded-full p-[2.5px]"
-                  style={{
-                    boxShadow: `0 0 16px ${RING_COLORS[i % RING_COLORS.length]}, 0 0 28px ${RING_COLORS[i % RING_COLORS.length]}66`,
-                    background: `linear-gradient(135deg, ${RING_COLORS[i % RING_COLORS.length]}, ${RING_COLORS[(i + 1) % RING_COLORS.length]})`,
-                  }}
-                >
-                  <div className="rounded-full bg-[#05050d] p-[2px]">
-                    <NeonAvatar src={person.photo} name={person.name} size={48} showPhoto />
-                  </div>
-                  <span
-                    className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full"
-                    style={{
-                      background: DOT_COLORS[i % DOT_COLORS.length],
-                      boxShadow: `0 0 10px ${DOT_COLORS[i % DOT_COLORS.length]}, 0 0 16px ${DOT_COLORS[i % DOT_COLORS.length]}`,
-                    }}
-                    aria-label="Online"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          {LIVE_RINGS.map((ring, i) => {
+            const person = liveAvatars[i];
+            if (!person) return null;
+            return (
+              <div
+                key={person.id}
+                className="yn-live-ring-slot"
+                style={{ left: ring.left, top: ring.top }}
+              >
+                <NeonAvatar src={person.photo} name={person.name} size={48} showPhoto />
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -189,13 +155,9 @@ export function DiscoverScreen({
                   className={`yn-gender-pill yn-gender-${option.tone} ${selected ? "is-on" : ""}`}
                   data-testid={`gender-${option.value}-btn`}
                 >
-                  <span className="text-[14px] font-semibold leading-none">
-                    {option.label}{" "}
-                    {option.value === "both" ? (
-                      <BothGenderMark />
-                    ) : (
-                      <span className="yn-gender-symbol">{option.symbol}</span>
-                    )}
+                  <span className="flex items-center gap-1 text-[14px] font-semibold leading-none">
+                    {option.label}
+                    <img src={option.icon} alt="" draggable={false} className="yn-gender-asset" />
                   </span>
                   <span className="mt-1 text-[10px] font-semibold leading-none">
                     {isPremium || option.cost === 0 ? (
@@ -281,7 +243,7 @@ export function DiscoverScreen({
           className="yn-start-cta"
           data-testid="start-random-chat-btn"
         >
-          <Video className="h-[18px] w-[18px] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.65)]" strokeWidth={2.15} />
+          <img src="/youneon/camera.png" alt="" draggable={false} className="yn-cta-camera" />
           <span>Start Random Chat</span>
           {isPremium && <PremiumBadge />}
         </button>

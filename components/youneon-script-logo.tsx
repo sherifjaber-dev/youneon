@@ -13,11 +13,15 @@ export function YouNeonScriptLogo({
     <button
       type="button"
       onClick={onClick}
-      className={cn("yn-script-logo min-w-0 truncate text-left active:scale-[0.98]", className)}
+      className={cn("yn-script-logo min-w-0 text-left active:scale-[0.98]", className)}
       aria-label="YouNeon, open profile"
     >
-      <span className="yn-script-you">You</span>
-      <span className="yn-script-neon">Neon</span>
+      <img
+        src="/youneon/logo.png"
+        alt="YouNeon"
+        className="yn-script-logo-img"
+        draggable={false}
+      />
     </button>
   );
 }

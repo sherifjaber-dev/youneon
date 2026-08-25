@@ -2010,6 +2010,23 @@ html.youneon-signed-in select {
     0 0 40px rgba(168, 85, 247, 0.28);
 }
 
+button.yn-script-logo {
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.yn-script-logo-img {
+  display: block;
+  height: 38px;
+  width: auto;
+  max-width: min(172px, 48vw);
+  object-fit: contain;
+  object-position: left center;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 10px rgba(255, 79, 216, 0.28));
+}
+
 .yn-discover {
   background:
     radial-gradient(90% 55% at 50% -8%, rgba(124, 58, 237, 0.42), transparent 58%),
@@ -2021,12 +2038,57 @@ html.youneon-signed-in select {
 .yn-live-card {
   border-radius: 22px;
   border: 1.5px solid rgba(192, 132, 252, 0.72);
-  background: #0a0614;
+  background: #05050d;
   box-shadow:
     0 0 0 1px rgba(168, 85, 247, 0.22),
     0 0 36px rgba(168, 85, 247, 0.48),
     0 0 64px rgba(124, 58, 237, 0.22),
     inset 0 0 48px rgba(88, 28, 135, 0.35);
+}
+
+.yn-live-banner-stage {
+  aspect-ratio: 1024 / 687;
+}
+
+.yn-live-banner-img {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center center;
+  pointer-events: none;
+}
+
+.yn-live-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 16%;
+  z-index: 2;
+  padding: 0 14px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.7),
+    0 0 18px rgba(5, 5, 13, 0.85);
+}
+
+.yn-live-ring-slot {
+  position: absolute;
+  z-index: 2;
+  width: 9.2%;
+  transform: translate(-50%, -50%);
+}
+
+.yn-live-ring-slot > div {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1;
 }
 
 .yn-gender-pill {
@@ -2046,6 +2108,26 @@ html.youneon-signed-in select {
 .yn-gender-symbol {
   font-size: 13px;
   font-weight: 700;
+}
+
+.yn-gender-asset {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  mix-blend-mode: screen;
+}
+
+.yn-gender-pink .yn-gender-asset {
+  filter: drop-shadow(0 0 6px rgba(255, 78, 200, 0.45));
+}
+
+.yn-gender-blue .yn-gender-asset {
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.45));
+}
+
+.yn-gender-purple .yn-gender-asset {
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.5));
 }
 
 .yn-gender-pink {
@@ -2118,6 +2200,13 @@ html.youneon-signed-in select {
   transform: scale(0.985);
 }
 
+.yn-cta-camera {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.45));
+}
+
 .yn-premium-card {
   display: flex;
   align-items: center;
@@ -2139,12 +2228,33 @@ html.youneon-signed-in select {
   border-radius: 10px;
 }
 
+.yn-nav-img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  opacity: 0.58;
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.yn-nav-slot.is-on .yn-nav-img {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(255, 78, 200, 0.7));
+}
+
 .yn-nav-slot.is-on .yn-nav-icon {
   color: #ff4ec8;
   background: rgba(255, 78, 200, 0.14);
   box-shadow:
     0 0 14px rgba(255, 78, 200, 0.7),
     0 0 26px rgba(255, 78, 200, 0.35);
+}
+
+.yn-premium-diamond {
+  object-fit: contain;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.55));
 }
 
 .yn-nav-slot.is-on {
