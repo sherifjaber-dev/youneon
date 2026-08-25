@@ -618,7 +618,15 @@ function VideoCallScreen({
     triggerGiftBurst(gift.id);
     setShowGiftPicker(false);
     const recipientId = partnerRef.current?.userId;
-    if (recipientId) incrementGiftsReceived(recipientId);
+    if (recipientId) {
+      incrementGiftsReceived(recipientId, {
+        fromId: currentUserId,
+        fromName: currentUserName,
+        fromPhoto: currentUserProfile?.avatar,
+        giftId: gift.id,
+        giftEmoji: gift.emoji,
+      });
+    }
   };
 
   const closeProfile = useCallback(() => setShowProfile(false), []);

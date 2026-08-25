@@ -517,9 +517,13 @@ export function YouNeonApp() {
         neonBalance={neonBalance}
         onNeonClick={() => setShowNeonShop(true)}
         isPremium={isPremium}
+        premiumUntil={premiumUntil}
         announcements={announcements}
         profilePicture={displayUser.profilePicture}
         profileName={displayUser.fullName || displayUser.piUsername}
+        currentUserId={currentUserId}
+        onOpenChat={handleOpenChat}
+        onOpenMessages={() => setActiveTab("messages")}
       />
       <div className={`fixed inset-x-0 top-[calc(48px+env(safe-area-inset-top))] bottom-[calc(56px+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (

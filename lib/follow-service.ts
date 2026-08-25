@@ -134,6 +134,16 @@ export async function followUser(me: FollowSnapshot, other: FollowSnapshot) {
     followedAge: theirs.age || 0,
     createdAt: serverTimestamp(),
   });
+  void import("@/lib/notifications")
+    .then(({ notifyFollow }) =>
+      notifyFollow({
+        recipientId: other.id,
+        actorId: me.id,
+        actorName: mine.name,
+        actorPhoto: mine.photo,
+      })
+    )
+    .catch(() => {});
 }
 
 export async function unfollowUser(meId: string, otherId: string) {

@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bell, Crown } from "lucide-react";
-import { NotificationPanel } from "@/components/notification-panel";
+import { NotificationsScreen } from "@/components/notifications-screen";
 import { NeonAvatar } from "@/components/neon-avatar";
+import { useNotificationInbox } from "@/hooks/use-notification-inbox";
 import type { Announcement } from "@/lib/announcements";
-import { markAnnouncementsRead, unreadAnnouncementCount } from "@/lib/announcements";
 
 interface TopBarProps {
   onProfileClick: () => void;
   neonBalance: number;
   onNeonClick?: () => void;
   isPremium?: boolean;
+  premiumUntil?: string | null;
   announcements?: Announcement[];
   profilePicture?: string;
   profileName?: string;
+  currentUserId?: string;
+  onOpenChat?: (user: { id: string; name: string; avatar: string; photo?: string }) => void;
+  onOpenMessages?: () => void;
 }
 
 export function TopBar({
@@ -22,22 +26,20 @@ export function TopBar({
   neonBalance,
   onNeonClick,
   isPremium = false,
+  premiumUntil = null,
   announcements = [],
   profilePicture = "",
   profileName = "",
+  currentUserId,
+  onOpenChat,
+  onOpenMessages,
 }: TopBarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
-
-  useEffect(() => {
-    setUnread(unreadAnnouncementCount(announcements));
-  }, [announcements]);
+  const { items, unread, markAllRead } = useNotificationInbox(currentUserId, announcements);
 
   const openPanel = () => {
     setPanelOpen(true);
-    const ids = announcements.filter((item) => item.active).map((item) => item.id);
-    markAnnouncementsRead(ids);
-    setUnread(0);
+    markAllRead();
   };
 
   return (
@@ -88,10 +90,17 @@ export function TopBar({
           </div>
         </div>
       </div>
-      <NotificationPanel
+      <NotificationsScreen
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
         announcements={announcements}
+        items={items}
+        markAllRead={markAllRead}
+        isPremium={isPremium}
+        premiumUntil={premiumUntil}
+        onOpenShop={onNeonClick}
+        onOpenChat={onOpenChat}
+        onOpenMessages={onOpenMessages}
       />
     </>
   );

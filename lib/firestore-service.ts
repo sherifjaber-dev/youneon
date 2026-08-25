@@ -74,7 +74,16 @@ export const subscribeToUserProfile = (
 };
 
 /** All-time gifts received. Call when a gift is successfully sent to this user. */
-export const incrementGiftsReceived = async (recipientUserId: string) => {
+export const incrementGiftsReceived = async (
+  recipientUserId: string,
+  meta?: {
+    fromId?: string;
+    fromName?: string;
+    fromPhoto?: string;
+    giftId?: string;
+    giftEmoji?: string;
+  }
+) => {
   if (!recipientUserId || recipientUserId === "anon") return;
   try {
     await setDoc(
@@ -84,6 +93,17 @@ export const incrementGiftsReceived = async (recipientUserId: string) => {
     );
   } catch (e) {
     console.warn("incrementGiftsReceived failed", e);
+  }
+  if (meta?.fromId || meta?.fromName) {
+    const { notifyGiftReceived } = await import("@/lib/notifications");
+    void notifyGiftReceived({
+      recipientId: recipientUserId,
+      actorId: meta.fromId,
+      actorName: meta.fromName,
+      actorPhoto: meta.fromPhoto,
+      giftId: meta.giftId,
+      giftEmoji: meta.giftEmoji,
+    });
   }
 };
 
@@ -176,11 +196,26 @@ export const sendChatMessage = async (
     const data = snap.data();
     const recipient = (data.participants as string[]).find((p) => p !== senderId);
     const currentUnread = (data.unreadCount && data.unreadCount[recipient!]) || 0;
+    const preview = text || (imageBase64 ? "📷 Image" : "");
     await updateDoc(ref, {
-      lastMessage: text || (imageBase64 ? "📷 Image" : ""),
+      lastMessage: preview,
       lastMessageTime: serverTimestamp(),
       [`unreadCount.${recipient}`]: currentUnread + 1,
     });
+    if (recipient) {
+      const names = (data.participantNames || {}) as Record<string, string>;
+      const photos = (data.participantPhotos || {}) as Record<string, string>;
+      const avatars = (data.participantAvatars || {}) as Record<string, string>;
+      const { notifyNewMessage } = await import("@/lib/notifications");
+      void notifyNewMessage({
+        recipientId: recipient,
+        actorId: senderId,
+        actorName: names[senderId] || senderId,
+        actorPhoto: photos[senderId] || avatars[senderId] || "",
+        conversationId,
+        preview,
+      });
+    }
   }
 };
 
