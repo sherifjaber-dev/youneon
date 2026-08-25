@@ -1,5 +1,6 @@
 const DAILY_API_KEY = import.meta.env.VITE_DAILY_API_KEY;
-const DAILY_DOMAIN = import.meta.env.VITE_DAILY_DOMAIN || "cloud-3d36d9675c4a44fcbbdd07a0a6ac05eea";
+const rawDomain = (process.env.NEXT_PUBLIC_DAILY_DOMAIN || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+const DAILY_DOMAIN = rawDomain.replace(/\.daily\.co$/i, "") || "youneon";
 
 export async function createVideoRoom(roomName = "pi-azar-" + Date.now()) {
   try {

@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 const DAILY_API = "https://api.daily.co/v1/rooms";
 
+function dailyHost() {
+  const raw = (process.env.NEXT_PUBLIC_DAILY_DOMAIN || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (!raw) return "";
+  return raw.endsWith(".daily.co") ? raw : `${raw}.daily.co`;
+}
+
 function roomUrlFrom(data: { url?: string; name?: string }) {
   if (data.url) return data.url;
-  const domain = (process.env.NEXT_PUBLIC_DAILY_DOMAIN || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
-  if (domain && data.name) return `https://${domain}/${data.name}`;
+  const host = dailyHost();
+  if (host && data.name) return `https://${host}/${data.name}`;
   return "";
 }
 
