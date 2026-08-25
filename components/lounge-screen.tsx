@@ -231,7 +231,7 @@ export function LoungeScreen({
           </div>
           <p className="text-[16px] font-semibold text-yn-text">No one in the Lounge yet</p>
           <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
-            People who were recently online will appear here. Jump into Discover to meet someone live.
+            People who were recently online will appear here. Jump into Video Chat to meet someone live.
           </p>
         </div>
       ) : all.length === 0 ? (

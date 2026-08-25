@@ -424,7 +424,7 @@ export function HistoryScreen({
           {history.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <p className="text-[16px] font-semibold text-yn-text">No video chats yet</p>
-              <p className="mt-1.5 text-sm text-yn-muted">Start a random chat from Discover</p>
+              <p className="mt-1.5 text-sm text-yn-muted">Start a random chat from Video Chat</p>
             </div>
           ) : (
             <>

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, Crown } from "lucide-react";
+import { Bell } from "lucide-react";
 import { NotificationsScreen } from "@/components/notifications-screen";
 import { MyItemsSheet } from "@/components/my-items-sheet";
-import { NeonAvatar } from "@/components/neon-avatar";
 import { YouNeonBagIcon } from "@/components/icons/youneon-chat-connect";
+import { YouNeonScriptLogo } from "@/components/youneon-script-logo";
 import { useNotificationInbox } from "@/hooks/use-notification-inbox";
 import type { Announcement } from "@/lib/announcements";
 
@@ -31,8 +31,6 @@ export function TopBar({
   isPremium = false,
   premiumUntil = null,
   announcements = [],
-  profilePicture = "",
-  profileName = "",
   currentUserId,
   onOpenChat,
   onOpenMessages,
@@ -51,76 +49,60 @@ export function TopBar({
 
   return (
     <>
-      <div className="yn-glass fixed top-0 left-0 right-0 z-50 border-b border-black/6 px-4 pt-[env(safe-area-inset-top)]">
-        <div className="flex h-12 items-center justify-between gap-2">
-          <button
-            onClick={onProfileClick}
-            className="relative h-8 w-8 shrink-0 overflow-visible rounded-full transition-transform active:scale-95"
-            aria-label="Open profile"
-          >
-            <NeonAvatar src={profilePicture} name={profileName} size={32} showPhoto />
-            {isPremium && (
-              <span className="absolute -bottom-0.5 -right-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-yn-nav bg-gradient-to-br from-amber-400 to-pink-500">
-                <Crown size={8} className="text-white" />
-              </span>
-            )}
-          </button>
+      <div className="yn-chrome fixed top-0 left-0 right-0 z-50 border-b px-4 pt-[env(safe-area-inset-top)]">
+        <div className="flex h-14 items-center justify-between gap-3">
+          <YouNeonScriptLogo onClick={onProfileClick} />
 
-          <span className="min-w-0 truncate bg-gradient-to-r from-fuchsia-600 to-pink-500 bg-clip-text text-[15px] font-semibold tracking-tight text-transparent">
-            YouNeon
-          </span>
+          <div className="flex shrink-0 flex-col items-end gap-0.5">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={openPanel}
+                className="relative flex h-8 w-8 items-center justify-center rounded-full text-[#e5e7eb] transition-colors hover:text-white active:scale-95"
+                aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+              >
+                <Bell size={18} strokeWidth={1.7} />
+                {unread > 0 && (
+                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#ff4ec8] shadow-[0_0_8px_#ff4ec8]" />
+                )}
+              </button>
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              onClick={openPanel}
-              className="relative flex h-8 w-8 items-center justify-center rounded-full border border-black/8 bg-white text-yn-muted shadow-sm transition-colors hover:text-yn-text active:scale-95"
-              aria-label="Notifications"
-            >
-              <Bell size={16} strokeWidth={2} />
-              {unread > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-pink-500 px-1 text-[9px] font-bold leading-none text-white">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setItemsOpen(true)}
-              className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors active:scale-95 ${
-                bagActive
-                  ? "border-blue-400/55 bg-blue-500/15 text-blue-600"
-                  : "border-black/10 bg-white text-zinc-800 shadow-sm"
-              }`}
-              title={
-                bagActive
-                  ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} today`
-                  : "No free chat unlocks left today"
-              }
-              aria-label={
-                bagActive
-                  ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} remaining today`
-                  : "No free chat unlocks remaining today"
-              }
-              data-testid="free-message-bag"
-            >
-              <YouNeonBagIcon size={16} />
-              {bagActive && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-bold leading-none text-white">
-                  {bagCount > 9 ? "9+" : bagCount}
-                </span>
-              )}
-            </button>
+              <button
+                type="button"
+                onClick={() => setItemsOpen(true)}
+                className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
+                  bagActive ? "text-[#60a5fa]" : "text-[#e5e7eb] hover:text-white"
+                }`}
+                title={
+                  bagActive
+                    ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} today`
+                    : "No free chat unlocks left today"
+                }
+                aria-label={
+                  bagActive
+                    ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} remaining today`
+                    : "No free chat unlocks remaining today"
+                }
+                data-testid="free-message-bag"
+              >
+                <YouNeonBagIcon size={18} />
+                {bagActive && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#3b82ff] px-1 text-[9px] font-bold leading-none text-white">
+                    {bagCount > 9 ? "9+" : bagCount}
+                  </span>
+                )}
+              </button>
+            </div>
 
             <button
               onClick={onNeonClick}
-              className="flex h-8 items-center gap-1.5 rounded-full border border-amber-200/80 bg-white px-2.5 shadow-sm transition-colors active:scale-95"
+              className="flex items-center gap-1 pr-0.5 text-[#f5d76e] transition-opacity active:scale-95"
               aria-label="Open Neon shop"
             >
-              <span className="text-[13px] text-amber-500">◆</span>
-              <span className="text-[13px] font-semibold tabular-nums text-amber-600">{neonBalance}</span>
-              <span className="text-[11px] font-medium text-amber-600/80">Neon</span>
+              <span className="text-[11px] leading-none">◆</span>
+              <span className="text-[11px] font-semibold leading-none">
+                Neon Balance: {neonBalance.toLocaleString()}
+              </span>
             </button>
           </div>
         </div>

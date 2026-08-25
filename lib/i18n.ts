@@ -86,12 +86,12 @@ export function isRtlLanguage(code: Language): boolean {
 }
 
 const EN: Record<string, string> = {
-  "nav.discover": "Discover",
+  "nav.discover": "Video Chat",
   "nav.lounge": "Lounge",
   "nav.history": "History",
   "nav.messages": "Messages",
   "nav.profile": "Profile",
-  "nav.video": "Video",
+  "nav.video": "Video Chat",
 
   "common.back": "Back",
   "common.close": "Close",
@@ -192,7 +192,7 @@ const EN: Record<string, string> = {
     "Neon packs and Premium (5 π / 30 days) are paid in Pi Browser. Open YouNeon inside Pi Browser to complete a payment. We cannot refund Pi from inside the app.",
   "settings.faqMatching": "Matching",
   "settings.faqMatchingBody":
-    "Tap Discover to start a random live video chat. Use Lounge to message people who were recently online. Premium removes filter costs and unlocks unlimited chats.",
+    "Tap Video Chat to start a random live video chat. Use Lounge to message people who were recently online. Premium removes filter costs and unlocks unlimited chats.",
   "settings.faqSafety": "Report and block",
   "settings.faqSafetyBody":
     "During a call you can block someone. Blocked people are hidden from Lounge, History, Messages, and matching as far as we can. You can unblock them in Settings.",
@@ -210,7 +210,7 @@ type Pack = Partial<Record<string, string>>;
 const PACKS: Record<Language, Pack> = {
   en: EN,
   ar: {
-    "nav.discover": "اكتشف",
+    "nav.discover": "دردشة فيديو",
     "nav.lounge": "الصالة",
     "nav.history": "السجل",
     "nav.messages": "الرسائل",
@@ -292,7 +292,7 @@ const PACKS: Record<Language, Pack> = {
     "profile.logout": "تسجيل الخروج",
   },
   es: {
-    "nav.discover": "Descubrir",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Historial",
     "nav.messages": "Mensajes",
@@ -374,7 +374,7 @@ const PACKS: Record<Language, Pack> = {
     "profile.logout": "Cerrar sesión",
   },
   fr: {
-    "nav.discover": "Découvrir",
+    "nav.discover": "Chat vidéo",
     "nav.lounge": "Lounge",
     "nav.history": "Historique",
     "nav.messages": "Messages",
@@ -456,7 +456,7 @@ const PACKS: Record<Language, Pack> = {
     "profile.logout": "Déconnexion",
   },
   de: {
-    "nav.discover": "Entdecken",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Verlauf",
     "nav.messages": "Nachrichten",
@@ -534,7 +534,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.alwaysOn": "Immer an",
   },
   pt: {
-    "nav.discover": "Descobrir",
+    "nav.discover": "Chat de vídeo",
     "nav.lounge": "Lounge",
     "nav.history": "Histórico",
     "nav.messages": "Mensagens",
@@ -596,7 +596,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Aceitar tudo",
   },
   it: {
-    "nav.discover": "Scopri",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Cronologia",
     "nav.messages": "Messaggi",
@@ -652,7 +652,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Accetta tutto",
   },
   ru: {
-    "nav.discover": "Обзор",
+    "nav.discover": "Видеочат",
     "nav.lounge": "Лаунж",
     "nav.history": "История",
     "nav.messages": "Сообщения",
@@ -708,7 +708,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Принять всё",
   },
   zh: {
-    "nav.discover": "发现",
+    "nav.discover": "视频聊天",
     "nav.lounge": "大厅",
     "nav.history": "记录",
     "nav.messages": "消息",
@@ -764,7 +764,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "全部接受",
   },
   ja: {
-    "nav.discover": "発見",
+    "nav.discover": "ビデオチャット",
     "nav.lounge": "ラウンジ",
     "nav.history": "履歴",
     "nav.messages": "メッセージ",
@@ -820,7 +820,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "すべて許可",
   },
   ko: {
-    "nav.discover": "발견",
+    "nav.discover": "영상 채팅",
     "nav.lounge": "라운지",
     "nav.history": "기록",
     "nav.messages": "메시지",
@@ -876,7 +876,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "모두 허용",
   },
   hi: {
-    "nav.discover": "डिस्कवर",
+    "nav.discover": "वीडियो चैट",
     "nav.lounge": "लाउंज",
     "nav.history": "इतिहास",
     "nav.messages": "संदेश",
@@ -917,7 +917,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "सब स्वीकार",
   },
   tr: {
-    "nav.discover": "Keşfet",
+    "nav.discover": "Video Sohbet",
     "nav.lounge": "Lounge",
     "nav.history": "Geçmiş",
     "nav.messages": "Mesajlar",
@@ -956,7 +956,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Tümünü kabul et",
   },
   id: {
-    "nav.discover": "Temukan",
+    "nav.discover": "Obrolan Video",
     "nav.lounge": "Lounge",
     "nav.history": "Riwayat",
     "nav.messages": "Pesan",
@@ -993,7 +993,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Terima semua",
   },
   vi: {
-    "nav.discover": "Khám phá",
+    "nav.discover": "Chat video",
     "nav.lounge": "Lounge",
     "nav.history": "Lịch sử",
     "nav.messages": "Tin nhắn",
@@ -1030,7 +1030,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Chấp nhận tất cả",
   },
   th: {
-    "nav.discover": "ค้นพบ",
+    "nav.discover": "แชทวิดีโอ",
     "nav.lounge": "เลานจ์",
     "nav.history": "ประวัติ",
     "nav.messages": "ข้อความ",
@@ -1059,7 +1059,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "ยอมรับทั้งหมด",
   },
   pl: {
-    "nav.discover": "Odkrywaj",
+    "nav.discover": "Czat wideo",
     "nav.lounge": "Lounge",
     "nav.history": "Historia",
     "nav.messages": "Wiadomości",
@@ -1088,7 +1088,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Zaakceptuj wszystko",
   },
   nl: {
-    "nav.discover": "Ontdekken",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Geschiedenis",
     "nav.messages": "Berichten",
@@ -1117,7 +1117,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Alles accepteren",
   },
   sv: {
-    "nav.discover": "Upptäck",
+    "nav.discover": "Videochatt",
     "nav.lounge": "Lounge",
     "nav.history": "Historik",
     "nav.messages": "Meddelanden",
@@ -1146,7 +1146,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Godkänn alla",
   },
   da: {
-    "nav.discover": "Opdag",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Historik",
     "nav.messages": "Beskeder",
@@ -1175,7 +1175,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Accepter alle",
   },
   uk: {
-    "nav.discover": "Огляд",
+    "nav.discover": "Відеочат",
     "nav.lounge": "Лаунж",
     "nav.history": "Історія",
     "nav.messages": "Повідомлення",
@@ -1204,7 +1204,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Прийняти все",
   },
   he: {
-    "nav.discover": "גלה",
+    "nav.discover": "צ'אט וידאו",
     "nav.lounge": "טרקלין",
     "nav.history": "היסטוריה",
     "nav.messages": "הודעות",
@@ -1233,7 +1233,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "אשר הכל",
   },
   fa: {
-    "nav.discover": "کشف",
+    "nav.discover": "چت ویدیویی",
     "nav.lounge": "لانج",
     "nav.history": "تاریخچه",
     "nav.messages": "پیام‌ها",
@@ -1262,7 +1262,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "پذیرش همه",
   },
   bn: {
-    "nav.discover": "আবিষ্কার",
+    "nav.discover": "ভিডিও চ্যাট",
     "nav.lounge": "লাউঞ্জ",
     "nav.history": "ইতিহাস",
     "nav.messages": "বার্তা",
@@ -1291,7 +1291,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "সব গ্রহণ",
   },
   ms: {
-    "nav.discover": "Teroka",
+    "nav.discover": "Sembang Video",
     "nav.lounge": "Lounge",
     "nav.history": "Sejarah",
     "nav.messages": "Mesej",
@@ -1320,7 +1320,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Terima semua",
   },
   fil: {
-    "nav.discover": "Tuklasin",
+    "nav.discover": "Video Chat",
     "nav.lounge": "Lounge",
     "nav.history": "Kasaysayan",
     "nav.messages": "Mensahe",
@@ -1349,7 +1349,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Tanggapin lahat",
   },
   ro: {
-    "nav.discover": "Descoperă",
+    "nav.discover": "Chat video",
     "nav.lounge": "Lounge",
     "nav.history": "Istoric",
     "nav.messages": "Mesaje",
@@ -1378,7 +1378,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Acceptă tot",
   },
   cs: {
-    "nav.discover": "Objevovat",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Historie",
     "nav.messages": "Zprávy",
@@ -1407,7 +1407,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Přijmout vše",
   },
   el: {
-    "nav.discover": "Ανακάλυψη",
+    "nav.discover": "Βιντεοκλήση",
     "nav.lounge": "Lounge",
     "nav.history": "Ιστορικό",
     "nav.messages": "Μηνύματα",
@@ -1436,7 +1436,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Αποδοχή όλων",
   },
   hu: {
-    "nav.discover": "Felfedezés",
+    "nav.discover": "Videocsevegés",
     "nav.lounge": "Lounge",
     "nav.history": "Előzmények",
     "nav.messages": "Üzenetek",
@@ -1465,7 +1465,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Összes elfogadása",
   },
   nb: {
-    "nav.discover": "Oppdag",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Historikk",
     "nav.messages": "Meldinger",
@@ -1494,7 +1494,7 @@ const PACKS: Record<Language, Pack> = {
     "settings.acceptAll": "Godta alle",
   },
   fi: {
-    "nav.discover": "Tutustu",
+    "nav.discover": "Videochat",
     "nav.lounge": "Lounge",
     "nav.history": "Historia",
     "nav.messages": "Viestit",

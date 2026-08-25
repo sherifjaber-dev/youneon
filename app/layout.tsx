@@ -259,6 +259,9 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/icon-180.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PUBLIC_LEGAL_PATH_SCRIPT }} />
       </head>
