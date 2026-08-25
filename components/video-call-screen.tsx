@@ -13,6 +13,15 @@ import {
   type MatchFilters,
   type QueueProfile,
 } from "@/lib/match-queue";
+import { playGiftSound } from "@/lib/gift-sounds";
+import {
+  GiftBurstOverlay,
+  GiftPickerPanel,
+  CALL_GIFTS,
+  resolveGiftId,
+  type CallGift,
+  type GiftId,
+} from "@/components/gift-overlay";
 
 interface PartnerProfile {
   userId?: string;
@@ -49,17 +58,7 @@ interface VideoCallScreenProps {
 type PermissionState = "checking" | "granted" | "denied" | "not-found" | "in-use" | "error";
 type CallStatus = "idle" | "preview" | "joining" | "waiting" | "joined";
 
-interface FloatingGift { id: string; emoji: string; left: number; duration: number; delay: number; }
 interface ChatMsg { id: string; from: "me" | "partner"; text: string; timestamp: number; }
-
-const GIFTS = [
-  { id: "rose", emoji: "🌹", label: "Rose" },
-  { id: "heart", emoji: "❤️", label: "Heart" },
-  { id: "bouquet", emoji: "💐", label: "Bouquet" },
-  { id: "diamond", emoji: "💎", label: "Diamond" },
-  { id: "gift", emoji: "🎁", label: "Gift" },
-  { id: "teddy", emoji: "🧸", label: "Teddy" },
-];
 
 const SKIP_COOLDOWN_MS = 5000;
 
@@ -187,7 +186,6 @@ function VideoCallScreen({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const callRef = useRef<DailyCall | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
   const previewStreamRef = useRef<MediaStream | null>(null);
   const nsfwModelRef = useRef<any>(null);
   const nsfwIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -240,7 +238,7 @@ function VideoCallScreen({
   const messageTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [showGiftPicker, setShowGiftPicker] = useState(false);
-  const [floatingGifts, setFloatingGifts] = useState<FloatingGift[]>([]);
+  const [giftBurst, setGiftBurst] = useState<{ key: string; giftId: GiftId } | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
   const [nsfwBlur, setNsfwBlur] = useState(false);
@@ -311,41 +309,12 @@ function VideoCallScreen({
     return () => { cancelled = true; };
   }, []);
 
-  const playGiftSound = useCallback(() => {
-    try {
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      const ctx = audioCtxRef.current;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(523, ctx.currentTime + 0.25);
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
-    } catch (e) { console.warn(e); }
+  const triggerGiftBurst = useCallback((giftId: GiftId) => {
+    setGiftBurst({ key: `${Date.now()}-${giftId}`, giftId });
+    playGiftSound(giftId);
   }, []);
 
-  const triggerFallingGift = useCallback((emoji: string) => {
-    const newGifts: FloatingGift[] = [];
-    for (let i = 0; i < 8; i++) {
-      newGifts.push({
-        id: `${Date.now()}-${i}-${Math.random()}`,
-        emoji, left: Math.random() * 90 + 5,
-        duration: 2.5 + Math.random() * 1.5, delay: Math.random() * 0.6,
-      });
-    }
-    setFloatingGifts((prev) => [...prev, ...newGifts]);
-    playGiftSound();
-    setTimeout(() => {
-      setFloatingGifts((prev) => prev.filter((g) => !newGifts.find((n) => n.id === g.id)));
-    }, 5000);
-  }, [playGiftSound]);
+  const clearGiftBurst = useCallback(() => setGiftBurst(null), []);
 
   const saveReceivedGift = useCallback((giftId: string, giftEmoji: string, fromName: string) => {
     try {
@@ -538,9 +507,12 @@ function VideoCallScreen({
               id: `msg-${Date.now()}-${Math.random()}`,
               from: "partner", text: String(d.text).slice(0, 200), timestamp: Date.now(),
             });
-          } else if (d.type === "gift" && d.emoji) {
-            triggerFallingGift(String(d.emoji));
-            saveReceivedGift(d.giftId || "unknown", String(d.emoji), partnerRef.current?.name || "Partner");
+          } else if (d.type === "gift") {
+            const giftId = resolveGiftId(d.giftId, d.emoji);
+            if (!giftId) return;
+            triggerGiftBurst(giftId);
+            const meta = CALL_GIFTS.find((g) => g.id === giftId);
+            saveReceivedGift(giftId, meta?.emoji || String(d.emoji || ""), partnerRef.current?.name || "Partner");
           }
         });
         await callObject.join({ url, userName: opts.currentUserName || "Me" });
@@ -555,7 +527,7 @@ function VideoCallScreen({
       cancelled = true;
       unsubMatch?.();
       if (opts.matchMode === "random") leaveMatchQueue(userId).catch(() => {});
-      setDisplayedMessage(null); setChatHistory([]); setFloatingGifts([]);
+      setDisplayedMessage(null); setChatHistory([]); setGiftBurst(null);
       setShowChatInput(false); setShowHistory(false); setShowGiftPicker(false);
       setShowProfile(false); setRemoteName(""); setNsfwBlur(false); setBypassNsfw(false);
       if (bypassTimerRef.current) clearTimeout(bypassTimerRef.current);
@@ -566,7 +538,7 @@ function VideoCallScreen({
       }
       stopPreview();
     };
-  }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerFallingGift, saveReceivedGift]);
+  }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerGiftBurst, saveReceivedGift]);
 
   useEffect(() => {
     if (callStatus !== "joined" && callStatus !== "waiting") {
@@ -595,10 +567,13 @@ function VideoCallScreen({
     setChatInputValue(""); setShowChatInput(false);
   };
 
-  const sendGift = (gift: { id: string; emoji: string }) => {
-    if (!callRef.current) return;
-    callRef.current.sendAppMessage({ type: "gift", giftId: gift.id, emoji: gift.emoji }, "*");
-    triggerFallingGift(gift.emoji);
+  const sendGift = (gift: CallGift) => {
+    try {
+      callRef.current?.sendAppMessage({ type: "gift", giftId: gift.id, emoji: gift.emoji }, "*");
+    } catch (e) {
+      console.warn(e);
+    }
+    triggerGiftBurst(gift.id);
     setShowGiftPicker(false);
   };
 
@@ -784,13 +759,14 @@ function VideoCallScreen({
       <audio ref={remoteAudioRef} autoPlay />
       <div className="yn-call-vignette" />
 
-      <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-        {floatingGifts.map((g) => (
-          <div key={g.id} className="absolute text-5xl" style={{ left: `${g.left}%`, top: 0, animation: `yn-gift-fall ${g.duration}s linear ${g.delay}s forwards` }}>
-            {g.emoji}
-          </div>
-        ))}
-      </div>
+      {giftBurst && (
+        <GiftBurstOverlay
+          key={giftBurst.key}
+          giftId={giftBurst.giftId}
+          burstKey={giftBurst.key}
+          onDone={clearGiftBurst}
+        />
+      )}
 
       {nsfwBlur && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -889,19 +865,7 @@ function VideoCallScreen({
       )}
 
       {showGiftPicker && (
-        <div className="absolute left-1/2 z-40 -translate-x-1/2" style={{ bottom: "calc(76px + env(safe-area-inset-bottom, 0px))", animation: "yn-slide-up 0.25s ease forwards" }}>
-          <div className="yn-call-glass rounded-2xl p-4">
-            <p className="text-white text-sm font-semibold mb-3 text-center">Send a gift</p>
-            <div className="grid grid-cols-3 gap-2">
-              {GIFTS.map((g) => (
-                <button key={g.id} onClick={() => sendGift(g)} className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/10 hover:bg-white/20 hover:scale-110 transition text-white" data-testid={`gift-${g.id}`}>
-                  <span className="text-3xl">{g.emoji}</span>
-                  <span className="text-[10px] opacity-80">{g.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <GiftPickerPanel onSelect={sendGift} onClose={() => setShowGiftPicker(false)} />
       )}
 
       {showProfile && partner && (
