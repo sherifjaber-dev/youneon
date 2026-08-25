@@ -55,8 +55,9 @@ export function MessagesScreen({
     country: currentUser?.country,
     age: currentUser?.age,
   };
-  const { following, followers, followingIds, online, busyId, toggleFollow } =
-    useFollowGraph(currentUserId);
+  const graphUserId = me.id || currentUserId;
+  const { following, followers, followingIds, online, busyId, ready, toggleFollow } =
+    useFollowGraph(graphUserId);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -136,33 +137,47 @@ export function MessagesScreen({
         <div
           className="mt-3 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+          data-testid="follow-strip"
         >
-          {following.length === 0 ? (
-            <button
-              type="button"
-              onClick={() => setPeopleView("following")}
-              className="flex h-[188px] w-[118px] shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed border-purple-400/25 bg-white/[0.03] px-3 text-center"
+          {!ready ? (
+            [0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-white/8 bg-white/[0.04] px-2.5 pb-3 pt-3"
+              >
+                <div className="h-20 w-20 animate-pulse rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/25" />
+                <div className="mt-3 h-3 w-16 animate-pulse rounded-full bg-white/10" />
+                <div className="mt-3 h-11 w-full animate-pulse rounded-full bg-white/8" />
+              </div>
+            ))
+          ) : following.length === 0 ? (
+            <div
+              className="flex min-h-[196px] w-full min-w-[280px] flex-col items-center justify-center rounded-2xl border border-pink-400/20 bg-gradient-to-b from-purple-600/20 via-[#1a0828]/80 to-[#12061c] px-5 py-6 text-center shadow-[0_8px_28px_rgba(88,28,135,0.28)]"
+              data-testid="follow-strip-empty"
             >
-              <UserPlus size={22} className="mb-2 text-pink-300/80" />
-              <p className="text-[12px] font-medium leading-snug text-white/45">
-                People you follow appear here
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-[0_0_24px_rgba(236,72,153,0.35)]">
+                <UserPlus size={22} className="text-white" />
+              </div>
+              <p className="text-[15px] font-semibold text-white">No one here yet</p>
+              <p className="mt-1 max-w-[240px] text-[12px] leading-relaxed text-white/45">
+                Follow people from History and they appear here instantly — with a photo, name, and Message.
               </p>
-            </button>
+            </div>
           ) : (
             following.map((person) => (
               <div
                 key={person.id}
-                className="flex w-[118px] shrink-0 flex-col items-center rounded-2xl border border-white/8 bg-white/[0.045] px-2.5 pb-3 pt-3"
+                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-white/8 bg-white/[0.045] px-2.5 pb-3 pt-3"
                 data-testid={`follow-card-${person.id}`}
               >
                 <NeonAvatar
                   src={person.photo}
                   name={person.name}
-                  size={64}
+                  size={80}
                   showPhoto={hasOwnPhoto}
                   online={!!online[person.id]}
                 />
-                <p className="mt-2 w-full truncate text-center text-[13px] font-bold text-white">
+                <p className="mt-2.5 w-full truncate text-center text-[13px] font-bold text-white">
                   {person.name}
                 </p>
                 <button

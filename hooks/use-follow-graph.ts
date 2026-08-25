@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   followUser,
   personFromFollow,
@@ -24,24 +24,63 @@ function mergeLive(person: FollowPerson, live: FollowPerson | undefined): Follow
   };
 }
 
+function snapshotToPerson(other: FollowSnapshot): FollowPerson {
+  return {
+    id: other.id,
+    name: (other.name && other.name.trim()) || other.id,
+    photo: other.photo || other.avatar || "",
+    country: other.country || "",
+    age: other.age,
+  };
+}
+
+function applyOverlay(
+  rows: FollowPerson[],
+  pendingAdd: FollowPerson[],
+  pendingRemove: Set<string>
+): FollowPerson[] {
+  const map = new Map<string, FollowPerson>();
+  rows.forEach((p) => {
+    if (p.id && !pendingRemove.has(p.id)) map.set(p.id, p);
+  });
+  pendingAdd.forEach((p) => {
+    if (p.id && !pendingRemove.has(p.id) && !map.has(p.id)) map.set(p.id, p);
+  });
+  return [...map.values()];
+}
+
 export function useFollowGraph(userId?: string) {
   const [followingRows, setFollowingRows] = useState<FollowPerson[]>([]);
   const [followerRows, setFollowerRows] = useState<FollowPerson[]>([]);
   const [liveById, setLiveById] = useState<Record<string, FollowPerson>>({});
   const [online, setOnline] = useState<Record<string, boolean>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const pendingAddRef = useRef<FollowPerson[]>([]);
+  const pendingRemoveRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    pendingAddRef.current = [];
+    pendingRemoveRef.current = new Set();
     if (!userId) {
       setFollowingRows([]);
       setFollowerRows([]);
+      setReady(true);
       return;
     }
+    setReady(false);
     const unsubFollow = subscribeToFollowing(userId, (rows) => {
-      setFollowingRows(rows.map((r) => personFromFollow(r, userId)));
+      const people = rows
+        .map((r) => personFromFollow(r, userId))
+        .filter((p) => p.id && p.id !== userId);
+      setFollowingRows(applyOverlay(people, pendingAddRef.current, pendingRemoveRef.current));
+      setReady(true);
     });
     const unsubFollowers = subscribeToFollowers(userId, (rows) => {
-      setFollowerRows(rows.map((r) => personFromFollow(r, userId)));
+      const people = rows
+        .map((r) => personFromFollow(r, userId))
+        .filter((p) => p.id && p.id !== userId);
+      setFollowerRows(people);
     });
     return () => {
       unsubFollow();
@@ -104,11 +143,20 @@ export function useFollowGraph(userId?: string) {
 
   const follow = useCallback(
     async (me: FollowSnapshot, other: FollowSnapshot) => {
-      if (!other.id || busyId) return;
+      if (!other.id || !me.id || other.id === me.id || busyId) return;
+      const person = snapshotToPerson(other);
+      pendingRemoveRef.current.delete(other.id);
+      pendingAddRef.current = [
+        person,
+        ...pendingAddRef.current.filter((p) => p.id !== other.id),
+      ];
+      setFollowingRows((prev) => applyOverlay(prev, pendingAddRef.current, pendingRemoveRef.current));
       setBusyId(other.id);
       try {
         await followUser(me, other);
       } catch (e) {
+        pendingAddRef.current = pendingAddRef.current.filter((p) => p.id !== other.id);
+        setFollowingRows((prev) => prev.filter((p) => p.id !== other.id));
         console.warn("follow failed", e);
       } finally {
         setBusyId(null);
@@ -119,11 +167,15 @@ export function useFollowGraph(userId?: string) {
 
   const unfollow = useCallback(
     async (meId: string, otherId: string) => {
-      if (!otherId || busyId) return;
+      if (!otherId || !meId || busyId) return;
+      pendingAddRef.current = pendingAddRef.current.filter((p) => p.id !== otherId);
+      pendingRemoveRef.current.add(otherId);
+      setFollowingRows((prev) => prev.filter((p) => p.id !== otherId));
       setBusyId(otherId);
       try {
         await unfollowUser(meId, otherId);
       } catch (e) {
+        pendingRemoveRef.current.delete(otherId);
         console.warn("unfollow failed", e);
       } finally {
         setBusyId(null);
@@ -147,6 +199,7 @@ export function useFollowGraph(userId?: string) {
     followingIds,
     online,
     busyId,
+    ready,
     follow,
     unfollow,
     toggleFollow,

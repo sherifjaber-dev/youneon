@@ -44,7 +44,7 @@ export function HistoryScreen({
     country: currentUser?.country,
     age: currentUser?.age,
   };
-  const { followingIds, busyId, toggleFollow } = useFollowGraph(currentUserId);
+  const { followingIds, busyId, toggleFollow } = useFollowGraph(me.id || currentUserId);
 
   useEffect(() => {
     const bal = localStorage.getItem("youneon_neon_balance");
