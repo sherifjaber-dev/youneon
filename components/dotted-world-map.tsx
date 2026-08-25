@@ -53,10 +53,17 @@ export function DottedWorldMap({ className }: { className?: string }) {
     >
       <defs>
         <radialGradient id="ynMapGlow" cx="50%" cy="48%" r="62%">
-          <stop offset="0%" stopColor="#a855f7" stopOpacity="0.28" />
-          <stop offset="55%" stopColor="#7c3aed" stopOpacity="0.08" />
-          <stop offset="100%" stopColor="#07040f" stopOpacity="0" />
+          <stop offset="0%" stopColor="#c084fc" stopOpacity="0.42" />
+          <stop offset="45%" stopColor="#7c3aed" stopOpacity="0.16" />
+          <stop offset="100%" stopColor="#05050d" stopOpacity="0" />
         </radialGradient>
+        <filter id="ynMapDotGlow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="0.42" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       <rect width="100" height="50" fill="url(#ynMapGlow)" />
       {DOTS.map((d, i) => (
@@ -65,8 +72,9 @@ export function DottedWorldMap({ className }: { className?: string }) {
           cx={d.x}
           cy={d.y}
           r={d.r}
-          fill={i % 7 === 0 ? "#f0abfc" : i % 5 === 0 ? "#60a5fa" : "#c084fc"}
-          opacity={0.55 + (i % 4) * 0.12}
+          fill={i % 7 === 0 ? "#f0abfc" : i % 5 === 0 ? "#67e8f9" : "#d8b4fe"}
+          opacity={0.72 + (i % 4) * 0.07}
+          filter="url(#ynMapDotGlow)"
         />
       ))}
     </svg>

@@ -129,40 +129,41 @@ export function DiscoverScreen({
   };
 
   return (
-    <div className="yn-discover flex h-full min-h-0 flex-col gap-3 overflow-y-auto px-4 pb-4 pt-3">
-      <div className="yn-live-card relative min-h-[188px] flex-[1.05] overflow-hidden">
+    <div className="yn-discover flex h-full min-h-0 flex-col gap-3.5 overflow-y-auto px-4 pb-4 pt-3">
+      <div className="yn-live-card relative min-h-[210px] flex-[1.08] overflow-hidden">
         <DottedWorldMap className="absolute inset-0 h-full w-full" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#07040f]/20 via-transparent to-[#07040f]/75" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#05050d]/10 via-transparent to-[#05050d]/80" />
 
-        <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-[#ef4444] px-2 py-0.5 shadow-[0_0_12px_rgba(239,68,68,0.55)]">
+        <div className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full bg-[#ef4444] px-2.5 py-0.5 shadow-[0_0_16px_rgba(239,68,68,0.85)]">
           <LiveWaveIcon />
           <span className="text-[10px] font-bold tracking-[0.14em] text-white">LIVE</span>
         </div>
 
-        <div className="relative z-10 flex h-full min-h-[188px] flex-col items-center justify-center px-4 pb-4 pt-8">
-          <p className="text-center text-[22px] font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
-            Start Random <span className="text-[#ff4ec8] drop-shadow-[0_0_12px_rgba(255,78,200,0.7)]">Video Chat</span>
+        <div className="relative z-10 flex h-full min-h-[210px] flex-col items-center justify-center px-4 pb-4 pt-8">
+          <p className="text-center text-[24px] font-bold leading-tight tracking-tight text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.55)]">
+            Start Random{" "}
+            <span className="text-[#ff4fd8] drop-shadow-[0_0_16px_rgba(255,78,200,0.95)]">Video Chat</span>
           </p>
 
           {liveAvatars.length > 0 && (
-            <div className="mt-4 flex items-center justify-center gap-3">
+            <div className="mt-5 flex items-center justify-center gap-3.5">
               {liveAvatars.map((person, i) => (
                 <div
                   key={person.id}
-                  className="relative rounded-full p-[2px]"
+                  className="relative rounded-full p-[2.5px]"
                   style={{
-                    boxShadow: `0 0 12px ${RING_COLORS[i % RING_COLORS.length]}`,
+                    boxShadow: `0 0 16px ${RING_COLORS[i % RING_COLORS.length]}, 0 0 28px ${RING_COLORS[i % RING_COLORS.length]}66`,
                     background: `linear-gradient(135deg, ${RING_COLORS[i % RING_COLORS.length]}, ${RING_COLORS[(i + 1) % RING_COLORS.length]})`,
                   }}
                 >
-                  <div className="rounded-full bg-[#07040f] p-[2px]">
-                    <NeonAvatar src={person.photo} name={person.name} size={44} showPhoto />
+                  <div className="rounded-full bg-[#05050d] p-[2px]">
+                    <NeonAvatar src={person.photo} name={person.name} size={48} showPhoto />
                   </div>
                   <span
                     className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full"
                     style={{
                       background: DOT_COLORS[i % DOT_COLORS.length],
-                      boxShadow: `0 0 8px ${DOT_COLORS[i % DOT_COLORS.length]}`,
+                      boxShadow: `0 0 10px ${DOT_COLORS[i % DOT_COLORS.length]}, 0 0 16px ${DOT_COLORS[i % DOT_COLORS.length]}`,
                     }}
                     aria-label="Online"
                   />
@@ -175,7 +176,7 @@ export function DiscoverScreen({
 
       <div className="flex-shrink-0 space-y-3">
         <div>
-          <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9b8bb8]">
+          <p className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9b8bb8]">
             Looking for:
           </p>
           <div className="flex gap-2">
@@ -242,12 +243,12 @@ export function DiscoverScreen({
                 </span>
               )}
               <ChevronDown
-                className={`h-4 w-4 text-[#c084fc] transition-transform ${showCountryDropdown ? "rotate-180" : ""}`}
+                className={`h-4 w-4 text-white/90 transition-transform ${showCountryDropdown ? "rotate-180" : ""}`}
               />
             </div>
           </button>
           {showCountryDropdown && (
-            <div className="absolute left-0 right-0 z-30 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#a855f7]/35 bg-[#12081c] shadow-[0_12px_32px_rgba(0,0,0,0.45)]">
+            <div className="absolute left-0 right-0 z-30 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#a855f7]/50 bg-[#0c0616] shadow-[0_12px_32px_rgba(0,0,0,0.55),0_0_22px_rgba(168,85,247,0.28)]">
               {countries.map((country) => (
                 <div
                   key={country}
@@ -280,7 +281,7 @@ export function DiscoverScreen({
           className="yn-start-cta"
           data-testid="start-random-chat-btn"
         >
-          <Video className="h-[18px] w-[18px] text-white" strokeWidth={2.1} />
+          <Video className="h-[18px] w-[18px] text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.65)]" strokeWidth={2.15} />
           <span>Start Random Chat</span>
           {isPremium && <PremiumBadge />}
         </button>
@@ -293,8 +294,8 @@ export function DiscoverScreen({
             ◆ {totalCost} Neon · first chat is free
           </p>
         ) : (
-          <p className="mt-2 text-center text-[12px] font-medium text-[#c4b5d8]">
-            • Matching worldwide · <span className="font-semibold text-[#e9d5ff]">Free</span> •
+          <p className="mt-2 text-center text-[12px] font-medium text-[#b9a8c9]">
+            • Matching worldwide · <span className="font-semibold text-white">Free</span> •
           </p>
         )}
       </div>
@@ -306,11 +307,13 @@ export function DiscoverScreen({
           className="yn-premium-card flex-shrink-0 text-left"
         >
           <div className="min-w-0 flex-1 pr-2">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f5d76e]">
-              <Crown size={12} className="text-[#f5d76e]" />
+            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f5d76e] drop-shadow-[0_0_8px_rgba(245,215,110,0.55)]">
+              <Crown size={12} className="text-[#f5d76e] drop-shadow-[0_0_8px_rgba(245,215,110,0.7)]" />
               Sponsored · YouNeon Premium
             </p>
-            <p className="mt-1 text-[15px] font-bold leading-snug text-[#f5d76e]">Unlock Premium Features,</p>
+            <p className="mt-1 text-[15px] font-bold leading-snug text-[#f5d76e] drop-shadow-[0_0_10px_rgba(245,215,110,0.45)]">
+              Unlock Premium Features,
+            </p>
             <p className="mt-0.5 text-[11px] leading-snug text-[#b8a9c9]">
               Better matches, HD quality, and no waiting.
             </p>
@@ -333,7 +336,7 @@ export function DiscoverScreen({
           onClick={() => setShowInsufficientModal(false)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-[#a855f7]/30 bg-[#12081c] p-5 text-white shadow-xl"
+            className="w-full max-w-sm rounded-2xl border border-[#a855f7]/40 bg-[#0c0616] p-5 text-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
             data-testid="insufficient-neon-modal"
           >

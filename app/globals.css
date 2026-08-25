@@ -304,13 +304,18 @@ html.youneon-signed-in select {
   }
   html,
   body {
-    background-color: #0f0117;
+    background-color: #05050d;
     color: #ffffff;
   }
   html.youneon-signed-in,
   html.youneon-signed-in body {
-    background-color: var(--yn-bg) !important;
-    color: var(--yn-text) !important;
+    background-color: #05050d !important;
+    color: var(--yn-text);
+  }
+  html.youneon-legal,
+  html.youneon-legal body {
+    background-color: #F6F4F8 !important;
+    color: #1f1f23 !important;
   }
   button {
     -webkit-tap-highlight-color: transparent;
@@ -1958,57 +1963,82 @@ html.youneon-signed-in select {
 }
 
 .yn-chrome {
-  background: rgba(8, 4, 18, 0.94);
+  background: #080412;
+  color: #fff;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-color: rgba(168, 85, 247, 0.28);
-  box-shadow: 0 0 24px rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.38);
+  box-shadow: 0 0 28px rgba(168, 85, 247, 0.22);
+}
+
+.yn-chrome-icon {
+  color: #d8b4fe;
+  filter:
+    drop-shadow(0 0 5px rgba(192, 132, 252, 0.95))
+    drop-shadow(0 0 12px rgba(168, 85, 247, 0.55));
+}
+
+.yn-chrome-gold {
+  color: #f5d76e;
+  text-shadow:
+    0 0 8px rgba(245, 215, 110, 0.85),
+    0 0 16px rgba(212, 175, 55, 0.45);
 }
 
 .yn-script-logo {
   font-family: "Pacifico", "Segoe Script", "Snell Roundhand", cursive;
-  font-size: 28px;
+  font-size: 30px;
   line-height: 1;
   letter-spacing: 0.01em;
 }
 
 .yn-script-you {
-  color: #ff4ec8;
-  text-shadow: 0 0 8px rgba(255, 78, 200, 0.95), 0 0 18px rgba(255, 43, 214, 0.55);
+  color: #ff4fd8;
+  text-shadow:
+    0 0 6px #ff4fd8,
+    0 0 14px rgba(255, 78, 200, 1),
+    0 0 28px rgba(192, 38, 211, 0.75),
+    0 0 42px rgba(255, 43, 214, 0.4);
 }
 
 .yn-script-neon {
-  color: #4db8ff;
-  text-shadow: 0 0 8px rgba(77, 184, 255, 0.95), 0 0 18px rgba(59, 130, 255, 0.5);
+  color: #5ec8ff;
+  text-shadow:
+    0 0 6px #5ec8ff,
+    0 0 14px rgba(77, 184, 255, 1),
+    0 0 28px rgba(59, 130, 255, 0.7),
+    0 0 40px rgba(168, 85, 247, 0.28);
 }
 
 .yn-discover {
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(124, 58, 237, 0.28), transparent 55%),
-    #07040f;
+    radial-gradient(90% 55% at 50% -8%, rgba(124, 58, 237, 0.42), transparent 58%),
+    radial-gradient(70% 40% at 80% 0%, rgba(255, 78, 200, 0.12), transparent 50%),
+    #05050d;
   color: #fff;
 }
 
 .yn-live-card {
   border-radius: 22px;
-  border: 1px solid rgba(192, 132, 252, 0.45);
-  background: #0b0614;
+  border: 1.5px solid rgba(192, 132, 252, 0.72);
+  background: #0a0614;
   box-shadow:
-    0 0 0 1px rgba(168, 85, 247, 0.12),
-    0 0 28px rgba(168, 85, 247, 0.28),
-    inset 0 0 40px rgba(88, 28, 135, 0.18);
+    0 0 0 1px rgba(168, 85, 247, 0.22),
+    0 0 36px rgba(168, 85, 247, 0.48),
+    0 0 64px rgba(124, 58, 237, 0.22),
+    inset 0 0 48px rgba(88, 28, 135, 0.35);
 }
 
 .yn-gender-pill {
   display: flex;
-  height: 52px;
+  height: 54px;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid transparent;
-  background: rgba(12, 6, 22, 0.85);
+  border: 1.6px solid transparent;
+  background: #0c0616;
   color: #d6c7e8;
   transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
@@ -2019,35 +2049,38 @@ html.youneon-signed-in select {
 }
 
 .yn-gender-pink {
-  border-color: rgba(244, 114, 182, 0.55);
+  border-color: #ff4ec8;
   color: #f9a8d4;
+  box-shadow: 0 0 12px rgba(255, 78, 200, 0.28);
 }
-.yn-gender-pink .yn-gender-symbol { color: #ff4ec8; }
+.yn-gender-pink .yn-gender-symbol { color: #ff4ec8; text-shadow: 0 0 8px rgba(255, 78, 200, 0.8); }
 .yn-gender-pink.is-on {
-  background: rgba(255, 78, 200, 0.16);
-  box-shadow: 0 0 16px rgba(255, 78, 200, 0.35);
+  background: #1a0820;
+  box-shadow: 0 0 18px rgba(255, 78, 200, 0.55), 0 0 32px rgba(255, 78, 200, 0.22);
   color: #fff;
 }
 
 .yn-gender-blue {
-  border-color: rgba(56, 189, 248, 0.55);
+  border-color: #38bdf8;
   color: #7dd3fc;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.28);
 }
-.yn-gender-blue .yn-gender-symbol { color: #38bdf8; }
+.yn-gender-blue .yn-gender-symbol { color: #38bdf8; text-shadow: 0 0 8px rgba(56, 189, 248, 0.8); }
 .yn-gender-blue.is-on {
-  background: rgba(56, 189, 248, 0.16);
-  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+  background: #07121c;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.55), 0 0 32px rgba(56, 189, 248, 0.22);
   color: #fff;
 }
 
 .yn-gender-purple {
-  border-color: rgba(192, 132, 252, 0.6);
+  border-color: #c084fc;
   color: #d8b4fe;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.32);
 }
-.yn-gender-purple .yn-gender-symbol { color: #c084fc; }
+.yn-gender-purple .yn-gender-symbol { color: #c084fc; text-shadow: 0 0 8px rgba(192, 132, 252, 0.85); }
 .yn-gender-purple.is-on {
-  background: rgba(168, 85, 247, 0.2);
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.38);
+  background: #140824;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.6), 0 0 34px rgba(168, 85, 247, 0.28);
   color: #fff;
 }
 
@@ -2056,29 +2089,30 @@ html.youneon-signed-in select {
   width: 100%;
   align-items: center;
   gap: 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(192, 132, 252, 0.45);
-  background: rgba(12, 6, 22, 0.9);
-  padding: 8px 14px;
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.16);
+  border-radius: 20px;
+  border: 1.5px solid rgba(192, 132, 252, 0.62);
+  background: #0c0616;
+  padding: 10px 16px;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.28);
 }
 
 .yn-start-cta {
   display: flex;
-  height: 54px;
+  height: 56px;
   width: 100%;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   border-radius: 999px;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.01em;
   color: #fff;
-  background-image: linear-gradient(90deg, #ff2bd6 0%, #7c3aed 48%, #3b82ff 100%);
+  background-image: linear-gradient(90deg, #ff2bd6 0%, #a21caf 42%, #6d28d9 68%, #3b82ff 100%);
   box-shadow:
-    0 8px 24px rgba(255, 43, 214, 0.32),
-    0 0 22px rgba(59, 130, 255, 0.28);
+    0 0 22px rgba(255, 43, 214, 0.65),
+    0 0 42px rgba(124, 58, 237, 0.45),
+    0 8px 28px rgba(59, 130, 255, 0.32);
 }
 .yn-start-cta:active {
   transform: scale(0.985);
@@ -2088,10 +2122,38 @@ html.youneon-signed-in select {
   display: flex;
   align-items: center;
   border-radius: 18px;
-  border: 1px solid rgba(245, 215, 110, 0.55);
-  background: linear-gradient(180deg, rgba(42, 28, 8, 0.55), rgba(12, 6, 22, 0.92));
+  border: 1.5px solid rgba(245, 215, 110, 0.72);
+  background: linear-gradient(180deg, #1a1408 0%, #0c0616 100%);
   padding: 12px 12px 12px 14px;
-  box-shadow: 0 0 18px rgba(212, 175, 55, 0.22);
+  box-shadow:
+    0 0 22px rgba(212, 175, 55, 0.38),
+    0 0 40px rgba(212, 175, 55, 0.16);
+}
+
+.yn-nav-icon {
+  display: flex;
+  height: 32px;
+  width: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.yn-nav-slot.is-on .yn-nav-icon {
+  color: #ff4ec8;
+  background: rgba(255, 78, 200, 0.14);
+  box-shadow:
+    0 0 14px rgba(255, 78, 200, 0.7),
+    0 0 26px rgba(255, 78, 200, 0.35);
+}
+
+.yn-nav-slot.is-on {
+  color: #ff4ec8;
+}
+
+.yn-nav-slot.is-on .yn-nav-label {
+  color: #ff4ec8;
+  text-shadow: 0 0 10px rgba(255, 78, 200, 0.85);
 }
 
 .yn-messages [class*="border-black"] {
@@ -2106,6 +2168,7 @@ html.youneon-signed-in select {
   font-weight: 700;
   color: #1a1408;
   background-image: linear-gradient(90deg, #f5d76e, #f6e27a);
+  box-shadow: 0 0 12px rgba(245, 215, 110, 0.45);
 }
 
 .yn-messages {

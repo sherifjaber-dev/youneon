@@ -58,7 +58,7 @@ export function TopBar({
               <button
                 type="button"
                 onClick={openPanel}
-                className="relative flex h-8 w-8 items-center justify-center rounded-full text-[#e5e7eb] transition-colors hover:text-white active:scale-95"
+                className="yn-chrome-icon relative flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95"
                 aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
               >
                 <Bell size={18} strokeWidth={1.7} />
@@ -70,8 +70,8 @@ export function TopBar({
               <button
                 type="button"
                 onClick={() => setItemsOpen(true)}
-                className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
-                  bagActive ? "text-[#60a5fa]" : "text-[#e5e7eb] hover:text-white"
+                className={`yn-chrome-icon relative flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
+                  bagActive ? "text-[#60a5fa]" : ""
                 }`}
                 title={
                   bagActive
@@ -96,7 +96,7 @@ export function TopBar({
 
             <button
               onClick={onNeonClick}
-              className="flex items-center gap-1 pr-0.5 text-[#f5d76e] transition-opacity active:scale-95"
+              className="yn-chrome-gold flex items-center gap-1 pr-0.5 transition-opacity active:scale-95"
               aria-label="Open Neon shop"
             >
               <span className="text-[11px] leading-none">◆</span>

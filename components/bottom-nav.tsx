@@ -63,21 +63,20 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               key={id}
               onClick={() => onTabChange(id)}
               className={cn(
-                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors active:scale-95",
-                active
-                  ? "text-[#ff4ec8] bg-[#ff4ec8]/10 ring-1 ring-[#ff4ec8]/70 shadow-[0_0_12px_rgba(255,78,200,0.4)]"
-                  : "text-[#8b8098]"
+                "yn-nav-slot flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors active:scale-95",
+                active ? "is-on" : "text-[#8b8098]"
               )}
             >
-              <Icon
-                size={20}
-                strokeWidth={active ? 2.15 : 1.75}
-                className={active ? "drop-shadow-[0_0_8px_rgba(255,78,200,0.85)]" : undefined}
-              />
+              <span className="yn-nav-icon">
+                <Icon
+                  size={20}
+                  strokeWidth={active ? 2.15 : 1.75}
+                />
+              </span>
               <span
                 className={cn(
-                  "text-[10px] font-medium leading-none",
-                  active && "text-[#ff4ec8] drop-shadow-[0_0_6px_rgba(255,78,200,0.55)]"
+                  "yn-nav-label text-[10px] font-medium leading-none",
+                  !active && "text-[#8b8098]"
                 )}
               >
                 {label}

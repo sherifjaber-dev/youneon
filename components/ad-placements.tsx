@@ -81,26 +81,26 @@ export function AdInterstitial({ ads, onSubscribe }: AdInterstitialProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-black/8 bg-yn-card p-5 text-yn-text shadow-xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-[#a855f7]/40 bg-[#0c0616] p-5 text-white shadow-[0_0_28px_rgba(168,85,247,0.28)]">
         <div className="mb-3 flex items-start justify-between gap-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-yn-muted">Sponsored</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#f5d76e]">Sponsored</p>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-black/8 text-yn-muted hover:text-yn-text"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/12 text-[#b9a8c9] hover:text-white"
             aria-label="Close"
           >
             <X size={16} />
           </button>
         </div>
-        <p className="text-lg font-semibold">{ad.title}</p>
-        <p className="mt-1.5 text-sm leading-relaxed text-yn-muted">{ad.body}</p>
+        <p className="text-lg font-semibold text-white">{ad.title}</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-[#b9a8c9]">{ad.body}</p>
         <div className="mt-4 flex gap-2">
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="h-11 flex-1 rounded-xl border border-black/10 text-[15px] font-semibold text-yn-muted"
+            className="h-11 flex-1 rounded-xl border border-white/12 text-[15px] font-semibold text-[#c4b5d8]"
           >
             Not now
           </button>
