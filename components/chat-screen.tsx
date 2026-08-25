@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { ArrowLeft, Send, Smile, ImageIcon, Video, Lock, Diamond } from "lucide-react";
-import EmojiPicker, { Theme } from "emoji-picker-react";
 import {
   subscribeToMessages,
   sendChatMessage,
@@ -19,6 +18,12 @@ import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { PremiumBadge } from "@/components/premium-badge";
 import { NeonAvatar } from "@/components/neon-avatar";
 import { countryToFlag } from "@/lib/countries";
+import {
+  ChatSmileyText,
+  YouNeonSmileyPicker,
+  smileyToken,
+  type SmileyId,
+} from "@/components/icons/youneon-smileys";
 
 const UNLOCK_COST = 100;
 
@@ -139,8 +144,12 @@ export function ChatScreen({
     setSending(false);
   };
 
-  const handleEmojiClick = (emojiData: any) => {
-    setInput((p) => p + emojiData.emoji);
+  const handleSmiley = (id: SmileyId) => {
+    const token = smileyToken(id);
+    setInput((prev) => {
+      if (!prev) return token;
+      return prev.endsWith(" ") ? prev + token : `${prev} ${token}`;
+    });
   };
 
   const compressImage = (file: File, maxW = 800, quality = 0.7): Promise<string> =>
@@ -360,7 +369,7 @@ export function ChatScreen({
                           className="rounded-lg max-w-full mb-1"
                         />
                       )}
-                      {msg.text && <p className="break-words whitespace-pre-wrap">{msg.text}</p>}
+                      {msg.text && <ChatSmileyText text={msg.text} />}
                       <p className="text-[10px] text-white/60 mt-1 text-right">
                         {msg.timestamp
                           ? new Date(msg.timestamp).toLocaleTimeString([], {
@@ -378,12 +387,18 @@ export function ChatScreen({
           </div>
 
           {showEmoji && (
-            <div className="fixed bottom-20 left-2 z-50">
-              <EmojiPicker onEmojiClick={handleEmojiClick} theme={Theme.DARK} height={350} width={300} />
-            </div>
+            <>
+              <button
+                type="button"
+                className="yn-smiley-scrim"
+                aria-label="Close smileys"
+                onClick={() => setShowEmoji(false)}
+              />
+              <YouNeonSmileyPicker onSelect={handleSmiley} />
+            </>
           )}
 
-          <div className="fixed bottom-0 left-0 right-0 p-3 bg-purple-950/95 backdrop-blur-lg border-t border-purple-500/30 flex items-center gap-2">
+          <div className="fixed bottom-0 left-0 right-0 p-3 bg-purple-950/95 backdrop-blur-lg border-t border-purple-500/30 flex items-center gap-2 z-40">
             <button
               onClick={() => setShowEmoji((v) => !v)}
               className="p-2 text-purple-300 hover:text-white"
