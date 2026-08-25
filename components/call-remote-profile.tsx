@@ -141,6 +141,7 @@ export function RemoteProfileModal({
   hint,
   dailyName,
   viewerId,
+  standalone = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -148,6 +149,7 @@ export function RemoteProfileModal({
   hint: CallPartnerHint | null;
   dailyName?: string;
   viewerId?: string;
+  standalone?: boolean;
 }) {
   const profile = useMemo(
     () => mergeRemoteProfile(firestoreUser, hint, dailyName),
@@ -182,7 +184,7 @@ export function RemoteProfileModal({
 
   return (
     <div
-      className="yn-remote-profile-overlay"
+      className={`yn-remote-profile-overlay${standalone ? " yn-remote-profile-overlay--standalone" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="yn-remote-profile-name"
@@ -253,6 +255,19 @@ export function RemoteProfileModal({
             <p className="yn-remote-profile-label">About</p>
             <p className="yn-remote-profile-bio">{displayOrDash(profile.bio)}</p>
           </div>
+
+          {profile.interests.length > 0 && (
+            <div className="yn-remote-profile-section">
+              <p className="yn-remote-profile-label">Interests</p>
+              <div className="yn-remote-profile-tags">
+                {profile.interests.map((tag) => (
+                  <span key={tag} className="yn-remote-profile-tag">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

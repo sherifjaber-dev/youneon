@@ -624,6 +624,11 @@
   -webkit-backdrop-filter: blur(10px);
 }
 
+.yn-remote-profile-overlay.yn-remote-profile-overlay--standalone {
+  position: fixed;
+  z-index: 130;
+}
+
 @media (min-width: 480px) {
   .yn-remote-profile-overlay {
     align-items: center;
@@ -803,6 +808,25 @@
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.86);
   white-space: pre-wrap;
+}
+
+.yn-remote-profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.yn-remote-profile-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(147, 51, 234, 0.35), rgba(236, 72, 153, 0.35));
+  border: 1px solid rgba(236, 72, 153, 0.28);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -10,7 +10,7 @@ import { BottomNav, type AppTab } from "@/components/bottom-nav";
 import { TopBar } from "@/components/top-bar";
 import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
-import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory } from "@/lib/firestore-service";
+import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory, subscribeToUserProfile } from "@/lib/firestore-service";
 import { formatCallDuration } from "@/lib/history-utils";
 import { countryToFlag } from "@/lib/countries";
 import { piAuthService } from "@/lib/pi-auth-service";
@@ -59,10 +59,15 @@ type YouNeonUser = {
   gender?: string;
   avatar: string;
   profilePicture: string;
+  photos?: string[];
   languages: string[];
   interests: string[];
   bio?: string;
   premiumUntil?: string;
+  reactionsReceived?: Record<string, number>;
+  giftsReceivedCount?: number;
+  nameChangeMonth?: string;
+  nameChangeCount?: number;
 };
 
 function readLocalProfileExtras(): Partial<YouNeonUser> {
@@ -70,8 +75,9 @@ function readLocalProfileExtras(): Partial<YouNeonUser> {
     const stored = localStorage.getItem("youneon_user_profile");
     if (!stored) return {};
     const data = JSON.parse(stored);
-    const photo = data?.profilePicture || data?.photos?.[data?.mainPhotoIndex || 0] || "";
-    return { ...data, profilePicture: photo };
+    const photos = Array.isArray(data?.photos) ? data.photos.filter(Boolean) : [];
+    const photo = data?.profilePicture || photos[0] || "";
+    return { ...data, photos, profilePicture: photo };
   } catch {
     return {};
   }
@@ -91,7 +97,12 @@ function stubUser(uid?: string, username?: string): YouNeonUser {
     gender: extras.gender || "",
     avatar: extras.avatar || "🙂",
     profilePicture: extras.profilePicture || "",
+    photos: extras.photos || (extras.profilePicture ? [extras.profilePicture] : []),
     languages: extras.languages || ["English"],
+    reactionsReceived: extras.reactionsReceived,
+    giftsReceivedCount: extras.giftsReceivedCount,
+    nameChangeMonth: extras.nameChangeMonth,
+    nameChangeCount: extras.nameChangeCount,
     interests: extras.interests || [],
     bio: extras.bio || "",
   };
@@ -239,9 +250,14 @@ export function YouNeonApp() {
         gender: extras.gender || "",
         avatar: extras.avatar || "🙂",
         profilePicture: extras.profilePicture || "",
+        photos: extras.photos || (extras.profilePicture ? [extras.profilePicture] : []),
         languages: extras.languages || ["English"],
         interests: extras.interests || [],
         bio: extras.bio || "",
+        reactionsReceived: extras.reactionsReceived,
+        giftsReceivedCount: extras.giftsReceivedCount,
+        nameChangeMonth: extras.nameChangeMonth,
+        nameChangeCount: extras.nameChangeCount,
       };
 
       try {
@@ -254,11 +270,18 @@ export function YouNeonApp() {
             uid,
             piUsername,
             profilePicture: remote.profilePicture || extras.profilePicture || "",
+            photos: Array.isArray(remote.photos) && remote.photos.length
+              ? remote.photos
+              : extras.photos || (remote.profilePicture ? [remote.profilePicture] : extras.profilePicture ? [extras.profilePicture] : []),
             bio: remote.bio || extras.bio || "",
             country: remote.country || remote.location || extras.country || extras.location || "",
             location: remote.location || remote.country || extras.location || extras.country || "",
             gender: remote.gender || extras.gender || "",
             premiumUntil: remote.premiumUntil || extras.premiumUntil || readStoredPremiumUntil() || undefined,
+            reactionsReceived: remote.reactionsReceived || extras.reactionsReceived,
+            giftsReceivedCount: remote.giftsReceivedCount ?? extras.giftsReceivedCount,
+            nameChangeMonth: remote.nameChangeMonth || extras.nameChangeMonth,
+            nameChangeCount: remote.nameChangeCount ?? extras.nameChangeCount,
           };
           if (remote.premiumUntil) {
             persistPremiumUntil(remote.premiumUntil);
@@ -296,6 +319,9 @@ export function YouNeonApp() {
                 interests: prev.interests,
                 languages: prev.languages,
                 profilePicture: prev.profilePicture,
+                photos: prev.photos,
+                nameChangeMonth: prev.nameChangeMonth,
+                nameChangeCount: prev.nameChangeCount,
               }
             : profile;
         try {
@@ -311,6 +337,27 @@ export function YouNeonApp() {
       cancelled = true;
     };
   }, [signedIn, isGuestDemo, user]);
+
+  useEffect(() => {
+    if (isGuestDemo || !signedIn) return;
+    const lite = readLiteSession();
+    const id = user?.username || lite?.username;
+    if (!id) return;
+    return subscribeToUserProfile(id, (remote) => {
+      if (!remote) return;
+      setCurrentUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          reactionsReceived: remote.reactionsReceived || prev.reactionsReceived,
+          giftsReceivedCount:
+            typeof remote.giftsReceivedCount === "number"
+              ? remote.giftsReceivedCount
+              : prev.giftsReceivedCount,
+        };
+      });
+    });
+  }, [signedIn, isGuestDemo, user?.username]);
 
   const updateNeonBalance = (n: number) => {
     setNeonBalance(n);
@@ -332,6 +379,11 @@ export function YouNeonApp() {
       interests: saved.interests || base.interests,
       languages: saved.languages?.length ? saved.languages : base.languages,
       profilePicture: saved.profilePicture || "",
+      photos: Array.isArray(saved.photos) ? saved.photos : base.photos || [],
+      nameChangeMonth: saved.nameChangeMonth || base.nameChangeMonth,
+      nameChangeCount: saved.nameChangeCount ?? base.nameChangeCount,
+      reactionsReceived: base.reactionsReceived,
+      giftsReceivedCount: base.giftsReceivedCount,
     };
 
     profileSavedAtRef.current = Date.now();
@@ -377,7 +429,10 @@ export function YouNeonApp() {
           interests: merged.interests,
           avatar: merged.avatar,
           profilePicture: merged.profilePicture,
+          photos: merged.photos || [],
           bio: merged.bio,
+          nameChangeMonth: merged.nameChangeMonth,
+          nameChangeCount: merged.nameChangeCount,
         });
       } catch (e) {
         console.warn("Profile cloud save failed", e);
@@ -455,7 +510,10 @@ export function YouNeonApp() {
   }
 
   const currentUserId = displayUser.id || displayUser.piUsername;
-  const hasOwnPhoto = !!(displayUser.profilePicture && displayUser.profilePicture.length > 0);
+  const hasOwnPhoto = !!(
+    (displayUser.profilePicture && displayUser.profilePicture.length > 0) ||
+    displayUser.photos?.[0]
+  );
   const isPremium = isPremiumActive(premiumUntil || displayUser.premiumUntil);
 
   if (activeChat && displayUser) {
@@ -607,8 +665,14 @@ export function YouNeonApp() {
         onSave={handleProfileSaved}
         currentUser={displayUser}
         isPremium={isPremium}
+        premiumUntil={premiumUntil}
+        neonBalance={neonBalance}
         announcements={announcements}
         currentUsername={displayUser.piUsername}
+        onOpenShop={() => {
+          setShowProfileModal(false);
+          setShowNeonShop(true);
+        }}
       />
       <NeonShopModal
         isOpen={showNeonShop}

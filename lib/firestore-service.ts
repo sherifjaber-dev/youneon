@@ -3,6 +3,7 @@ import {
   query, where, orderBy, onSnapshot, serverTimestamp, Timestamp, increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { GIFT_TO_REACTION } from "@/lib/profile-catalog";
 
 export interface UserProfile {
   id?: string;
@@ -23,6 +24,9 @@ export interface UserProfile {
   lastPaymentId?: string;
   neonBalance?: number;
   giftsReceivedCount?: number;
+  reactionsReceived?: Record<string, number>;
+  nameChangeMonth?: string;
+  nameChangeCount?: number;
   createdAt?: Date;
   updatedAt?: unknown;
   lastProfileUpdate?: unknown;
@@ -92,9 +96,14 @@ export const incrementGiftsReceived = async (
 ) => {
   if (!recipientUserId || recipientUserId === "anon") return;
   try {
+    const reactionKey = meta?.giftId ? GIFT_TO_REACTION[meta.giftId] : undefined;
     await setDoc(
       doc(db, "users", recipientUserId),
-      { giftsReceivedCount: increment(1), updatedAt: Timestamp.now() },
+      {
+        giftsReceivedCount: increment(1),
+        updatedAt: Timestamp.now(),
+        ...(reactionKey ? { [`reactionsReceived.${reactionKey}`]: increment(1) } : {}),
+      },
       { merge: true }
     );
   } catch (e) {
