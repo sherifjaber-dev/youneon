@@ -7,8 +7,9 @@ import { NeonAvatar } from "@/components/neon-avatar";
 import { FollowersScreen, type ChatTarget } from "@/components/followers-screen";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
-import { CountryLabel } from "@/components/country-flag";
+import { CountryFlag } from "@/components/country-flag";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
+import type { FollowSnapshot } from "@/lib/follow-service";
 
 interface MessagesScreenProps {
   currentUserId?: string;
@@ -105,7 +106,7 @@ export function MessagesScreen({
 
   if (peopleView !== "inbox") {
     return (
-      <>
+      <div className="yn-messages">
         <FollowersScreen
           key={peopleView}
           initialTab={peopleView}
@@ -122,20 +123,22 @@ export function MessagesScreen({
           onOpenProfile={(id) => setPreviewUserId(id)}
         />
         {previewSheet}
-      </>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-yn-bg pb-6 text-yn-text">
-      <div className="px-4 pt-3">
-        <h1 className="text-[32px] font-bold leading-none tracking-tight">Message</h1>
+    <div className="yn-messages">
+      <div className="yn-messages-heading">
+        <span className="yn-messages-heading-line" />
+        <h1>MESSAGES</h1>
+        <span className="yn-messages-heading-line" />
       </div>
 
       {!hasOwnPhoto && (
-        <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 p-3" data-testid="messages-photo-gate">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-600 to-pink-600">
-            <Camera size={16} className="text-white" />
+        <div className="yn-messages-gate" data-testid="messages-photo-gate">
+          <div className="yn-messages-gate-icon">
+            <Camera size={16} />
           </div>
           <div className="text-sm">
             <p className="font-semibold text-yn-text">Add your profile photo</p>
@@ -144,11 +147,11 @@ export function MessagesScreen({
         </div>
       )}
 
-      <div className="mt-5">
+      <div className="yn-messages-follow">
         <button
           type="button"
           onClick={() => setPeopleView("following")}
-          className="flex h-11 items-center gap-0.5 px-4 text-[13px] font-medium text-yn-muted"
+          className="yn-messages-follow-link"
           data-testid="follow-section-link"
         >
           Follow
@@ -156,28 +159,22 @@ export function MessagesScreen({
         </button>
 
         <div
-          className="mt-3 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+          className="yn-messages-strip"
+          style={{ WebkitOverflowScrolling: "touch" }}
           data-testid="follow-strip"
         >
           {!ready ? (
             [0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-black/6 bg-yn-card px-2.5 pb-3 pt-3 shadow-sm"
-              >
-                <div className="h-20 w-20 animate-pulse rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/25" />
-                <div                 className="mt-3 h-3 w-16 animate-pulse rounded-full bg-black/8" />
-                <div className="mt-3 h-11 w-full animate-pulse rounded-full bg-black/6" />
+              <div key={i} className="yn-messages-person">
+                <div className="yn-messages-skeleton animate-pulse" />
+                <div className="mt-2 h-3 w-12 animate-pulse rounded-full bg-white/10" />
+                <div className="mt-2 h-3 w-10 animate-pulse rounded-full bg-white/8" />
               </div>
             ))
           ) : following.length === 0 ? (
-            <div
-              className="flex min-h-[196px] w-full min-w-[280px] flex-col items-center justify-center rounded-2xl border border-fuchsia-200 bg-gradient-to-b from-fuchsia-50 via-yn-card to-pink-50 px-5 py-6 text-center shadow-[0_8px_28px_rgba(88,28,135,0.08)]"
-              data-testid="follow-strip-empty"
-            >
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-[0_8px_20px_rgba(192,38,211,0.22)]">
-                <UserPlus size={22} className="text-white" />
+            <div className="yn-messages-empty-follow" data-testid="follow-strip-empty">
+              <div className="yn-messages-followers-icon mb-3">
+                <UserPlus size={22} />
               </div>
               <p className="text-[15px] font-semibold text-yn-text">No one here yet</p>
               <p className="mt-1 max-w-[240px] text-[12px] leading-relaxed text-yn-muted">
@@ -188,7 +185,7 @@ export function MessagesScreen({
             following.map((person) => (
               <div
                 key={person.id}
-                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-black/6 bg-yn-card px-2.5 pb-3 pt-3 shadow-sm"
+                className="yn-messages-person"
                 data-testid={`follow-card-${person.id}`}
               >
                 <button
@@ -198,15 +195,14 @@ export function MessagesScreen({
                   aria-label={`View ${person.name}'s profile`}
                 >
                   <NeonAvatar
+                    className="yn-messages-ring"
                     src={person.photo}
                     name={person.name}
-                    size={80}
+                    size={64}
                     showPhoto={hasOwnPhoto}
                     online={!!online[person.id]}
                   />
-                  <p className="mt-2.5 w-full truncate text-center text-[13px] font-bold text-yn-text">
-                    {person.name}
-                  </p>
+                  <p className="yn-messages-person-name">{person.name}</p>
                 </button>
                 <button
                   type="button"
@@ -221,7 +217,7 @@ export function MessagesScreen({
                       isOnline: !!online[person.id],
                     })
                   }
-                  className="mt-2 flex h-11 w-full items-center justify-center rounded-full bg-yn-bg text-[12px] font-semibold text-yn-muted transition active:scale-[0.98]"
+                  className="yn-messages-person-msg"
                 >
                   Message
                 </button>
@@ -231,17 +227,17 @@ export function MessagesScreen({
         </div>
       </div>
 
-      <div className="mt-6 px-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-yn-muted">Messages</p>
+      <div className="yn-messages-section">
+        <p className="yn-messages-section-label">Messages</p>
 
         <button
           type="button"
           onClick={() => setPeopleView("followers")}
-          className="mt-3 flex min-h-[72px] w-full items-center gap-3 py-3 text-left"
+          className="yn-messages-followers"
           data-testid="see-my-followers"
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/90 to-fuchsia-500/90 shadow-[0_4px_14px_rgba(168,85,247,0.35)]">
-            <UserPlus size={22} className="text-white" />
+          <div className="yn-messages-followers-icon">
+            <UserPlus size={22} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="flex items-center text-[16px] font-bold text-yn-text">
@@ -260,8 +256,9 @@ export function MessagesScreen({
                   className="relative"
                   style={{ marginLeft: i === 0 ? 0 : -10, zIndex: 3 - i }}
                 >
-                  <div className="rounded-full ring-2 ring-yn-bg">
+                  <div className="rounded-full ring-2 ring-[#07040f]">
                     <NeonAvatar
+                      className="yn-messages-ring"
                       src={person.photo}
                       name={person.name}
                       size={28}
@@ -275,9 +272,9 @@ export function MessagesScreen({
         </button>
 
         {conversations.length === 0 ? (
-          <div className="py-14 text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-100 to-pink-100 ring-1 ring-pink-200">
-              <MessageCircle size={26} className="text-yn-accent" />
+          <div className="yn-messages-empty">
+            <div className="yn-messages-empty-icon">
+              <MessageCircle size={26} />
             </div>
             <p className="text-[15px] font-semibold text-yn-text">No conversations yet</p>
             <p className="mx-auto mt-1.5 max-w-xs text-[13px] text-yn-muted">
@@ -285,7 +282,7 @@ export function MessagesScreen({
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-black/6">
+          <div className="yn-messages-list">
             {conversations.map((conv) => {
               const otherId = conv.participants?.find((p: string) => p !== currentUserId);
               if (!otherId || blockedIds.has(otherId)) return null;
@@ -297,7 +294,7 @@ export function MessagesScreen({
               return (
                 <div
                   key={conv.id}
-                  className="flex min-h-[76px] w-full items-start gap-3 py-3.5"
+                  className="yn-messages-row"
                   data-testid={`conversation-${otherId}`}
                 >
                   <button
@@ -307,6 +304,7 @@ export function MessagesScreen({
                     aria-label={`View ${name}'s profile`}
                   >
                     <NeonAvatar
+                      className="yn-messages-ring"
                       src={photo}
                       name={name}
                       size={64}
@@ -318,23 +316,23 @@ export function MessagesScreen({
                     <div className="flex items-start justify-between gap-2">
                       <button
                         type="button"
-                        className="flex min-w-0 flex-col items-start truncate text-left"
+                        className="flex min-w-0 items-center text-left"
                         onClick={() => setPreviewUserId(otherId)}
                       >
-                        <span className="truncate text-[16px] font-bold text-yn-text" data-testid={`conversation-name-${otherId}`}>
-                          {name}
+                        <span className="yn-messages-name" data-testid={`conversation-name-${otherId}`}>
+                          <span className="truncate">{name}</span>
+                          {country ? (
+                            <CountryFlag
+                              country={country}
+                              size={14}
+                              className="shadow-none ring-1 ring-white/20"
+                            />
+                          ) : null}
                         </span>
-                        {country ? (
-                          <CountryLabel
-                            country={country}
-                            size={16}
-                            className="mt-0.5 text-[12px] font-medium text-yn-muted"
-                          />
-                        ) : null}
                       </button>
                       <button
                         type="button"
-                        className="shrink-0 pt-0.5 text-[11px] text-yn-muted"
+                        className="flex shrink-0 items-center gap-2 pt-0.5"
                         onClick={() =>
                           openChat({
                             id: otherId,
@@ -347,7 +345,8 @@ export function MessagesScreen({
                           })
                         }
                       >
-                        {formatConvDate(conv.lastMessageTime)}
+                        <span className="yn-messages-time">{formatConvDate(conv.lastMessageTime)}</span>
+                        {unread > 0 && <span className="yn-messages-unread">{unread}</span>}
                       </button>
                     </div>
                     <button
@@ -363,16 +362,11 @@ export function MessagesScreen({
                           isOnline: !!online[otherId],
                         })
                       }
-                      className="mt-1 flex w-full items-center justify-between gap-3 text-left transition active:opacity-80"
+                      className="mt-1 flex w-full items-center text-left transition active:opacity-80"
                     >
-                      <p className="truncate text-[13px] text-yn-muted">
+                      <p className="yn-messages-preview">
                         {conv.lastMessage || "Start the conversation..."}
                       </p>
-                      {unread > 0 && (
-                        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pink-500 px-1.5 text-[10px] font-bold text-white">
-                          {unread}
-                        </span>
-                      )}
                     </button>
                   </div>
                 </div>

@@ -64,7 +64,9 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               onClick={() => onTabChange(id)}
               className={cn(
                 "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors active:scale-95",
-                active ? "text-[#ff4ec8]" : "text-[#8b8098]"
+                active
+                  ? "text-[#ff4ec8] bg-[#ff4ec8]/10 ring-1 ring-[#ff4ec8]/70 shadow-[0_0_12px_rgba(255,78,200,0.4)]"
+                  : "text-[#8b8098]"
               )}
             >
               <Icon

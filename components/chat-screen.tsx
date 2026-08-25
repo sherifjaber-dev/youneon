@@ -17,7 +17,7 @@ import {
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { PremiumBadge } from "@/components/premium-badge";
 import { NeonAvatar } from "@/components/neon-avatar";
-import { CountryLabel } from "@/components/country-flag";
+import { CountryFlag } from "@/components/country-flag";
 import {
   ChatSmileyText,
   YouNeonSmileyPicker,
@@ -215,8 +215,8 @@ export function ChatScreen({
   return (
     <div className="yn-chat min-h-screen flex flex-col">
       <div className="yn-chat-header sticky top-0 z-40 flex items-center gap-3 px-3 py-2.5">
-        <button onClick={onBack} className="p-2 hover:bg-zinc-100 rounded-full" data-testid="chat-back-btn">
-          <ArrowLeft className="text-zinc-800" size={22} />
+        <button onClick={onBack} className="yn-chat-back" data-testid="chat-back-btn">
+          <ArrowLeft size={22} />
         </button>
         <button
           type="button"
@@ -225,6 +225,7 @@ export function ChatScreen({
           aria-label={`View ${otherUser.name}'s profile`}
         >
           <NeonAvatar
+            className="yn-chat-row-avatar"
             src={otherUser.photo}
             name={otherUser.name}
             size={44}
@@ -238,33 +239,30 @@ export function ChatScreen({
           onClick={() => setPreviewOpen(true)}
         >
           <div className="flex items-center gap-1.5">
-            <p className="font-semibold text-[17px] text-zinc-900 truncate">{otherUser.name}</p>
+            <p className="yn-chat-name font-semibold text-[17px] truncate">{otherUser.name}</p>
+            <CountryFlag
+              country={otherUser.country || otherUser.countryFlag}
+              size={14}
+              className="shadow-none ring-1 ring-white/20"
+            />
             {isPremium && <PremiumBadge />}
           </div>
-          <CountryLabel
-            country={otherUser.country || otherUser.countryFlag}
-            size={16}
-            className="text-[12px] text-zinc-500"
-          />
-          <p className={`text-xs ${otherUser.isOnline ? "text-pink-500" : "text-zinc-400"}`}>
+          <p className={`yn-chat-status ${otherUser.isOnline ? "is-online" : ""}`}>
+            <span className="yn-chat-status-dot" />
             {otherUser.isOnline ? "Online" : "Offline"}
           </p>
         </button>
         <button
           onClick={handleVideoCall}
           disabled={callDisabled}
-          className={`relative p-3 rounded-full transition-all ${
-            callDisabled
-              ? "bg-zinc-100 text-zinc-400 cursor-not-allowed"
-              : "yn-chat-accent-btn text-white hover:shadow-lg hover:shadow-pink-500/30"
-          }`}
+          className={`yn-chat-video ${callDisabled ? "is-disabled" : ""}`}
           title={!isUnlocked ? "Unlock chat first" : !otherHasReplied ? "Wait for a reply first" : (callCost > 0 ? `Video call: ${callCost} Neon` : "Free video call")}
           data-testid="chat-video-call-btn"
         >
           <Video size={20} />
           {callDisabled ? (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-zinc-200 rounded-full flex items-center justify-center border border-white">
-              <Lock size={9} className="text-zinc-500" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#2a1a3a] rounded-full flex items-center justify-center border border-[#c084fc]/40">
+              <Lock size={9} className="text-[#c084fc]" />
             </span>
           ) : callCost > 0 ? (
             <span className="absolute -top-2 -right-2 text-[9px] font-black bg-yellow-400 text-black px-1.5 py-0.5 rounded-full border border-yellow-600 leading-none">
@@ -285,21 +283,21 @@ export function ChatScreen({
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full yn-chat-accent-btn mb-3">
               <Lock className="text-white" size={20} />
             </div>
-            <h2 className="text-lg font-semibold text-zinc-900 mb-2">Chat is locked</h2>
-            <p className="text-zinc-500 text-sm mb-4">
-              Unlock chat with <b className="text-zinc-800">{otherUser.name}</b> to send messages, photos, and video calls.
+            <h2 className="text-lg font-semibold text-white mb-2">Chat is locked</h2>
+            <p className="yn-chat-modal-muted text-sm mb-4">
+              Unlock chat with <b className="text-white">{otherUser.name}</b> to send messages, photos, and video calls.
             </p>
 
-            <div className="bg-zinc-50 rounded-xl p-3 mb-4 border border-zinc-100">
+            <div className="yn-chat-modal-row rounded-xl p-3 mb-4">
               <div className="flex items-center justify-center gap-2 mb-1">
                 <Diamond className="text-yellow-500" size={18} fill="currentColor" />
-                <span className="text-xl font-semibold text-zinc-900">{UNLOCK_COST}</span>
-                <span className="text-zinc-500 text-sm font-medium">Neon</span>
+                <span className="text-xl font-semibold text-white">{UNLOCK_COST}</span>
+                <span className="yn-chat-modal-muted text-sm font-medium">Neon</span>
               </div>
-              <p className="text-[11px] text-zinc-400">One-time unlock — then unlimited</p>
+              <p className="text-[11px] yn-chat-modal-muted">One-time unlock — then unlimited</p>
             </div>
 
-            <ul className="text-left text-sm text-zinc-600 space-y-1.5 mb-4">
+            <ul className="text-left text-sm yn-chat-modal-muted space-y-1.5 mb-4">
               <li>Unlimited messages</li>
               <li>Share photos</li>
               <li>Video calls (after they reply)</li>
@@ -314,8 +312,8 @@ export function ChatScreen({
               {unlocking ? "Unlocking..." : `Unlock for ${UNLOCK_COST} Neon`}
             </button>
 
-            <p className="text-xs text-zinc-400 mt-3">
-              Your balance: <span className="text-zinc-800 font-semibold">◆ {neonBalance}</span> Neon
+            <p className="text-xs yn-chat-modal-muted mt-3">
+              Your balance: <span className="text-[#f5d76e] font-semibold">◆ {neonBalance}</span> Neon
             </p>
           </div>
         </div>
@@ -341,8 +339,8 @@ export function ChatScreen({
               </div>
             )}
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[50vh] text-zinc-400">
-                <p className="text-lg font-semibold text-zinc-600">Start the conversation!</p>
+              <div className="flex flex-col items-center justify-center h-[50vh] yn-chat-modal-muted">
+                <p className="text-lg font-semibold text-white">Start the conversation!</p>
                 <p className="text-sm">Send a message to {otherUser.name}</p>
               </div>
             ) : (
@@ -351,13 +349,22 @@ export function ChatScreen({
                 return (
                   <div
                     key={msg.id}
-                    className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                    className={`yn-chat-row ${mine ? "is-mine" : "is-theirs"}`}
                   >
+                    {!mine && (
+                      <NeonAvatar
+                        className="yn-chat-row-avatar"
+                        src={otherUser.photo}
+                        name={otherUser.name}
+                        size={28}
+                        showPhoto={canSeeOtherPhoto}
+                      />
+                    )}
                     <div
-                      className={`max-w-[78%] px-4 py-2.5 text-[16px] leading-[1.4] shadow-sm ${
+                      className={`max-w-[78%] px-4 py-2.5 text-[16px] leading-[1.4] ${
                         mine
-                          ? "yn-chat-bubble-out rounded-[22px] rounded-br-md"
-                          : "yn-chat-bubble-in rounded-[22px] rounded-bl-md"
+                          ? "yn-chat-bubble-out rounded-[18px] rounded-br-md"
+                          : "yn-chat-bubble-in rounded-[18px] rounded-bl-md"
                       }`}
                     >
                       {msg.imageBase64 && (
@@ -368,7 +375,7 @@ export function ChatScreen({
                         />
                       )}
                       {msg.text && <ChatSmileyText text={msg.text} />}
-                      <p className={`text-[11px] mt-1 text-right ${mine ? "text-white/70" : "text-zinc-400"}`}>
+                      <p className={`yn-chat-time ${mine ? "is-mine" : "is-theirs"}`}>
                         {msg.timestamp
                           ? new Date(msg.timestamp).toLocaleTimeString([], {
                               hour: "2-digit",
@@ -397,40 +404,42 @@ export function ChatScreen({
           )}
 
           <div className="yn-chat-composer fixed bottom-0 left-0 right-0 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] flex items-center gap-2 z-40">
-            <button
-              onClick={() => setShowEmoji((v) => !v)}
-              className={`p-2 rounded-full ${showEmoji ? "text-pink-500 bg-pink-50" : "text-zinc-400 hover:text-pink-500"}`}
-              data-testid="chat-emoji-btn"
-            >
-              <Smile size={22} />
-            </button>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="p-2 text-zinc-400 hover:text-pink-500 rounded-full"
-              data-testid="chat-image-btn"
-            >
-              <ImageIcon size={22} />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImage}
-            />
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Type a message..."
-              className="yn-chat-field flex-1 rounded-full px-4 py-[11px] text-[16px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40"
-              data-testid="chat-input"
-            />
+            <div className="yn-chat-bar">
+              <button
+                onClick={() => setShowEmoji((v) => !v)}
+                className={`yn-chat-icon ${showEmoji ? "is-on" : ""}`}
+                data-testid="chat-emoji-btn"
+              >
+                <Smile size={22} />
+              </button>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="yn-chat-icon"
+                data-testid="chat-image-btn"
+              >
+                <ImageIcon size={22} />
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImage}
+              />
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder="Type a message"
+                className="yn-chat-field py-[11px] text-[16px] placeholder:text-[#8b8098] focus:outline-none"
+                data-testid="chat-input"
+              />
+            </div>
             <button
               onClick={handleSend}
               disabled={!input.trim() || sending}
-              className="p-3 rounded-full yn-chat-accent-btn text-white disabled:opacity-40"
+              className="yn-chat-send"
               data-testid="chat-send-btn"
             >
               <Send size={18} />
@@ -441,7 +450,7 @@ export function ChatScreen({
 
       {/* ===== "No reply yet" toast for video call ===== */}
       {showNoReplyToast && (
-        <div className="yn-chat-card fixed bottom-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl px-5 py-3 text-zinc-800 text-sm max-w-xs text-center" data-testid="no-reply-toast">
+        <div className="yn-chat-card fixed bottom-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl px-5 py-3 text-sm max-w-xs text-center" data-testid="no-reply-toast">
           You can start a video call after {otherUser.name} replies to your message
         </div>
       )}
@@ -449,35 +458,35 @@ export function ChatScreen({
       {/* ===== INSUFFICIENT NEON MODAL ===== */}
       {showInsufficientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowInsufficientModal(false)}>
-          <div className="yn-chat-card rounded-2xl p-5 max-w-sm w-full text-zinc-900" onClick={(e) => e.stopPropagation()} data-testid="chat-insufficient-modal">
+          <div className="yn-chat-card rounded-2xl p-5 max-w-sm w-full" onClick={(e) => e.stopPropagation()} data-testid="chat-insufficient-modal">
             <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-50 border border-yellow-200 mb-3">
-                <span className="text-xl">◆</span>
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#2a1a08] border border-[#f5d76e]/40 mb-3">
+                <span className="text-xl text-[#f5d76e]">◆</span>
               </div>
-              <h3 className="text-lg font-semibold mb-3">Not enough Neon</h3>
-              <div className="bg-zinc-50 rounded-xl p-3 mb-3 border border-zinc-100">
+              <h3 className="text-lg font-semibold mb-3 text-white">Not enough Neon</h3>
+              <div className="yn-chat-modal-row rounded-xl p-3 mb-3">
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-zinc-500">Unlock chat</span>
-                  <span className="font-semibold text-zinc-900">◆ {UNLOCK_COST} Neon</span>
+                  <span className="yn-chat-modal-muted">Unlock chat</span>
+                  <span className="font-semibold text-white">◆ {UNLOCK_COST} Neon</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-zinc-500">You have</span>
-                  <span className="font-semibold text-zinc-900">◆ {neonBalance} Neon</span>
+                  <span className="yn-chat-modal-muted">You have</span>
+                  <span className="font-semibold text-white">◆ {neonBalance} Neon</span>
                 </div>
-                <div className="border-t border-zinc-100 my-2"></div>
+                <div className="border-t border-white/10 my-2"></div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-600 font-medium">Missing</span>
-                  <span className="font-semibold text-pink-500">◆ {missingNeon} Neon</span>
+                  <span className="text-[#d6c7e8] font-medium">Missing</span>
+                  <span className="font-semibold text-[#ff4ec8]">◆ {missingNeon} Neon</span>
                 </div>
               </div>
-              <p className="text-zinc-500 text-sm">
+              <p className="yn-chat-modal-muted text-sm">
                 Add Neon to unlock this chat.
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowInsufficientModal(false)}
-                className="flex-1 h-11 rounded-xl border border-zinc-200 text-zinc-600 text-[15px] font-semibold hover:bg-zinc-50 transition"
+                className="flex-1 h-11 rounded-xl yn-chat-ghost text-[15px] font-semibold"
                 data-testid="chat-cancel-insufficient-btn"
               >
                 Cancel
