@@ -34,16 +34,21 @@ export function persistPremiumUntil(premiumUntil: string | null) {
   }
 }
 
-export function readStoredNeonBalance(fallback = 100): number {
-  if (typeof window === "undefined") return fallback;
+export function readStoredNeonBalanceIfSet(): number | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(NEON_BALANCE_KEY);
-    if (!raw) return fallback;
+    if (raw == null || raw === "") return null;
     const n = parseInt(raw, 10);
-    return Number.isFinite(n) ? n : fallback;
+    return Number.isFinite(n) ? n : null;
   } catch {
-    return fallback;
+    return null;
   }
+}
+
+export function readStoredNeonBalance(fallback = 100): number {
+  const stored = readStoredNeonBalanceIfSet();
+  return stored == null ? fallback : stored;
 }
 
 export function persistNeonBalance(balance: number) {

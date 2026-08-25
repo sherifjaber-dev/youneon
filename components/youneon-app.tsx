@@ -10,7 +10,19 @@ import { BottomNav, type AppTab } from "@/components/bottom-nav";
 import { TopBar } from "@/components/top-bar";
 import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
-import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory, subscribeToUserProfile, conversationExists, unlockConversation } from "@/lib/firestore-service";
+import {
+  saveUserProfile,
+  loadOrCreateUserProfile,
+  persistUserNeonBalance,
+  persistUserPremiumUntil,
+  getOrCreateConversation,
+  addToHistory,
+  subscribeToUserProfile,
+  conversationExists,
+  unlockConversation,
+  STARTING_NEON_BALANCE,
+  type UserProfile as CloudUserProfile,
+} from "@/lib/firestore-service";
 import { formatCallDuration } from "@/lib/history-utils";
 import { countryToFlag } from "@/lib/countries";
 import { piAuthService } from "@/lib/pi-auth-service";
@@ -25,9 +37,11 @@ import {
 } from "@/lib/pi-client-session";
 import {
   isPremiumActive,
+  persistNeonBalance,
   persistPremiumUntil,
   PREMIUM_GRANTED_EVENT,
   readStoredNeonBalance,
+  readStoredNeonBalanceIfSet,
   readStoredPremiumUntil,
   type PremiumGrantedDetail,
 } from "@/lib/premium";
@@ -84,11 +98,12 @@ type YouNeonUser = {
   nameChangeCount?: number;
 };
 
-function readLocalProfileExtras(): Partial<YouNeonUser> {
+function readLocalProfileExtras(forUsername?: string): Partial<YouNeonUser> {
   try {
     const stored = localStorage.getItem("youneon_user_profile");
     if (!stored) return {};
     const data = JSON.parse(stored);
+    if (forUsername && data?.piUsername && data.piUsername !== forUsername) return {};
     const photos = Array.isArray(data?.photos) ? data.photos.filter(Boolean) : [];
     const photo = data?.profilePicture || photos[0] || "";
     return { ...data, photos, profilePicture: photo };
@@ -97,28 +112,74 @@ function readLocalProfileExtras(): Partial<YouNeonUser> {
   }
 }
 
+function cacheLocalUser(next: YouNeonUser) {
+  try {
+    localStorage.setItem("youneon_user", JSON.stringify(next));
+    localStorage.setItem("youneon_user_profile", JSON.stringify(next));
+  } catch {
+    /* quota */
+  }
+}
+
+function userFromRemote(
+  remote: CloudUserProfile,
+  uid: string,
+  piUsername: string,
+  extras: Partial<YouNeonUser>
+): YouNeonUser {
+  const remotePhotos = Array.isArray(remote.photos) ? remote.photos.filter(Boolean) : [];
+  const extraPhotos = Array.isArray(extras.photos) ? extras.photos.filter(Boolean) : [];
+  const photos = remotePhotos.length ? remotePhotos : extraPhotos;
+  const picture = remote.profilePicture || photos[0] || extras.profilePicture || "";
+  const place = remote.country || remote.location || extras.country || extras.location || "";
+  const remoteLangs = Array.isArray(remote.languages) ? remote.languages : [];
+  const remoteInterests = Array.isArray(remote.interests) ? remote.interests : [];
+  return {
+    id: remote.piUsername || piUsername,
+    uid,
+    piUsername,
+    fullName: (remote.fullName && String(remote.fullName).trim()) || extras.fullName || piUsername,
+    age: typeof remote.age === "number" && remote.age > 0 ? remote.age : extras.age || 0,
+    country: place,
+    location: remote.location || remote.country || extras.location || extras.country || place,
+    gender: remote.gender || extras.gender || "",
+    avatar: remote.avatar || extras.avatar || "🙂",
+    profilePicture: picture,
+    photos: photos.length ? photos : picture ? [picture] : [],
+    languages: remoteLangs.length ? remoteLangs : extras.languages || [],
+    interests: remoteInterests.length ? remoteInterests : extras.interests || [],
+    bio: remote.bio || extras.bio || "",
+    premiumUntil: remote.premiumUntil || extras.premiumUntil,
+    reactionsReceived: remote.reactionsReceived || extras.reactionsReceived,
+    giftsReceivedCount: remote.giftsReceivedCount ?? extras.giftsReceivedCount,
+    nameChangeMonth: remote.nameChangeMonth || extras.nameChangeMonth,
+    nameChangeCount: remote.nameChangeCount ?? extras.nameChangeCount,
+  };
+}
+
 function stubUser(uid?: string, username?: string): YouNeonUser {
   const piUsername = username || uid || "pi_user";
-  const extras = readLocalProfileExtras();
+  const extras = readLocalProfileExtras(piUsername);
   return {
     id: piUsername,
     uid: uid || piUsername,
     piUsername,
     fullName: extras.fullName || piUsername,
-    age: extras.age || 18,
+    age: extras.age || 0,
     country: extras.country || extras.location || "",
     location: extras.location || extras.country || "",
     gender: extras.gender || "",
     avatar: extras.avatar || "🙂",
     profilePicture: extras.profilePicture || "",
     photos: extras.photos || (extras.profilePicture ? [extras.profilePicture] : []),
-    languages: extras.languages || ["English"],
+    languages: extras.languages || [],
     reactionsReceived: extras.reactionsReceived,
     giftsReceivedCount: extras.giftsReceivedCount,
     nameChangeMonth: extras.nameChangeMonth,
     nameChangeCount: extras.nameChangeCount,
     interests: extras.interests || [],
     bio: extras.bio || "",
+    premiumUntil: extras.premiumUntil,
   };
 }
 
@@ -131,7 +192,7 @@ export function YouNeonApp() {
   const [activeTab, setActiveTab] = useState<AppTab>("discover");
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [videoSession, setVideoSession] = useState<VideoSession | null>(null);
-  const [neonBalance, setNeonBalance] = useState(100);
+  const [neonBalance, setNeonBalance] = useState(0);
   const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNeonShop, setShowNeonShop] = useState(false);
@@ -143,9 +204,11 @@ export function YouNeonApp() {
   const [unlockBusy, setUnlockBusy] = useState(false);
   const profileSavedAtRef = useRef(0);
   const unlockInFlightRef = useRef(false);
+  const userIdRef = useRef("");
 
   const signedIn = isAuthenticated || bootAuthOk;
   const showApp = signedIn || (isGuestDemo && !!currentUser);
+  userIdRef.current = currentUser?.piUsername || user?.username || "";
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -195,7 +258,7 @@ export function YouNeonApp() {
   }, [showApp, isAuthenticated]);
 
   useEffect(() => {
-    setNeonBalance(readStoredNeonBalance(100));
+    setNeonBalance(readStoredNeonBalance(0));
     const storedUntil = readStoredPremiumUntil();
     if (storedUntil) setPremiumUntil(storedUntil);
   }, []);
@@ -259,93 +322,66 @@ export function YouNeonApp() {
 
     (async () => {
       const fetchStartedAt = Date.now();
-      const extras = readLocalProfileExtras();
-      let profile: YouNeonUser = {
-        id: piUsername,
-        uid,
-        piUsername,
-        fullName: extras.fullName || piUsername,
-        age: extras.age || 18,
-        country: extras.country || extras.location || "",
-        location: extras.location || extras.country || "",
-        gender: extras.gender || "",
-        avatar: extras.avatar || "🙂",
-        profilePicture: extras.profilePicture || "",
-        photos: extras.photos || (extras.profilePicture ? [extras.profilePicture] : []),
-        languages: extras.languages || ["English"],
-        interests: extras.interests || [],
-        bio: extras.bio || "",
-        reactionsReceived: extras.reactionsReceived,
-        giftsReceivedCount: extras.giftsReceivedCount,
-        nameChangeMonth: extras.nameChangeMonth,
-        nameChangeCount: extras.nameChangeCount,
-      };
+      const extras = readLocalProfileExtras(piUsername);
+      let profile: YouNeonUser = stubUser(uid, piUsername);
 
       try {
-        const remote = await getUserProfile(piUsername);
-        if (remote) {
-          profile = {
-            ...profile,
-            ...remote,
-            id: remote.piUsername || piUsername,
-            uid,
-            piUsername,
-            profilePicture: remote.profilePicture || extras.profilePicture || "",
-            photos: Array.isArray(remote.photos) && remote.photos.length
-              ? remote.photos
-              : extras.photos || (remote.profilePicture ? [remote.profilePicture] : extras.profilePicture ? [extras.profilePicture] : []),
-            bio: remote.bio || extras.bio || "",
-            country: remote.country || remote.location || extras.country || extras.location || "",
-            location: remote.location || remote.country || extras.location || extras.country || "",
-            gender: remote.gender || extras.gender || "",
-            premiumUntil: remote.premiumUntil || extras.premiumUntil || readStoredPremiumUntil() || undefined,
-            reactionsReceived: remote.reactionsReceived || extras.reactionsReceived,
-            giftsReceivedCount: remote.giftsReceivedCount ?? extras.giftsReceivedCount,
-            nameChangeMonth: remote.nameChangeMonth || extras.nameChangeMonth,
-            nameChangeCount: remote.nameChangeCount ?? extras.nameChangeCount,
-          };
-          if (remote.premiumUntil) {
-            persistPremiumUntil(remote.premiumUntil);
-            setPremiumUntil(remote.premiumUntil);
-          }
-          if (typeof remote.neonBalance === "number" && remote.neonBalance > readStoredNeonBalance(0)) {
-            setNeonBalance(remote.neonBalance);
-            localStorage.setItem("youneon_neon_balance", String(remote.neonBalance));
-          }
-          cacheSettingsFromProfile({
-            neonId: remote.neonId,
-            hideGender: remote.hideGender,
-            backgroundPlay: remote.backgroundPlay,
-            notificationPrefs: remote.notificationPrefs,
-            privacyConsent: remote.privacyConsent,
-            items: remote.items as TimedItem[] | undefined,
-            claimedPromoCodes: remote.claimedPromoCodes,
-          });
-          setChatUnlocks(normalizeChatUnlocks(remote.chatUnlocks));
-          setUnlockedChats(normalizeUnlockedChats(remote.unlockedChats));
-          setTimedItems(
-            Array.isArray(remote.items)
-              ? (remote.items.filter((item) => Date.parse(item.expiresAt) > Date.now()) as TimedItem[])
-              : []
-          );
-          if (remote.locale && isLanguage(remote.locale)) {
-            setLanguage(remote.locale);
+        const { profile: remote } = await loadOrCreateUserProfile(piUsername, uid);
+        profile = userFromRemote(remote, uid, piUsername, extras);
+
+        if (typeof remote.neonBalance === "number") {
+          setNeonBalance(remote.neonBalance);
+          persistNeonBalance(remote.neonBalance);
+        } else {
+          const localNeon = readStoredNeonBalanceIfSet();
+          const grant = localNeon != null ? localNeon : STARTING_NEON_BALANCE;
+          setNeonBalance(grant);
+          persistNeonBalance(grant);
+          void persistUserNeonBalance(piUsername, grant).catch(() => {});
+        }
+
+        if (remote.premiumUntil) {
+          persistPremiumUntil(remote.premiumUntil);
+          setPremiumUntil(remote.premiumUntil);
+        } else {
+          const localUntil = readStoredPremiumUntil();
+          if (localUntil) {
+            persistPremiumUntil(localUntil);
+            setPremiumUntil(localUntil);
+            void persistUserPremiumUntil(piUsername, localUntil).catch(() => {});
           }
         }
+
+        cacheSettingsFromProfile({
+          neonId: remote.neonId,
+          hideGender: remote.hideGender,
+          backgroundPlay: remote.backgroundPlay,
+          notificationPrefs: remote.notificationPrefs,
+          privacyConsent: remote.privacyConsent as {
+            necessary?: true;
+            analytics?: boolean;
+            advertising?: boolean;
+            marketing?: boolean;
+          },
+          items: remote.items as TimedItem[] | undefined,
+          claimedPromoCodes: remote.claimedPromoCodes,
+        });
+        setChatUnlocks(normalizeChatUnlocks(remote.chatUnlocks));
+        setUnlockedChats(normalizeUnlockedChats(remote.unlockedChats));
+        setTimedItems(
+          Array.isArray(remote.items)
+            ? (remote.items.filter((item) => Date.parse(item.expiresAt) > Date.now()) as TimedItem[])
+            : []
+        );
+        if (remote.locale && isLanguage(remote.locale)) {
+          setLanguage(remote.locale);
+        }
       } catch {
-        /* keep local/verified identity */
+        /* keep stub; never write empty defaults over a returning user */
       }
 
       void ensureNeonId(piUsername);
       void ensureCreatedAt(piUsername);
-
-      if (profileSavedAtRef.current < fetchStartedAt) {
-        try {
-          await saveUserProfile(profile);
-        } catch (e) {
-          console.warn("Profile sync failed", e);
-        }
-      }
 
       if (cancelled) return;
       setCurrentUser((prev) => {
@@ -367,11 +403,7 @@ export function YouNeonApp() {
                 nameChangeCount: prev.nameChangeCount,
               }
             : profile;
-        try {
-          localStorage.setItem("youneon_user", JSON.stringify(next));
-        } catch {
-          /* quota */
-        }
+        cacheLocalUser(next);
         return next;
       });
     })();
@@ -395,15 +427,40 @@ export function YouNeonApp() {
           remote.items.filter((item) => Date.parse(item.expiresAt) > Date.now()) as TimedItem[]
         );
       }
+      if (typeof remote.neonBalance === "number") {
+        setNeonBalance(remote.neonBalance);
+        persistNeonBalance(remote.neonBalance);
+      }
+      if (remote.premiumUntil) {
+        persistPremiumUntil(remote.premiumUntil);
+        setPremiumUntil(remote.premiumUntil);
+      }
+      cacheSettingsFromProfile({
+        neonId: remote.neonId,
+        hideGender: remote.hideGender,
+        backgroundPlay: remote.backgroundPlay,
+        notificationPrefs: remote.notificationPrefs,
+        privacyConsent: remote.privacyConsent as {
+          necessary?: true;
+          analytics?: boolean;
+          advertising?: boolean;
+          marketing?: boolean;
+        },
+        items: remote.items as TimedItem[] | undefined,
+        claimedPromoCodes: remote.claimedPromoCodes,
+      });
       setCurrentUser((prev) => {
         if (!prev) return prev;
+        const recentlySaved = profileSavedAtRef.current > Date.now() - 2500;
+        const hydrated = userFromRemote(remote, prev.uid || "", prev.piUsername, prev);
         return {
-          ...prev,
+          ...(recentlySaved ? prev : hydrated),
           reactionsReceived: remote.reactionsReceived || prev.reactionsReceived,
           giftsReceivedCount:
             typeof remote.giftsReceivedCount === "number"
               ? remote.giftsReceivedCount
               : prev.giftsReceivedCount,
+          premiumUntil: remote.premiumUntil || prev.premiumUntil,
         };
       });
     });
@@ -416,8 +473,13 @@ export function YouNeonApp() {
   }, []);
 
   const updateNeonBalance = (n: number) => {
-    setNeonBalance(n);
-    localStorage.setItem("youneon_neon_balance", n.toString());
+    const next = Math.max(0, Math.floor(n));
+    setNeonBalance(next);
+    persistNeonBalance(next);
+    const id = userIdRef.current;
+    if (id) {
+      void persistUserNeonBalance(id, next).catch((e) => console.warn("Neon sync failed", e));
+    }
   };
 
   const handleProfileSaved = async (saved: ProfileSavePayload) => {
@@ -449,8 +511,7 @@ export function YouNeonApp() {
     setCurrentUser(merged);
 
     try {
-      localStorage.setItem("youneon_user", JSON.stringify(merged));
-      localStorage.setItem("youneon_user_profile", JSON.stringify(merged));
+      cacheLocalUser(merged);
     } catch {
       /* quota */
     }

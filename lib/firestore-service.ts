@@ -1,6 +1,7 @@
 import {
   collection, addDoc, getDocs, getDoc, setDoc, updateDoc, doc, deleteDoc,
   query, where, orderBy, onSnapshot, serverTimestamp, Timestamp, increment,
+  runTransaction,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { GIFT_TO_REACTION } from "@/lib/profile-catalog";
@@ -37,7 +38,7 @@ export interface UserProfile {
     newFollowers?: boolean;
   };
   privacyConsent?: {
-    necessary?: boolean;
+    necessary?: true;
     analytics?: boolean;
     advertising?: boolean;
     marketing?: boolean;
@@ -73,6 +74,12 @@ const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 export const FREE_CALL_INTERVAL_MS = TWENTY_FOUR_HOURS_MS;
 export const PAID_CALL_COST = 20;
 
+export const STARTING_NEON_BALANCE = 100;
+
+function isPersistableUsername(piUsername: string | undefined | null): piUsername is string {
+  return !!piUsername && piUsername !== "anon" && piUsername !== "pi_user" && piUsername !== "guest_demo";
+}
+
 export const saveUserProfile = async (profile: UserProfile) => {
   const { neonBalance: _neon, premiumUntil: _until, lastPaymentId: _pay, ...rest } = profile;
   const ref = doc(db, "users", profile.piUsername);
@@ -82,6 +89,72 @@ export const saveUserProfile = async (profile: UserProfile) => {
     { merge: true }
   );
   return profile.piUsername;
+};
+
+/**
+ * Load users/{piUsername}. Create only when missing.
+ * Never writes empty profile defaults onto an existing returning user.
+ */
+export const loadOrCreateUserProfile = async (
+  piUsername: string,
+  uid?: string
+): Promise<{ profile: UserProfile; created: boolean }> => {
+  if (!isPersistableUsername(piUsername)) {
+    throw new Error("invalid username");
+  }
+  const ref = doc(db, "users", piUsername);
+  let created = false;
+  let profile: UserProfile | null = null;
+
+  await runTransaction(db, async (tx) => {
+    created = false;
+    const snap = await tx.get(ref);
+    if (snap.exists()) {
+      profile = { id: snap.id, ...(snap.data() as object) } as UserProfile;
+      return;
+    }
+    const payload = {
+      piUsername,
+      uid: uid || "",
+      languages: [] as string[],
+      interests: [] as string[],
+      photos: [] as string[],
+      unlockedChats: [] as string[],
+      neonBalance: STARTING_NEON_BALANCE,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+    tx.set(ref, payload);
+    created = true;
+    profile = { id: piUsername, ...payload } as UserProfile;
+  });
+
+  if (!profile) {
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      return { profile: { id: snap.id, ...snap.data() } as UserProfile, created: false };
+    }
+    throw new Error("user profile missing after load");
+  }
+  return { profile, created };
+};
+
+export const persistUserNeonBalance = async (piUsername: string, balance: number) => {
+  if (!isPersistableUsername(piUsername)) return;
+  await setDoc(
+    doc(db, "users", piUsername),
+    { neonBalance: Math.max(0, Math.floor(balance)), updatedAt: Timestamp.now() },
+    { merge: true }
+  );
+};
+
+export const persistUserPremiumUntil = async (piUsername: string, premiumUntil: string) => {
+  if (!isPersistableUsername(piUsername) || !premiumUntil) return;
+  await setDoc(
+    doc(db, "users", piUsername),
+    { premiumUntil, updatedAt: Timestamp.now() },
+    { merge: true }
+  );
 };
 
 export const getUserProfile = async (piUsername: string) => {

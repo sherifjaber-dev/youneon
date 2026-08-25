@@ -150,7 +150,8 @@ export async function ensureCreatedAt(username: string) {
   try {
     const ref = doc(db, "users", username);
     const snap = await getDoc(ref);
-    if (snap.exists() && snap.data()?.createdAt) return;
+    if (!snap.exists()) return;
+    if (snap.data()?.createdAt) return;
     await setDoc(ref, { createdAt: Timestamp.now(), updatedAt: Timestamp.now() }, { merge: true });
   } catch {
     /* rules / offline */

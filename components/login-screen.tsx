@@ -1,7 +1,8 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { applyPiSigninNativeAttrs, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
+import { applyPiSigninNativeAttrs } from "@/lib/pi-signin-onclick";
+import { PI_WELCOME_OVERLAY_STYLE, piWelcomeInnerHtml } from "@/lib/pi-welcome-markup";
 import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 interface LoginScreenProps {
@@ -73,6 +74,18 @@ export function LoginScreen({
       onSelect={(e) => e.preventDefault()}
     >
       <div
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html:
+            '<div style="' +
+            PI_WELCOME_OVERLAY_STYLE.replace("position:fixed;top:0;right:0;bottom:0;left:0;", "position:relative;") +
+            'padding:0;min-height:0">' +
+            piWelcomeInnerHtml("youneon-signin-btn-login", "ynlogin") +
+            "</div>",
+        }}
+      />
+
+      <div
         style={{
           position: "relative",
           zIndex: 10,
@@ -81,38 +94,9 @@ export function LoginScreen({
           maxWidth: 360,
           pointerEvents: "none",
           userSelect: "none",
-          WebkitUserSelect: "none",
-          cursor: "pointer",
-          caretColor: "transparent",
+          marginTop: 8,
         }}
       >
-        <h1
-          style={{
-            fontSize: "1.75rem",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            margin: "0 0 0.5rem",
-            color: "#e9d5ff",
-            fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
-            pointerEvents: "none",
-            userSelect: "none",
-          }}
-        >
-          YouNeon
-        </h1>
-        <p
-          style={{
-            fontSize: 14,
-            lineHeight: 1.45,
-            color: "rgba(255,255,255,0.62)",
-            margin: "0 0 1.5rem",
-            pointerEvents: "none",
-            userSelect: "none",
-          }}
-        >
-          Live video chat with people on Pi Network
-        </p>
-
         {showPiBrowserHint && (
           <p
             style={{
@@ -158,13 +142,6 @@ export function LoginScreen({
           </p>
         )}
 
-        <div
-          style={{ pointerEvents: "auto", userSelect: "none", WebkitUserSelect: "none" }}
-          dangerouslySetInnerHTML={{
-            __html: piSigninControlsHtml("youneon-signin-btn-login"),
-          }}
-        />
-
         {onGuest && (
           <button
             type="button"
@@ -178,7 +155,7 @@ export function LoginScreen({
             style={{
               position: "relative",
               zIndex: 20,
-              marginTop: 16,
+              marginTop: 8,
               display: "block",
               marginLeft: "auto",
               marginRight: "auto",
@@ -195,18 +172,6 @@ export function LoginScreen({
             Continue as guest (demo)
           </button>
         )}
-
-        <p
-          style={{
-            color: "rgba(255,255,255,0.4)",
-            fontSize: 12,
-            marginTop: 24,
-            pointerEvents: "none",
-            userSelect: "none",
-          }}
-        >
-          Secure · Instant · Powered by Pi Network
-        </p>
       </div>
     </div>
   );

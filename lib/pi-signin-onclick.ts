@@ -23,10 +23,10 @@ export const PI_SIGNIN_NATIVE_ATTRS =
   '" onselectstart="return false" unselectable="on"';
 
 export const PI_SIGNIN_CONTROL_STYLE =
-  "height:48px;padding:0 20px;font-size:16px;font-weight:600;line-height:48px;border:0;border-radius:14px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(90deg,#a855f7,#ec4899);cursor:pointer;width:100%;max-width:320px;display:block;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(168,85,247,0.35);user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;caret-color:transparent;-webkit-appearance:none;appearance:none;box-shadow:0 4px 16px rgba(168,85,247,0.32)";
+  "height:52px;padding:0 20px;font-size:16px;font-weight:700;line-height:52px;border:0;border-radius:16px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(90deg,#a855f7,#ec4899);cursor:pointer;width:100%;max-width:320px;display:block;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(168,85,247,0.35);user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;caret-color:transparent;-webkit-appearance:none;appearance:none;box-shadow:0 10px 24px rgba(168,85,247,0.42),0 0 0 1px rgba(255,255,255,0.12) inset;letter-spacing:0.01em";
 
 export const PI_SIGNIN_STATUS_STYLE =
-  "font-size:0.75rem;color:rgba(233,213,255,0.9);margin:16px 0 0;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;line-height:1.45;word-break:break-word;font-family:system-ui,-apple-system,Segoe UI,sans-serif";
+  "font-size:0.75rem;color:#7e22ce;margin:12px 0 0;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;line-height:1.45;word-break:break-word;font-family:system-ui,-apple-system,Segoe UI,sans-serif";
 
 export function escapePiSigninAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
