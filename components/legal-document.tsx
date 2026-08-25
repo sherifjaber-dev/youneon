@@ -1,6 +1,6 @@
 import type { LegalDocument } from "@/lib/legal-copy";
 
-const SUPPORT_EMAIL = "support@youneon.pi";
+const SUPPORT_EMAIL = "Sherif.Jaber@icloud.com";
 
 function withSupportLink(text: string) {
   const idx = text.indexOf(SUPPORT_EMAIL);

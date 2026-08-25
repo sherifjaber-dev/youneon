@@ -82,7 +82,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     },
     {
       heading: "10. Contact",
-      paragraphs: ["For privacy questions: support@youneon.pi"],
+      paragraphs: ["For privacy questions: Sherif.Jaber@icloud.com"],
     },
   ],
 };
@@ -152,7 +152,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
     },
     {
       heading: "10. Contact",
-      paragraphs: ["For questions about these Terms: support@youneon.pi"],
+      paragraphs: ["For questions about these Terms: Sherif.Jaber@icloud.com"],
     },
   ],
 };

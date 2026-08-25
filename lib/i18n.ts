@@ -197,7 +197,7 @@ const EN: Record<string, string> = {
   "settings.faqSafetyBody":
     "During a call you can block someone. Blocked people are hidden from Lounge, History, Messages, and matching as far as we can. You can unblock them in Settings.",
   "settings.contact": "Contact",
-  "settings.contactBody": "Email support@youneon.pi — listed in the YouNeon Pi app listing.",
+  "settings.contactBody": "Email Sherif.Jaber@icloud.com — listed in the YouNeon Pi app listing.",
 
   "login.title": "Log in or sign up",
   "login.subtitle": "Connect with people from around the world",

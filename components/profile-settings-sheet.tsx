@@ -634,8 +634,8 @@ export function ProfileSettingsSheet({
             <article className="rounded-2xl border border-black/6 bg-yn-card p-4">
               <h3 className="text-[15px] font-semibold text-yn-text">{t("settings.contact")}</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{t("settings.contactBody")}</p>
-              <a href="mailto:support@youneon.pi" className="mt-2 inline-block text-[14px] font-semibold text-yn-accent">
-                support@youneon.pi
+              <a href="mailto:Sherif.Jaber@icloud.com" className="mt-2 inline-block text-[14px] font-semibold text-yn-accent">
+                Sherif.Jaber@icloud.com
               </a>
             </article>
           </div>
