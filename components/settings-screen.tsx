@@ -126,7 +126,13 @@ export function SettingsScreen({ onBack, onLogOut }: SettingsScreenProps) {
         />
 
         {isCurrentUserAdmin(username) && (
-          <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
+          <div className="space-y-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
+            <a
+              href="/admin"
+              className="flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 text-[14px] font-semibold text-white"
+            >
+              Open admin panel
+            </a>
             <AnnouncementsAdmin announcements={announcements} />
           </div>
         )}

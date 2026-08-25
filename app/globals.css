@@ -137,6 +137,42 @@
   --yn-bottomnav-inner: 58px;
 }
 
+html.youneon-signed-in,
+html.youneon-signed-in body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+  color: var(--yn-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html.youneon-signed-in h1,
+html.youneon-signed-in h2,
+html.youneon-signed-in h3 {
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: var(--yn-text);
+}
+
+html.youneon-signed-in button,
+html.youneon-signed-in [type="button"],
+html.youneon-signed-in [type="submit"] {
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+html.youneon-signed-in input,
+html.youneon-signed-in textarea,
+html.youneon-signed-in select {
+  font-family: inherit;
+  letter-spacing: -0.011em;
+}
+
 @layer components {
   .neon-glow {
     @apply shadow-md shadow-fuchsia-500/18;
@@ -258,15 +294,20 @@
   }
 }
 
-/* Compact Sign in with Pi — keep native handlers; size only */
+/* Sign in with Pi — keep native handlers; visual size only */
 .youneon-signin-btn {
-  height: 48px !important;
-  padding: 0 20px !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  padding: 0 22px !important;
   font-size: 16px !important;
-  font-weight: 600 !important;
-  line-height: 48px !important;
-  border-radius: 14px !important;
-  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.32) !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  border-radius: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  box-shadow: 0 14px 28px rgba(168, 85, 247, 0.4), 0 1px 0 rgba(255, 255, 255, 0.22) inset !important;
 }
 
 /* Video call — premium neon controls */

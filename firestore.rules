@@ -29,8 +29,7 @@ service cloud.firestore {
       allow read, write: if true;
     }
     match /promoCodes/{id} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if false;
     }
     match /matchQueue/{id} {
       allow read, write: if true;

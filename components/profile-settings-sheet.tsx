@@ -404,8 +404,16 @@ export function ProfileSettingsSheet({
             </Group>
 
             {isCurrentUserAdmin(username) && (
-              <div className="mt-5 rounded-2xl border border-purple-400/25 bg-purple-500/10 p-3">
-                <AnnouncementsAdmin announcements={announcements} />
+              <div className="mt-5 space-y-3">
+                <a
+                  href="/admin"
+                  className="flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 text-[14px] font-semibold text-white"
+                >
+                  Open admin panel
+                </a>
+                <div className="rounded-2xl border border-purple-400/25 bg-purple-500/10 p-3">
+                  <AnnouncementsAdmin announcements={announcements} />
+                </div>
               </div>
             )}
           </>

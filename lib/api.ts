@@ -64,7 +64,9 @@ const request = async <T = any>(
 
   if (!response.ok) {
     const error = new Error(
-      response.statusText || "Request failed"
+      (isJson && data && typeof data === "object" && "error" in data && typeof (data as { error?: string }).error === "string"
+        ? (data as { error: string }).error
+        : response.statusText) || "Request failed"
     ) as ApiError<T>;
     error.status = response.status;
     error.data = data as T;

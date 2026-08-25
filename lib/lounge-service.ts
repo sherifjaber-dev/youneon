@@ -193,6 +193,7 @@ function personFromUserDoc(
   const ageRaw = asNum(data.age);
   const age = ageRaw && ageRaw > 0 ? Math.round(ageRaw) : undefined;
   if (!age || age < 18) return null;
+  if (data.banned === true) return null;
   const languages = Array.isArray(data.languages)
     ? data.languages.filter((l): l is string => typeof l === "string" && !!l.trim())
     : [];

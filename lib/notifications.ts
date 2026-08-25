@@ -14,7 +14,7 @@ import { db } from "@/lib/firebase";
 import type { Announcement } from "@/lib/announcements";
 import { readAnnouncementIds } from "@/lib/announcements";
 
-export type SocialNotificationType = "follow" | "message" | "gift";
+export type SocialNotificationType = "follow" | "message" | "gift" | "warning";
 export type InboxFilter = "all" | "notifications" | "events" | "updates";
 export type InboxKind = SocialNotificationType | "system" | "event" | "promo" | "online";
 
@@ -98,7 +98,7 @@ export function markNotificationsRead(ids: string[]) {
 }
 
 function asSocialType(value: unknown): SocialNotificationType | null {
-  if (value === "follow" || value === "message" || value === "gift") return value;
+  if (value === "follow" || value === "message" || value === "gift" || value === "warning") return value;
   return null;
 }
 
@@ -298,10 +298,11 @@ export function subscribeToFollowInbox(
 }
 
 export function socialToInbox(row: UserNotification, read: Set<string>): InboxItem {
+  const warning = row.type === "warning";
   return {
     id: row.id,
-    filter: "notifications",
-    kind: row.type,
+    filter: warning ? "updates" : "notifications",
+    kind: warning ? "system" : row.type,
     title: row.title,
     body: row.body,
     createdAtMs: row.createdAtMs,

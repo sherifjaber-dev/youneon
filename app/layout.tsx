@@ -13,7 +13,7 @@ const CRITICAL_CSS =
   ".youneon-live-dot{animation:youneonLivePulse 1.4s ease-in-out infinite}" +
   "#youneon-static-login,.youneon-static-login,#youneon-static-login *,.youneon-static-login *{user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;caret-color:transparent !important;cursor:pointer !important}" +
   "#youneon-static-login,.youneon-static-login{background:#0f0117;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
-  "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p,.youneon-welcome-card,.youneon-welcome-card svg{pointer-events:none !important}" +
+  "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p,.youneon-welcome-card,.youneon-welcome-card svg,.youneon-welcome-card img,.youneon-welcome-hero{pointer-events:none !important}" +
   "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin],input[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
   "#youneon-app-tree{pointer-events:none;position:relative;z-index:0}" +
   "html.youneon-signed-in #youneon-static-login,html.youneon-signed-in .youneon-static-login,html.youneon-signed-in [data-youneon-login-host],html.youneon-signed-in [data-youneon-login-hidden='1']{display:none !important;visibility:hidden !important;pointer-events:none !important;z-index:0 !important}" +
@@ -245,7 +245,7 @@ export default function RootLayout({
       >
         <StaticPiLogin overlayId="youneon-static-login" />
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=gesture-auth-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=welcome-pro-1"></script>
         <div
           id="youneon-app-tree"
           style={{ position: "relative", zIndex: 0, isolation: "isolate", pointerEvents: "none" }}

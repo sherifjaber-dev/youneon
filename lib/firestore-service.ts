@@ -57,6 +57,8 @@ export interface UserProfile {
   youneonBadge?: boolean;
   reportsReceivedCount?: number;
   lastReportedAt?: unknown;
+  banned?: boolean;
+  warnings?: Array<{ at: string; message: string; by: string }>;
   successfulChats?: number;
   createdAt?: Date | unknown;
   updatedAt?: unknown;
@@ -162,6 +164,12 @@ export const getUserProfile = async (piUsername: string) => {
   const snap = await getDoc(ref);
   if (snap.exists()) return { id: snap.id, ...snap.data() } as UserProfile;
   return null;
+};
+
+export const isUserBanned = async (piUsername: string): Promise<boolean> => {
+  if (!isPersistableUsername(piUsername)) return false;
+  const profile = await getUserProfile(piUsername);
+  return !!profile?.banned;
 };
 
 export const subscribeToUserProfile = (

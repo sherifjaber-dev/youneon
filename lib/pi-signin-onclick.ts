@@ -23,10 +23,19 @@ export const PI_SIGNIN_NATIVE_ATTRS =
   '" onselectstart="return false" unselectable="on"';
 
 export const PI_SIGNIN_CONTROL_STYLE =
-  "height:52px;padding:0 20px;font-size:16px;font-weight:700;line-height:52px;border:0;border-radius:16px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(90deg,#a855f7,#ec4899);cursor:pointer;width:100%;max-width:320px;display:block;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(168,85,247,0.35);user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;caret-color:transparent;-webkit-appearance:none;appearance:none;box-shadow:0 10px 24px rgba(168,85,247,0.42),0 0 0 1px rgba(255,255,255,0.12) inset;letter-spacing:0.01em";
+  "height:56px;padding:0 22px;font-size:16px;font-weight:700;line-height:1;border:0;border-radius:18px;color:#ffffff;background-color:#a855f7;background-image:linear-gradient(180deg,#c084fc 0%,#a855f7 46%,#db2777 100%);cursor:pointer;width:100%;max-width:100%;display:flex;align-items:center;justify-content:center;gap:10px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(168,85,247,0.35);user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;caret-color:transparent;-webkit-appearance:none;appearance:none;box-shadow:0 14px 28px rgba(168,85,247,0.4),0 1px 0 rgba(255,255,255,0.28) inset;letter-spacing:0.01em";
 
 export const PI_SIGNIN_STATUS_STYLE =
-  "font-size:0.75rem;color:#7e22ce;margin:12px 0 0;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;line-height:1.45;word-break:break-word;font-family:system-ui,-apple-system,Segoe UI,sans-serif";
+  "font-size:0.75rem;color:#a78bfa;margin:12px 0 0;max-width:320px;pointer-events:none;user-select:none;-webkit-user-select:none;line-height:1.45;word-break:break-word;font-family:system-ui,-apple-system,Segoe UI,sans-serif";
+
+function piNetworkMarkHtml(): string {
+  return (
+    '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" style="display:block;flex-shrink:0;pointer-events:none">' +
+    '<circle cx="11" cy="11" r="11" fill="#F6C344"/>' +
+    '<path d="M11 2.15A8.85 8.85 0 0 1 19.85 11H11V2.15Z" fill="#1a1028"/>' +
+    "</svg>"
+  );
+}
 
 export function escapePiSigninAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
@@ -50,7 +59,9 @@ export function piSigninButtonHtml(id: string): string {
     PI_SIGNIN_CONTROL_STYLE +
     '" ' +
     PI_SIGNIN_NATIVE_ATTRS +
-    ">Sign in with Pi Network</button>"
+    ">" +
+    piNetworkMarkHtml() +
+    "Sign in with Pi Network</button>"
   );
 }
 

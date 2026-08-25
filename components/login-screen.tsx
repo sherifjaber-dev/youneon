@@ -102,7 +102,7 @@ export function LoginScreen({
             style={{
               color: "#fde68a",
               fontSize: 12,
-              margin: "0 0 1rem",
+              margin: "8px 0 0",
               lineHeight: 1.5,
               pointerEvents: "none",
               userSelect: "none",

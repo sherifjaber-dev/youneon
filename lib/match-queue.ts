@@ -12,6 +12,7 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { isUserBanned } from "./firestore-service";
 
 const QUEUE = "matchQueue";
 const WAIT_WINDOW_MS = 60_000;
@@ -124,6 +125,9 @@ export async function enqueueOrMatch(opts: {
   isPremium?: boolean;
 }): Promise<MatchSession> {
   const { userId, profile, filters, blockedIds = [], isPremium = false } = opts;
+  if (await isUserBanned(userId)) {
+    throw new Error("This account cannot join video chat.");
+  }
   const blocked = new Set(blockedIds.filter(Boolean));
   const myRef = doc(db, QUEUE, userId);
 
@@ -136,6 +140,7 @@ export async function enqueueOrMatch(opts: {
     if (!isRecent(data.createdAt)) return;
     const peerId = String(data.userId || d.id);
     if (blocked.has(peerId) || blocked.has(d.id)) return;
+    if (data.banned === true) return;
     const peerAge = Number(data.age);
     if (Number.isFinite(peerAge) && peerAge > 0 && peerAge < 18) return;
     if (!genderOk(filters.gender, data.gender as string | undefined)) return;

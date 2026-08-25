@@ -3,13 +3,12 @@ import {
   arrayUnion,
   doc,
   getDoc,
-  increment,
   setDoc,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { addBlockedUserId, readBlockedUserIds } from "@/lib/match-queue";
-import { persistNeonBalance, persistPremiumUntil, readStoredNeonBalance } from "@/lib/premium";
+import { persistNeonBalance, persistPremiumUntil } from "@/lib/premium";
 
 export const SETTINGS_CHANGED_EVENT = "youneon:settings-changed";
 
@@ -62,14 +61,6 @@ const LS = {
   claimed: "youneon_claimed_promos",
 } as const;
 
-const BUILTIN_PROMOS: Record<
-  string,
-  { neon?: number; item?: { type: TimedItem["type"]; hours: number; label: string } }
-> = {
-  YOUNEON50: { neon: 50 },
-  GLOW100: { neon: 100 },
-  FREEMSG: { item: { type: "free_message", hours: 24, label: "Free Message" } },
-};
 
 function emitSettingsChanged() {
   if (typeof window === "undefined") return;
@@ -429,84 +420,40 @@ export async function consumeFreeMessageItem(
 export async function claimPromoCode(
   username: string,
   rawCode: string,
-  current: { claimed?: string[]; items?: TimedItem[] }
+  _current?: { claimed?: string[]; items?: TimedItem[] }
 ): Promise<{ ok: true; message: string } | { ok: false; message: string }> {
   const code = rawCode.trim().toUpperCase().replace(/\s+/g, "");
   if (!code) return { ok: false, message: "Enter a promo code." };
-
-  const claimed = new Set(
-    (current.claimed || readJson<string[]>(LS.claimed, [])).map((c) => c.toUpperCase())
-  );
-  if (claimed.has(code)) return { ok: false, message: "You already claimed this code." };
-
-  let grant = BUILTIN_PROMOS[code];
+  void username;
   try {
-    const snap = await getDoc(doc(db, "promoCodes", code));
-    if (snap.exists()) {
-      const data = snap.data() as Record<string, unknown>;
-      if (data.active === false) return { ok: false, message: "This code is no longer active." };
-      const neon = typeof data.neon === "number" ? data.neon : undefined;
-      const hours = typeof data.itemHours === "number" ? data.itemHours : undefined;
-      const itemType = data.itemType === "free_message" ? "free_message" : undefined;
-      const label = typeof data.itemLabel === "string" ? data.itemLabel : "Free Message";
-      grant = {
-        neon,
-        item: itemType && hours ? { type: itemType, hours, label } : grant?.item,
-      };
+    const { data } = await (await import("@/lib/api")).api.post<{
+      message?: string;
+      neonAmount?: number;
+      newBalance?: number;
+      error?: string;
+    }>("/api/promo/claim", { code });
+    if (typeof data.newBalance === "number") {
+      persistNeonBalance(data.newBalance);
     }
-  } catch {
-    /* use builtin */
-  }
-
-  if (!grant || (!grant.neon && !grant.item)) {
-    return { ok: false, message: "Invalid promo code." };
-  }
-
-  const items = [...(current.items || readLocalItems())];
-  let message = "Code claimed.";
-  if (grant.item) {
-    const expiresAt = new Date(Date.now() + grant.item.hours * 60 * 60 * 1000).toISOString();
-    items.push({
-      id: `${grant.item.type}-${Date.now()}`,
-      type: grant.item.type,
-      label: grant.item.label,
-      expiresAt,
-    });
-    persistItems(items);
-    message = `${grant.item.label} added for ${grant.item.hours} hours.`;
-  }
-  if (grant.neon && grant.neon > 0) {
-    persistNeonBalance(readStoredNeonBalance() + grant.neon);
-    message = grant.item ? `${message} +${grant.neon} Neon.` : `+${grant.neon} Neon added.`;
-  }
-
-  claimed.add(code);
-  writeJson(LS.claimed, [...claimed]);
-
-  const cloudPatch: Record<string, unknown> = {
-    claimedPromoCodes: arrayUnion(code),
-    items,
-    updatedAt: Timestamp.now(),
-  };
-  if (grant.neon && grant.neon > 0) cloudPatch.neonBalance = increment(grant.neon);
-
-  if (username && username !== "anon") {
-    try {
-      await setDoc(doc(db, "users", username), cloudPatch, { merge: true });
-    } catch {
-      /* local grant still stands */
+    if (typeof window !== "undefined" && data.neonAmount) {
+      window.dispatchEvent(
+        new CustomEvent("youneon:premium-granted", {
+          detail: { premiumUntil: null, neonGranted: data.neonAmount, alreadyGranted: false },
+        })
+      );
     }
+    const claimed = new Set((readJson<string[]>(LS.claimed, [])).map((c) => c.toUpperCase()));
+    claimed.add(code);
+    writeJson(LS.claimed, [...claimed]);
+    emitSettingsChanged();
+    return { ok: true, message: data.message || "Code claimed." };
+  } catch (error) {
+    const err = error as { data?: { error?: string }; message?: string };
+    return {
+      ok: false,
+      message: err.data?.error || err.message || "Could not claim this code.",
+    };
   }
-
-  if (grant.neon && grant.neon > 0 && typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent("youneon:premium-granted", {
-        detail: { premiumUntil: null, neonGranted: grant.neon, alreadyGranted: false },
-      })
-    );
-  }
-  emitSettingsChanged();
-  return { ok: true, message };
 }
 
 export async function cancelPremiumLocally(username: string, uid?: string) {

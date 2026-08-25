@@ -186,11 +186,12 @@ function stubUser(uid?: string, username?: string): YouNeonUser {
 }
 
 export function YouNeonApp() {
-  const { user, isAuthenticated, sessionUnverified } = usePiAuth();
+  const { user, isAuthenticated, sessionUnverified, logout } = usePiAuth();
   const { setLanguage } = useLanguage();
   const isGuestDemo = false;
   const [bootAuthOk, setBootAuthOk] = useState(false);
   const [currentUser, setCurrentUser] = useState<YouNeonUser | null>(null);
+  const [accountBanned, setAccountBanned] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>("discover");
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [videoSession, setVideoSession] = useState<VideoSession | null>(null);
@@ -314,6 +315,7 @@ export function YouNeonApp() {
 
     if (!signedIn) {
       setCurrentUser(null);
+      setAccountBanned(false);
       return;
     }
 
@@ -331,6 +333,11 @@ export function YouNeonApp() {
 
       try {
         const { profile: remote } = await loadOrCreateUserProfile(piUsername, uid);
+        if (remote.banned) {
+          if (!cancelled) setAccountBanned(true);
+          return;
+        }
+        setAccountBanned(false);
         profile = userFromRemote(remote, uid, piUsername, extras);
 
         if (typeof remote.neonBalance === "number") {
@@ -709,6 +716,24 @@ export function YouNeonApp() {
 
   if (!showApp) {
     return null;
+  }
+
+  if (accountBanned) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-yn-bg px-6 text-center">
+        <h1 className="text-[22px] font-semibold tracking-[-0.03em] text-yn-text">Account suspended</h1>
+        <p className="mt-2 max-w-sm text-[15px] leading-6 text-yn-muted">
+          This Pi account cannot use YouNeon. If you think this is a mistake, contact support from the Pi app listing.
+        </p>
+        <button
+          type="button"
+          onClick={() => void logout()}
+          className="mt-6 h-12 rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-600 px-6 text-[15px] font-semibold text-white"
+        >
+          Sign out
+        </button>
+      </div>
+    );
   }
 
   const currentUserId = displayUser.id || displayUser.piUsername;

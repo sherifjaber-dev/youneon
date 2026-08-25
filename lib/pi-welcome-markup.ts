@@ -7,154 +7,189 @@ export const PI_WELCOME_OVERLAY_STYLE =
   "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#0f0117;color:#ffffff;padding:20px 16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:rgba(168,85,247,0.35);caret-color:transparent";
 
 const CARD_STYLE =
-  "position:relative;z-index:2;width:100%;max-width:380px;padding:26px 22px 22px;border-radius:28px;background-color:#fff8ff;background-image:linear-gradient(180deg,#fff8ff 0%,#f6edff 52%,#fde8f4 100%);box-shadow:0 28px 70px rgba(88,28,135,0.45),0 0 0 1px rgba(236,72,153,0.18);box-sizing:border-box;" +
+  "position:relative;z-index:2;width:100%;max-width:400px;padding:0 0 22px;border-radius:28px;overflow:hidden;background-color:#ffffff;background-image:linear-gradient(180deg,#ffffff 0%,#faf7ff 100%);box-shadow:0 36px 80px rgba(8,0,18,0.58),0 0 0 1px rgba(255,255,255,0.1);box-sizing:border-box;" +
   NONE;
+
+const HERO_WRAP =
+  "position:relative;width:100%;height:0;padding-bottom:56.25%;overflow:hidden;background-color:#14021c;" +
+  NONE;
+
+const HERO_MEDIA =
+  "position:absolute;top:0;left:0;width:100%;height:100%;display:block;object-fit:cover;" +
+  NONE;
+
+const BODY_STYLE = "padding:18px 22px 0;box-sizing:border-box;" + NONE;
 
 const LOGO_ROW =
-  "display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 14px;" + NONE;
+  "display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 12px;" + NONE;
 
 const WORDMARK_STYLE =
-  "font-size:1.7rem;font-weight:800;letter-spacing:-0.03em;line-height:1;margin:0;color:#6b21a8;font-family:system-ui,-apple-system,Segoe UI,sans-serif;" +
+  "font-size:1.85rem;font-weight:800;letter-spacing:-0.04em;line-height:1;margin:0;color:#1a0b2e;font-family:system-ui,-apple-system,Segoe UI,sans-serif;" +
   NONE;
 
-const LIVE_STYLE =
-  "display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;padding:3px 10px;border-radius:999px;background-color:#fdf2f8;color:#9d174d;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;" +
-  NONE;
-
-const TITLE_STYLE =
-  "font-size:1.15rem;font-weight:700;letter-spacing:-0.02em;margin:14px 0 6px;color:#3b0764;font-family:system-ui,-apple-system,Segoe UI,sans-serif;" +
-  NONE;
-
-const SUB_STYLE =
-  "font-size:14px;line-height:1.45;color:#6b21a8;margin:0 0 18px;max-width:320px;margin-left:auto;margin-right:auto;" +
-  NONE;
-
-const HINT_STYLE =
-  "font-size:0.8125rem;color:#7e22ce;margin:12px 0 0;max-width:320px;margin-left:auto;margin-right:auto;" +
+const TAG_STYLE =
+  "font-size:15px;line-height:1.4;font-weight:500;color:#52525b;margin:0 0 20px;max-width:300px;margin-left:auto;margin-right:auto;" +
   NONE;
 
 const GLOW_A =
-  "position:absolute;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,0.4) 0%,rgba(15,1,23,0) 70%);top:-40px;left:-30px;z-index:0;" +
+  "position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,0.26) 0%,rgba(15,1,23,0) 70%);top:-70px;left:-40px;z-index:0;" +
   NONE;
 
 const GLOW_B =
-  "position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(236,72,153,0.32) 0%,rgba(15,1,23,0) 70%);bottom:-50px;right:-40px;z-index:0;" +
+  "position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(236,72,153,0.2) 0%,rgba(15,1,23,0) 72%);bottom:-90px;right:-50px;z-index:0;" +
   NONE;
 
 /** YouNeon mark — rounded tile with two video faces. */
 export function youneonLogoSvg(idPrefix: string): string {
   const a = idPrefix + "-lg";
   const b = idPrefix + "-lp";
+  const c = idPrefix + "-lr";
   return (
-    '<svg width="52" height="52" viewBox="0 0 52 52" fill="none" aria-hidden="true" style="' +
+    '<svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden="true" style="' +
     NONE +
     '">' +
     "<defs>" +
     '<linearGradient id="' +
     a +
-    '" x1="6" y1="4" x2="48" y2="48">' +
-    '<stop offset="0%" stop-color="#c084fc"/>' +
-    '<stop offset="55%" stop-color="#a855f7"/>' +
-    '<stop offset="100%" stop-color="#ec4899"/>' +
+    '" x1="6" y1="4" x2="66" y2="68">' +
+    '<stop offset="0%" stop-color="#d8b4fe"/>' +
+    '<stop offset="52%" stop-color="#a855f7"/>' +
+    '<stop offset="100%" stop-color="#db2777"/>' +
     "</linearGradient>" +
     '<linearGradient id="' +
     b +
-    '" x1="12" y1="10" x2="40" y2="42">' +
+    '" x1="16" y1="14" x2="36" y2="54">' +
     '<stop offset="0%" stop-color="#fdf4ff"/>' +
-    '<stop offset="100%" stop-color="#f5d0fe"/>' +
+    '<stop offset="100%" stop-color="#ddd6fe"/>' +
+    "</linearGradient>" +
+    '<linearGradient id="' +
+    c +
+    '" x1="34" y1="20" x2="58" y2="58">' +
+    '<stop offset="0%" stop-color="#fff1f7"/>' +
+    '<stop offset="100%" stop-color="#fbcfe8"/>' +
     "</linearGradient>" +
     "</defs>" +
-    '<rect width="52" height="52" rx="16" fill="url(#' +
+    '<rect width="72" height="72" rx="20" fill="url(#' +
     a +
     ')"/>' +
-    '<rect x="8" y="11" width="22" height="28" rx="6" fill="url(#' +
+    '<rect x="11" y="16" width="28" height="40" rx="8" fill="url(#' +
     b +
-    ')" fill-opacity="0.95"/>' +
-    '<rect x="22" y="15" width="22" height="26" rx="6" fill="#fff" fill-opacity="0.92"/>' +
-    '<circle cx="19" cy="22" r="4.2" fill="#7c3aed"/>' +
-    '<path d="M12.5 33.5c1.2-4 3.8-6 6.5-6s5.3 2 6.5 6" fill="#7c3aed"/>' +
-    '<circle cx="33" cy="25" r="4.2" fill="#db2777"/>' +
-    '<path d="M26.8 35.8c1.2-3.8 3.7-5.6 6.2-5.6s5 1.8 6.2 5.6" fill="#db2777"/>' +
-    '<circle cx="26" cy="10" r="3" fill="#f0abfc"/>' +
+    ')"/>' +
+    '<rect x="32" y="20" width="28" height="38" rx="8" fill="url(#' +
+    c +
+    ')"/>' +
+    '<circle cx="25" cy="31" r="6" fill="#7c3aed"/>' +
+    '<path d="M16 50c2.4-8.5 5.6-12.5 9-12.5s6.6 4 9 12.5" fill="#5b21b6"/>' +
+    '<circle cx="46" cy="35" r="6" fill="#db2777"/>' +
+    '<path d="M37 52.5c2.4-7.8 5.6-11.5 9-11.5s6.6 3.7 9 11.5" fill="#9d174d"/>' +
+    '<circle cx="36" cy="13" r="4" fill="#f5d0fe"/>' +
     "</svg>"
   );
 }
 
-/** Original illustration: two people on a live video call. Not copied from Azar. */
+/** Original 16:9 illustration — live tiles + globe. Fallback if the hero photo fails. */
 export function youneonVideoChatArtSvg(idPrefix: string): string {
-  const g = idPrefix + "-ag";
-  const s = idPrefix + "-as";
-  const fl = idPrefix + "-fl";
-  const fr = idPrefix + "-fr";
+  const bg = idPrefix + "-bg";
+  const neon = idPrefix + "-neon";
+  const tileL = idPrefix + "-tl";
+  const tileC = idPrefix + "-tc";
+  const tileR = idPrefix + "-tr";
   return (
-    '<svg viewBox="0 0 320 168" width="100%" height="168" fill="none" aria-hidden="true" style="display:block;margin:0 auto 4px;max-width:320px;' +
+    '<svg viewBox="0 0 360 202" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" fill="none" aria-hidden="true" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;' +
     NONE +
     '">' +
     "<defs>" +
     '<linearGradient id="' +
-    g +
-    '" x1="20" y1="10" x2="300" y2="160">' +
-    '<stop offset="0%" stop-color="#f5d0fe"/>' +
-    '<stop offset="100%" stop-color="#fbcfe8"/>' +
+    bg +
+    '" x1="0" y1="0" x2="360" y2="202">' +
+    '<stop offset="0%" stop-color="#1a0530"/>' +
+    '<stop offset="100%" stop-color="#0f0117"/>' +
     "</linearGradient>" +
     '<linearGradient id="' +
-    s +
-    '" x1="40" y1="30" x2="280" y2="140">' +
+    neon +
+    '" x1="40" y1="20" x2="320" y2="180">' +
     '<stop offset="0%" stop-color="#c084fc"/>' +
-    '<stop offset="100%" stop-color="#ec4899"/>' +
+    '<stop offset="100%" stop-color="#f472b6"/>' +
     "</linearGradient>" +
     '<linearGradient id="' +
-    fl +
-    '" x1="48" y1="40" x2="140" y2="150">' +
-    '<stop offset="0%" stop-color="#ddd6fe"/>' +
+    tileL +
+    '" x1="30" y1="40" x2="130" y2="160">' +
+    '<stop offset="0%" stop-color="#ede9fe"/>' +
     '<stop offset="100%" stop-color="#a78bfa"/>' +
     "</linearGradient>" +
     '<linearGradient id="' +
-    fr +
-    '" x1="180" y1="40" x2="280" y2="150">' +
+    tileC +
+    '" x1="130" y1="20" x2="250" y2="180">' +
+    '<stop offset="0%" stop-color="#c4b5fd"/>' +
+    '<stop offset="100%" stop-color="#7c3aed"/>' +
+    "</linearGradient>" +
+    '<linearGradient id="' +
+    tileR +
+    '" x1="240" y1="80" x2="330" y2="180">' +
     '<stop offset="0%" stop-color="#fbcfe8"/>' +
     '<stop offset="100%" stop-color="#f472b6"/>' +
     "</linearGradient>" +
     "</defs>" +
-    '<rect x="8" y="8" width="304" height="152" rx="24" fill="url(#' +
-    g +
+    '<rect width="360" height="202" fill="url(#' +
+    bg +
     ')"/>' +
-    '<path d="M108 92c18-20 86-20 104 0" stroke="url(#' +
-    s +
-    ')" stroke-width="2" stroke-linecap="round" opacity="0.55"/>' +
-    '<path d="M118 104c14 12 70 12 84 0" stroke="url(#' +
-    s +
-    ')" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>' +
-    // left phone
-    '<rect x="28" y="28" width="92" height="118" rx="16" fill="#2e1065" stroke="url(#' +
-    s +
+    '<ellipse cx="180" cy="118" rx="92" ry="92" fill="none" stroke="url(#' +
+    neon +
+    ')" stroke-width="1.2" opacity="0.35"/>' +
+    '<ellipse cx="180" cy="118" rx="92" ry="34" fill="none" stroke="#c084fc" stroke-width="0.8" opacity="0.28"/>' +
+    '<ellipse cx="180" cy="118" rx="40" ry="92" fill="none" stroke="#f0abfc" stroke-width="0.8" opacity="0.22"/>' +
+    '<circle cx="180" cy="118" r="3" fill="#f5d0fe"/>' +
+    '<path d="M118 96c22-18 102-18 124 0" stroke="url(#' +
+    neon +
+    ')" stroke-width="1.6" stroke-linecap="round" opacity="0.45"/>' +
+    '<rect x="24" y="38" width="112" height="136" rx="18" fill="#241038" stroke="url(#' +
+    neon +
+    ')" stroke-width="1.8"/>' +
+    '<rect x="32" y="50" width="96" height="108" rx="12" fill="url(#' +
+    tileL +
+    ')"/>' +
+    '<circle cx="80" cy="90" r="16" fill="#f5f3ff"/>' +
+    '<circle cx="80" cy="88" r="11" fill="#7c3aed"/>' +
+    '<path d="M58 142c5-18 13-26 22-26s17 8 22 26" fill="#5b21b6"/>' +
+    '<rect x="36" y="44" width="34" height="12" rx="6" fill="#ef4444"/>' +
+    '<circle cx="44" cy="50" r="2.4" fill="#fff"/>' +
+    '<rect x="118" y="22" width="128" height="154" rx="20" fill="#2a1048" stroke="url(#' +
+    neon +
     ')" stroke-width="2"/>' +
-    '<rect x="34" y="38" width="80" height="88" rx="10" fill="url(#' +
-    fl +
+    '<rect x="126" y="34" width="112" height="122" rx="14" fill="url(#' +
+    tileC +
     ')"/>' +
-    '<circle cx="74" cy="72" r="16" fill="#efe4ff"/>' +
-    '<circle cx="74" cy="70" r="11" fill="#7c3aed"/>' +
-    '<path d="M54 112c4-14 12-22 20-22s16 8 20 22" fill="#5b21b6"/>' +
-    '<rect x="42" y="132" width="64" height="6" rx="3" fill="#c084fc" opacity="0.7"/>' +
-    '<rect x="40" y="32" width="28" height="10" rx="5" fill="#ef4444"/>' +
-    '<circle cx="47" cy="37" r="2.2" fill="#fff"/>' +
-    // right phone
-    '<rect x="200" y="22" width="92" height="118" rx="16" fill="#4a044e" stroke="url(#' +
-    s +
-    ')" stroke-width="2"/>' +
-    '<rect x="206" y="32" width="80" height="88" rx="10" fill="url(#' +
-    fr +
+    '<circle cx="182" cy="82" r="18" fill="#ede9fe"/>' +
+    '<circle cx="182" cy="80" r="12.5" fill="#4c1d95"/>' +
+    '<path d="M154 140c6-20 16-30 28-30s22 10 28 30" fill="#3b0764"/>' +
+    '<rect x="132" y="28" width="34" height="12" rx="6" fill="#ef4444"/>' +
+    '<circle cx="140" cy="34" r="2.4" fill="#fff"/>' +
+    '<circle cx="166" cy="146" r="8" fill="rgba(15,1,23,0.35)"/>' +
+    '<circle cx="186" cy="146" r="8" fill="rgba(15,1,23,0.35)"/>' +
+    '<rect x="236" y="86" width="100" height="92" rx="16" fill="#3b0a2e" stroke="url(#' +
+    neon +
+    ')" stroke-width="1.6"/>' +
+    '<rect x="243" y="96" width="86" height="72" rx="10" fill="url(#' +
+    tileR +
     ')"/>' +
-    '<circle cx="246" cy="66" r="16" fill="#ffe4f1"/>' +
-    '<circle cx="246" cy="64" r="11" fill="#db2777"/>' +
-    '<path d="M226 106c4-14 12-22 20-22s16 8 20 22" fill="#9d174d"/>' +
-    '<rect x="214" y="126" width="64" height="6" rx="3" fill="#f9a8d4" opacity="0.75"/>' +
-    '<rect x="212" y="26" width="28" height="10" rx="5" fill="#ef4444"/>' +
-    '<circle cx="219" cy="31" r="2.2" fill="#fff"/>' +
-    // center spark
-    '<path d="M160 58l8 14-8 14-8-14z" fill="#f0abfc"/>' +
-    '<circle cx="160" cy="72" r="3" fill="#fff"/>' +
+    '<circle cx="286" cy="122" r="12" fill="#ffe4f1"/>' +
+    '<circle cx="286" cy="120" r="8.5" fill="#db2777"/>' +
+    '<path d="M268 156c3-12 8-18 18-18s15 6 18 18" fill="#9d174d"/>' +
     "</svg>"
+  );
+}
+
+export function youneonWelcomeHeroHtml(idPrefix: string): string {
+  return (
+    '<div class="youneon-welcome-hero" style="' +
+    HERO_WRAP +
+    '">' +
+    '<img src="/youneon-welcome-hero.jpg" alt="" width="1280" height="720" decoding="async" style="' +
+    HERO_MEDIA +
+    "\" onerror=\"this.style.display='none';var s=this.nextSibling;if(s&&s.style)s.style.display='block'\"" +
+    " />" +
+    youneonVideoChatArtSvg(idPrefix) +
+    "</div>"
   );
 }
 
@@ -163,35 +198,26 @@ export function piWelcomeInnerHtml(buttonId: string, idPrefix: string): string {
     '<div class="youneon-welcome-card" style="' +
     CARD_STYLE +
     '">' +
+    youneonWelcomeHeroHtml(idPrefix) +
+    '<div style="' +
+    BODY_STYLE +
+    '">' +
     '<div style="' +
     LOGO_ROW +
     '">' +
     youneonLogoSvg(idPrefix) +
-    '<div style="' +
-    NONE +
-    ';text-align:left">' +
     '<h1 style="' +
     WORDMARK_STYLE +
     '">YouNeon</h1>' +
-    '<span class="youneon-live-pill" style="' +
-    LIVE_STYLE +
-    '"><span class="youneon-live-dot" style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block"></span>LIVE video chat</span>' +
-    "</div></div>" +
-    youneonVideoChatArtSvg(idPrefix) +
+    "</div>" +
     '<p style="' +
-    TITLE_STYLE +
+    TAG_STYLE +
     '">Random video chat with the Pi community</p>' +
-    '<p style="' +
-    SUB_STYLE +
-    '">Meet people on Pi Network in live 1:1 video. Sign in to start matching.</p>' +
     '<div style="pointer-events:auto;user-select:none;-webkit-user-select:none;width:100%;display:flex;justify-content:center">' +
     piSigninControlsHtml(buttonId) +
     "</div>" +
-    '<p style="' +
-    HINT_STYLE +
-    '">Tap anywhere to sign in with Pi Network</p>' +
     piSigninStatusHtml() +
-    "</div>"
+    "</div></div>"
   );
 }
 
