@@ -35,7 +35,7 @@ export function AdBanner({ ads, onSubscribe }: AdBannerProps) {
         <button
           type="button"
           onClick={onSubscribe}
-          className="mt-1.5 text-[11px] font-semibold text-yn-accent hover:text-yn-accent-2"
+          className="yn-gold-cta mt-2 inline-flex h-10 items-center justify-center px-4 text-[13px] font-bold text-[#1a1408]"
         >
           See Premium
         </button>
@@ -111,7 +111,7 @@ export function AdInterstitial({ ads, onSubscribe }: AdInterstitialProps) {
                 setOpen(false);
                 onSubscribe();
               }}
-              className="h-11 flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white"
+              className="yn-gold-cta h-12 flex-1 text-[16px] font-bold text-[#1a1408]"
             >
               See Premium
             </button>

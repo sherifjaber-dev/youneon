@@ -297,10 +297,15 @@ export function NotificationsScreen({
                 <span className="mt-0.5 block text-[13px] leading-snug text-yn-muted">
                   {isPremium
                     ? "Unlimited chats, free filters, and ad-free browsing are on."
-                    : `${SUBSCRIPTION_PLAN.amount} π / ${SUBSCRIPTION_PLAN.days} days · 1,000 Neon on subscribe.`}
+                    : (
+                      <>
+                        <span className="text-[16px] font-bold text-yn-gold">{SUBSCRIPTION_PLAN.amount} π</span>
+                        {" / "}{SUBSCRIPTION_PLAN.days} days · 1,000 Neon on subscribe.
+                      </>
+                    )}
                 </span>
               </span>
-              <span className="shrink-0 rounded-full bg-white px-3 py-2 text-[12px] font-semibold text-[#5b21b6]">
+              <span className="shrink-0 rounded-full bg-gradient-to-r from-[#C9A227] to-[#D4AF37] px-3.5 py-2 text-[13px] font-bold text-[#1a1408] shadow-[0_2px_8px_rgba(201,162,39,0.35)]">
                 {isPremium ? "Renew" : "Subscribe"}
               </span>
             </button>
@@ -317,7 +322,7 @@ export function NotificationsScreen({
                 <button
                   type="button"
                   onClick={openShop}
-                  className="yn-cta mx-auto mt-5 inline-flex min-w-[180px] items-center justify-center px-5 text-white"
+                  className="yn-gold-cta mx-auto mt-5 inline-flex min-w-[200px] items-center justify-center px-5 text-[#1a1408]"
                 >
                   Subscribe with Pi
                 </button>

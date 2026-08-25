@@ -836,7 +836,7 @@ function VideoCallScreen({
               <div className="bg-yn-bg rounded-xl p-4 mb-5 text-sm">
                 {browser === "edge" && (
                   <>
-                    <p className="font-semibold text-yellow-300 mb-2">How to allow in Edge:</p>
+                    <p className="font-semibold text-yn-gold mb-2">How to allow in Edge:</p>
                     <ol className="list-decimal list-inside space-y-1 text-yn-text">
                       <li>Tap the <b>lock icon</b> in the address bar</li>
                       <li>Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b></li>
@@ -846,7 +846,7 @@ function VideoCallScreen({
                 )}
                 {browser === "chrome" && (
                   <>
-                    <p className="font-semibold text-yellow-300 mb-2">How to allow in Chrome:</p>
+                    <p className="font-semibold text-yn-gold mb-2">How to allow in Chrome:</p>
                     <ol className="list-decimal list-inside space-y-1 text-yn-text">
                       <li>Tap the <b>lock icon</b></li>
                       <li>Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b></li>
@@ -920,12 +920,12 @@ function VideoCallScreen({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-[#0f0117]">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#1a0a24]">
       <video
         ref={remoteVideoRef}
         autoPlay
         playsInline
-        className={`absolute inset-0 h-full w-full bg-[#0f0117] object-cover transition-all duration-300 ${nsfwBlur ? "scale-110 blur-3xl" : ""}`}
+        className={`absolute inset-0 h-full w-full bg-[#1a0a24] object-cover transition-all duration-300 ${nsfwBlur ? "scale-110 blur-3xl" : ""}`}
         data-testid="remote-video"
       />
       <audio ref={remoteAudioRef} autoPlay />
@@ -966,7 +966,7 @@ function VideoCallScreen({
       <div className="yn-call-pip">
         <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" data-testid="local-video" />
         {!camOn && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[#0c0416]/90 text-xs text-white/80">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[#1f1228]/90 text-xs text-white/80">
             <CallIcon name="camOff" uid="pip-cam" />
             <span>Camera off</span>
           </div>
@@ -1068,7 +1068,7 @@ function VideoCallScreen({
       )}
 
       {callStatus === "waiting" && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-white pointer-events-none">
+        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 pointer-events-none">
           <WaitingMatchPanel
             title="Waiting for match…"
             subtitle={isPremium ? "You are in the priority queue." : "Stay on this screen — the next person joins the same room."}
@@ -1077,14 +1077,14 @@ function VideoCallScreen({
         </div>
       )}
       {callStatus === "joining" && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-white pointer-events-none">
+        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 pointer-events-none">
           <WaitingMatchPanel title="Starting video…" subtitle="Connecting your camera and microphone." />
         </div>
       )}
 
       {callStatus === "joined" && nsfwModelRef.current && !nsfwBlur && (
         <div
-          className="absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md"
+          className="absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-fuchsia-300/35 bg-[#3b1d4a]/60 px-3 py-1.5 backdrop-blur-md"
           style={{ top: "max(12px, env(safe-area-inset-top))" }}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
@@ -1108,7 +1108,7 @@ function VideoCallScreen({
             setShowGiftPicker(false);
             setShowChatInput(false);
           }}
-          className="absolute z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-md"
+          className="absolute z-20 flex h-11 w-11 items-center justify-center rounded-full border border-fuchsia-300/40 bg-[#3b1d4a]/70 text-white backdrop-blur-md"
           style={{ top: "max(12px, env(safe-area-inset-top))", right: 16 }}
           aria-label="Report this person"
           data-testid="report-user-btn"

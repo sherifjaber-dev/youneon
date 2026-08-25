@@ -90,8 +90,8 @@ export function TopBar({
               onClick={() => setItemsOpen(true)}
               className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors active:scale-95 ${
                 bagActive
-                  ? "border-sky-400/40 bg-sky-500/15 text-sky-500"
-                  : "border-black/8 bg-white text-yn-muted/50 shadow-sm"
+                  ? "border-blue-400/55 bg-blue-500/15 text-blue-600"
+                  : "border-black/10 bg-white text-zinc-800 shadow-sm"
               }`}
               title={
                 bagActive
@@ -107,7 +107,7 @@ export function TopBar({
             >
               <YouNeonBagIcon size={16} />
               {bagActive && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-500 px-1 text-[9px] font-bold leading-none text-white">
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[9px] font-bold leading-none text-white">
                   {bagCount > 9 ? "9+" : bagCount}
                 </span>
               )}

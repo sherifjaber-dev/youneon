@@ -103,8 +103,11 @@ export function SubscribeWithPi({
         </div>
         <div className="min-w-0 flex-1">
           <div className={titleClass}>{SUBSCRIPTION_PLAN.name}</div>
-          <p className={isShop ? "mt-0.5 text-[13px] font-medium text-yn-accent" : "mt-0.5 text-[13px] font-medium text-purple-700"}>
-            {SUBSCRIPTION_PLAN.amount} π / {SUBSCRIPTION_PLAN.days} days
+          <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 leading-none">
+            <span className="text-[26px] font-bold tabular-nums tracking-tight text-yn-gold">
+              {SUBSCRIPTION_PLAN.amount} π
+            </span>
+            <span className="text-[13px] font-semibold text-yn-muted">/ {SUBSCRIPTION_PLAN.days} days</span>
           </p>
           {active && premiumUntil && (
             <p className={isShop ? "mt-1 text-[11px] text-emerald-700" : "mt-1 text-[11px] text-emerald-700"}>
@@ -137,7 +140,7 @@ export function SubscribeWithPi({
       <Button
         onClick={handleSubscribe}
         disabled={status === "loading"}
-        className="mt-4 h-11 w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white hover:from-purple-500 hover:to-pink-500"
+        className="yn-gold-cta mt-4 h-[52px] w-full rounded-xl bg-gradient-to-r from-[#C9A227] to-[#D4AF37] text-[17px] font-bold text-[#1a1408] shadow-[0_4px_18px_rgba(201,162,39,0.42)] hover:from-[#D4AF37] hover:to-[#C9A227] hover:bg-transparent"
       >
         {status === "loading"
           ? "Processing Pi payment..."

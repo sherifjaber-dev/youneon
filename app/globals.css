@@ -10,6 +10,8 @@
   --yn-muted: #3f3f46;
   --yn-accent: #c026d3;
   --yn-accent-2: #db2777;
+  --yn-gold: #C9A227;
+  --yn-gold-bright: #D4AF37;
   --yn-nav: #EDE8F2;
   --background: #F6F4F8;
   --foreground: #1f1f23;
@@ -126,6 +128,8 @@
   --color-yn-muted: var(--yn-muted);
   --color-yn-accent: var(--yn-accent);
   --color-yn-accent-2: var(--yn-accent-2);
+  --color-yn-gold: var(--yn-gold);
+  --color-yn-gold-bright: var(--yn-gold-bright);
   --color-yn-nav: var(--yn-nav);
 }
 
@@ -133,6 +137,8 @@
 :root {
   --yn-purple: #c026d3;
   --yn-pink: #db2777;
+  --yn-gold: #C9A227;
+  --yn-gold-bright: #D4AF37;
   --yn-topbar-inner: 48px;
   --yn-bottomnav-inner: 58px;
 }
@@ -268,6 +274,22 @@ html.youneon-signed-in select {
   .yn-cta:active {
     transform: scale(0.985);
   }
+
+  .yn-gold-cta {
+    height: 52px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    border-radius: 14px;
+    color: #1a1408;
+    background-image: linear-gradient(90deg, var(--yn-gold), var(--yn-gold-bright));
+    border: 1px solid color-mix(in srgb, var(--yn-gold) 55%, #7a5c10);
+    box-shadow: 0 4px 18px color-mix(in srgb, var(--yn-gold) 42%, transparent);
+  }
+
+  .yn-gold-cta:active {
+    transform: scale(0.985);
+  }
 }
 
 @layer base {
@@ -357,8 +379,8 @@ html.youneon-signed-in select {
 }
 
 @keyframes yn-wait-core {
-  0%, 100% { box-shadow: 0 0 18px rgba(168, 85, 247, 0.45), 0 0 36px rgba(236, 72, 153, 0.18); }
-  50% { box-shadow: 0 0 26px rgba(236, 72, 153, 0.5), 0 0 48px rgba(168, 85, 247, 0.28); }
+  0%, 100% { box-shadow: 0 0 18px color-mix(in srgb, var(--yn-accent) 42%, transparent), 0 0 32px color-mix(in srgb, var(--yn-gold) 22%, transparent); }
+  50% { box-shadow: 0 0 26px color-mix(in srgb, var(--yn-accent-2) 48%, transparent), 0 0 40px color-mix(in srgb, var(--yn-gold) 28%, transparent); }
 }
 
 .yn-call-vignette {
@@ -367,8 +389,8 @@ html.youneon-signed-in select {
   z-index: 5;
   pointer-events: none;
   background:
-    linear-gradient(180deg, rgba(8, 1, 16, 0.38) 0%, transparent 18%, transparent 62%, rgba(8, 1, 16, 0.55) 100%),
-    radial-gradient(ellipse at center, transparent 42%, rgba(8, 1, 16, 0.42) 100%);
+    linear-gradient(180deg, color-mix(in srgb, var(--yn-accent) 18%, transparent) 0%, transparent 18%, transparent 62%, rgba(31, 31, 35, 0.42) 100%),
+    radial-gradient(ellipse at center, transparent 48%, rgba(31, 31, 35, 0.22) 100%);
 }
 
 .yn-call-dock {
@@ -392,12 +414,12 @@ html.youneon-signed-in select {
   padding: 8px 10px;
   max-width: 100%;
   border-radius: 999px;
-  background: rgba(8, 2, 16, 0.78);
-  border: 1px solid rgba(168, 85, 247, 0.32);
+  background: color-mix(in srgb, #3b1d4a 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yn-accent) 38%, white);
   box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.55),
-    0 0 32px rgba(168, 85, 247, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 10px 32px color-mix(in srgb, var(--yn-accent) 22%, transparent),
+    0 0 22px color-mix(in srgb, var(--yn-gold) 14%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
 }
@@ -419,15 +441,14 @@ html.youneon-signed-in select {
   min-width: 48px;
   min-height: 48px;
   border-radius: 50%;
-  color: #f3e8ff;
+  color: #fff;
   background:
-    radial-gradient(circle at 50% 26%, rgba(168, 85, 247, 0.32), transparent 58%),
-    rgba(14, 6, 26, 0.82);
-  border: 1px solid rgba(168, 85, 247, 0.4);
+    radial-gradient(circle at 50% 26%, color-mix(in srgb, var(--yn-accent) 46%, transparent), transparent 58%),
+    linear-gradient(180deg, var(--yn-accent), var(--yn-accent-2));
+  border: 1px solid color-mix(in srgb, var(--yn-accent-2) 42%, white);
   box-shadow:
-    0 0 14px rgba(168, 85, 247, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -10px 18px rgba(168, 85, 247, 0.14);
+    0 4px 14px color-mix(in srgb, var(--yn-accent) 32%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
@@ -435,10 +456,10 @@ html.youneon-signed-in select {
 
 .yn-call-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(236, 72, 153, 0.55);
+  border-color: color-mix(in srgb, var(--yn-gold) 55%, white);
   box-shadow:
-    0 0 20px rgba(236, 72, 153, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    0 0 18px color-mix(in srgb, var(--yn-gold) 32%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
 }
 
 .yn-call-btn:active:not(:disabled) {
@@ -446,37 +467,41 @@ html.youneon-signed-in select {
 }
 
 .yn-call-btn.is-off {
-  color: #fecdd3;
+  color: #fff;
   background:
-    radial-gradient(circle at 50% 30%, rgba(236, 72, 153, 0.38), transparent 58%),
-    rgba(42, 8, 22, 0.9);
-  border-color: rgba(236, 72, 153, 0.58);
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--yn-accent-2) 48%, transparent), transparent 58%),
+    linear-gradient(180deg, #be185d, #9d174d);
+  border-color: color-mix(in srgb, var(--yn-accent-2) 55%, white);
   box-shadow:
-    0 0 16px rgba(236, 72, 153, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 0 16px color-mix(in srgb, var(--yn-accent-2) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .yn-call-btn.is-gift {
+  color: #1a1408;
   background:
-    radial-gradient(circle at 50% 24%, rgba(236, 72, 153, 0.42), transparent 56%),
-    linear-gradient(180deg, rgba(168, 85, 247, 0.35), rgba(14, 6, 26, 0.85));
-  border-color: rgba(236, 72, 153, 0.48);
+    radial-gradient(circle at 50% 24%, color-mix(in srgb, var(--yn-gold-bright) 55%, white), transparent 56%),
+    linear-gradient(180deg, var(--yn-gold-bright), var(--yn-gold));
+  border-color: color-mix(in srgb, var(--yn-gold-bright) 50%, white);
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--yn-gold) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .yn-call-btn.is-end {
   color: #fff;
   background:
-    radial-gradient(circle at 50% 28%, rgba(255, 140, 180, 0.55), transparent 55%),
-    linear-gradient(180deg, #ec4899 0%, #be123c 100%);
-  border-color: rgba(255, 186, 214, 0.42);
+    radial-gradient(circle at 50% 28%, rgba(255, 180, 200, 0.45), transparent 55%),
+    linear-gradient(180deg, var(--yn-accent-2) 0%, #be123c 100%);
+  border-color: color-mix(in srgb, var(--yn-accent-2) 40%, white);
   box-shadow:
-    0 0 22px rgba(236, 72, 153, 0.55),
+    0 0 18px color-mix(in srgb, var(--yn-accent-2) 45%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.32);
 }
 
 .yn-call-btn.is-end:hover:not(:disabled) {
   box-shadow:
-    0 0 28px rgba(236, 72, 153, 0.7),
+    0 0 24px color-mix(in srgb, var(--yn-accent-2) 58%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.36);
 }
 
@@ -497,13 +522,13 @@ html.youneon-signed-in select {
   height: 16px;
   padding: 0 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #a855f7, #ec4899);
+  background: linear-gradient(90deg, var(--yn-accent), var(--yn-accent-2));
   color: #fff;
   font-size: 9px;
   font-weight: 700;
   line-height: 16px;
   text-align: center;
-  box-shadow: 0 0 10px rgba(236, 72, 153, 0.55);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--yn-accent-2) 45%, transparent);
 }
 
 .yn-call-btn-count {
@@ -515,11 +540,11 @@ html.youneon-signed-in select {
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #f5d0fe;
+  color: #fff;
 }
 
 .yn-call-wordmark {
-  background-image: linear-gradient(90deg, #c084fc, #ec4899 55%, #a855f7);
+  background-image: linear-gradient(90deg, var(--yn-accent), var(--yn-accent-2) 52%, var(--yn-gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -536,11 +561,11 @@ html.youneon-signed-in select {
   pointer-events: none;
   padding: 28px 32px;
   border-radius: 24px;
-  background: rgba(36, 16, 52, 0.48);
-  border: 1px solid rgba(192, 38, 211, 0.22);
+  background: color-mix(in srgb, var(--yn-card) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yn-accent) 22%, white);
   box-shadow:
-    0 16px 40px rgba(0, 0, 0, 0.28),
-    0 0 28px rgba(192, 38, 211, 0.1);
+    0 16px 40px color-mix(in srgb, var(--yn-accent) 16%, transparent),
+    0 0 22px color-mix(in srgb, var(--yn-gold) 12%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
@@ -556,14 +581,14 @@ html.youneon-signed-in select {
   position: absolute;
   inset: 8px;
   border-radius: 50%;
-  border: 1px solid rgba(168, 85, 247, 0.55);
-  box-shadow: 0 0 16px rgba(236, 72, 153, 0.22);
+  border: 1px solid color-mix(in srgb, var(--yn-accent) 55%, white);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--yn-gold) 28%, transparent);
   animation: yn-wait-ring 2.6s ease-out infinite;
 }
 
 .yn-wait-ring-delay {
   inset: 0;
-  border-color: rgba(236, 72, 153, 0.38);
+  border-color: color-mix(in srgb, var(--yn-accent-2) 48%, white);
   animation-delay: 0.85s;
 }
 
@@ -572,8 +597,8 @@ html.youneon-signed-in select {
   inset: 28px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 40% 35%, rgba(236, 72, 153, 0.55), transparent 55%),
-    linear-gradient(180deg, rgba(168, 85, 247, 0.85), rgba(76, 29, 149, 0.95));
+    radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--yn-gold-bright) 62%, transparent), transparent 55%),
+    linear-gradient(180deg, var(--yn-accent-2), var(--yn-accent));
   animation: yn-wait-core 2.4s ease-in-out infinite;
 }
 
@@ -581,7 +606,7 @@ html.youneon-signed-in select {
   margin: 10px 0 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #f5e9ff;
+  color: var(--yn-text);
   letter-spacing: -0.02em;
 }
 
@@ -589,7 +614,7 @@ html.youneon-signed-in select {
   margin: 6px 0 0;
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--yn-muted);
   max-width: 240px;
 }
 
@@ -598,14 +623,14 @@ html.youneon-signed-in select {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid color-mix(in srgb, var(--yn-gold) 48%, white);
+  background: color-mix(in srgb, var(--yn-gold) 16%, white);
   padding: 3px 10px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #fde68a;
+  color: #7a5c10;
 }
 
 .yn-call-pip {
@@ -617,11 +642,11 @@ html.youneon-signed-in select {
   z-index: 20;
   overflow: hidden;
   border-radius: 16px;
-  background: #0c0416;
-  border: 1px solid rgba(168, 85, 247, 0.45);
+  background: #1f1228;
+  border: 1px solid color-mix(in srgb, var(--yn-gold) 42%, var(--yn-accent));
   box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.5),
-    0 0 18px rgba(168, 85, 247, 0.28);
+    0 8px 28px color-mix(in srgb, var(--yn-accent) 22%, transparent),
+    0 0 14px color-mix(in srgb, var(--yn-gold) 18%, transparent);
 }
 
 @media (min-width: 640px) {
@@ -1256,10 +1281,12 @@ html.youneon-signed-in select {
 }
 
 .yn-call-glass {
-  background: rgba(8, 2, 16, 0.78);
-  color: #f5e9ff;
-  border: 1px solid rgba(168, 85, 247, 0.28);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  background: color-mix(in srgb, #3b1d4a 68%, transparent);
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--yn-accent) 32%, white);
+  box-shadow:
+    0 12px 32px color-mix(in srgb, var(--yn-accent) 22%, transparent),
+    0 0 16px color-mix(in srgb, var(--yn-gold) 10%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }

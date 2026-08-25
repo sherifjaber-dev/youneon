@@ -147,11 +147,13 @@ export function DiscoverScreen({
                   data-testid={`gender-${option.value}-btn`}
                 >
                   <span className="text-[15px] font-semibold leading-none">{option.label}</span>
-                  <span className={`mt-1 text-[10px] font-medium leading-none ${selected ? "text-white/80" : "text-yn-muted/70"}`}>
+                  <span className="mt-1 text-[10px] font-semibold leading-none">
                     {isPremium || option.cost === 0 ? (
                       <span className={selected ? "text-emerald-100" : "text-emerald-600"}>Free</span>
                     ) : (
-                      <>◆ {option.cost} Neon</>
+                      <span className={selected ? "text-yn-gold-bright drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]" : "text-yn-gold"}>
+                        ◆ {option.cost} Neon
+                      </span>
                     )}
                   </span>
                 </button>
