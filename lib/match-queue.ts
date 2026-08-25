@@ -136,6 +136,8 @@ export async function enqueueOrMatch(opts: {
     if (!isRecent(data.createdAt)) return;
     const peerId = String(data.userId || d.id);
     if (blocked.has(peerId) || blocked.has(d.id)) return;
+    const peerAge = Number(data.age);
+    if (Number.isFinite(peerAge) && peerAge > 0 && peerAge < 18) return;
     if (!genderOk(filters.gender, data.gender as string | undefined)) return;
     if (!countryOk(filters.country, data.country as string | undefined)) return;
     const theirFilters = (data.filters as MatchFilters) || { gender: "both", country: "Worldwide" };

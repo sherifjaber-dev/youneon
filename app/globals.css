@@ -748,10 +748,58 @@
 
 .yn-remote-profile-name {
   margin: 0 0 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: #fff;
+}
+
+.yn-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(90deg, #7c3aed, #ec4899);
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.35);
+}
+
+.yn-remote-profile-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-bottom: 8px;
+}
+
+.yn-remote-profile-action {
+  flex: 1;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.yn-remote-profile-action.is-report {
+  background: rgba(244, 63, 94, 0.16);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fecdd3;
+}
+
+.yn-remote-profile-action.is-block {
+  background: linear-gradient(90deg, #7c3aed, #ec4899);
+  border-color: transparent;
 }
 
 .yn-remote-profile-meta {

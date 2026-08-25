@@ -27,7 +27,35 @@ export interface UserProfile {
   reactionsReceived?: Record<string, number>;
   nameChangeMonth?: string;
   nameChangeCount?: number;
-  createdAt?: Date;
+  neonId?: string;
+  hideGender?: boolean;
+  backgroundPlay?: boolean;
+  locale?: string;
+  notificationPrefs?: {
+    marketing?: boolean;
+    onlineStatus?: boolean;
+    newFollowers?: boolean;
+  };
+  privacyConsent?: {
+    necessary?: boolean;
+    analytics?: boolean;
+    advertising?: boolean;
+    marketing?: boolean;
+  };
+  blockedUsers?: string[];
+  blockedUserMeta?: Record<string, { name?: string; photo?: string }>;
+  claimedPromoCodes?: string[];
+  items?: Array<{
+    id: string;
+    type: string;
+    label: string;
+    expiresAt: string;
+  }>;
+  youneonBadge?: boolean;
+  reportsReceivedCount?: number;
+  lastReportedAt?: unknown;
+  successfulChats?: number;
+  createdAt?: Date | unknown;
   updatedAt?: unknown;
   lastProfileUpdate?: unknown;
 }
@@ -327,6 +355,19 @@ export const addToHistory = async (
     durationSeconds,
     timestamp: serverTimestamp(),
   });
+  if (durationSeconds != null && durationSeconds >= 30) {
+    try {
+      await setDoc(
+        doc(db, "users", currentUserId),
+        { successfulChats: increment(1), updatedAt: Timestamp.now() },
+        { merge: true }
+      );
+      const { refreshYouNeonBadge } = await import("@/lib/safety");
+      void refreshYouNeonBadge(currentUserId);
+    } catch {
+      /* ignore */
+    }
+  }
 };
 
 export const subscribeToHistory = (userId: string, cb: (items: any[]) => void) => {

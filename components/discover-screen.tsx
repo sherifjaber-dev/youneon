@@ -8,6 +8,7 @@ import { AdBanner, AdInterstitial } from "@/components/ad-placements";
 import { PremiumBadge } from "@/components/premium-badge";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
+import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
 
 interface DiscoverScreenProps {
   onStartVideo: (filters: { gender: "women" | "men" | "both"; country: string }) => void;
@@ -28,6 +29,7 @@ export function DiscoverScreen({
   isPremium = false,
   announcements = [],
 }: DiscoverScreenProps) {
+  const privacy = usePrivacyConsentLive();
   const [selectedGender, setSelectedGender] = useState<"women" | "men" | "both">("both");
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -224,10 +226,10 @@ export function DiscoverScreen({
         )}
       </div>
 
-      {!isPremium && (
+      {!isPremium && privacy.advertising && (
         <AdBanner ads={adItems} onSubscribe={onOpenNeonShop} />
       )}
-      {!isPremium && (
+      {!isPremium && privacy.advertising && (
         <AdInterstitial ads={adItems} onSubscribe={onOpenNeonShop} />
       )}
 

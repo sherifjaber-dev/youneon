@@ -6,6 +6,7 @@ import { subscribeToConversations } from "@/lib/firestore-service";
 import { NeonAvatar } from "@/components/neon-avatar";
 import { FollowersScreen, type ChatTarget } from "@/components/followers-screen";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
+import { useBlockedIds } from "@/hooks/use-user-settings";
 import { countryToFlag } from "@/lib/countries";
 import type { FollowSnapshot } from "@/lib/follow-service";
 
@@ -58,6 +59,7 @@ export function MessagesScreen({
   const graphUserId = me.id || currentUserId;
   const { following, followers, followingIds, online, busyId, ready, toggleFollow } =
     useFollowGraph(graphUserId);
+  const blockedIds = useBlockedIds(graphUserId);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -260,7 +262,7 @@ export function MessagesScreen({
           <div className="divide-y divide-white/[0.06]">
             {conversations.map((conv) => {
               const otherId = conv.participants?.find((p: string) => p !== currentUserId);
-              if (!otherId) return null;
+              if (!otherId || blockedIds.has(otherId)) return null;
               const known = peopleById[otherId];
               const name = conv.participantNames?.[otherId] || known?.name || "User";
               const photo = conv.participantPhotos?.[otherId] || known?.photo || "";

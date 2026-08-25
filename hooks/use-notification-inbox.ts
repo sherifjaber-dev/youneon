@@ -19,11 +19,14 @@ import {
   subscribeToFollowInbox,
   subscribeToUserNotifications,
   unreadInboxCount,
+  filterInboxByPrefs,
   type InboxItem,
   type UserNotification,
 } from "@/lib/notifications";
+import { useNotificationPrefsLive } from "@/hooks/use-user-settings";
 
 export function useNotificationInbox(userId: string | undefined, announcements: Announcement[]) {
+  const prefs = useNotificationPrefsLive();
   const [social, setSocial] = useState<UserNotification[]>([]);
   const [follows, setFollows] = useState<InboxItem[]>([]);
   const [convs, setConvs] = useState<Array<Record<string, unknown>>>([]);
@@ -68,8 +71,8 @@ export function useNotificationInbox(userId: string | undefined, announcements: 
       : [];
     const anns = announcementsToInbox(announcements, annRead);
     void readTick;
-    return mergeInbox([written, follows, fromConvs, gifts, anns]);
-  }, [social, follows, convs, announcements, userId, readTick]);
+    return filterInboxByPrefs(mergeInbox([written, follows, fromConvs, gifts, anns]), prefs);
+  }, [social, follows, convs, announcements, userId, readTick, prefs]);
 
   itemsRef.current = items;
 

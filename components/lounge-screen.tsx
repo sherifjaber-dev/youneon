@@ -18,6 +18,8 @@ import {
   type LoungePerson,
 } from "@/lib/lounge-service";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
+import { useBlockedIds } from "@/hooks/use-user-settings";
+import { isAdultAge } from "@/lib/safety";
 import type { FollowSnapshot } from "@/lib/follow-service";
 
 export type LoungeChatTarget = {
@@ -114,6 +116,7 @@ export function LoungeScreen({
   const [draft, setDraft] = useState<LoungeFilters>(DEFAULT_LOUNGE_FILTERS);
 
   const { followingIds, busyId, toggleFollow } = useFollowGraph(meId);
+  const blockedIds = useBlockedIds(meId);
 
   useEffect(() => {
     const stored = readStoredLoungeFilters();
@@ -141,10 +144,10 @@ export function LoungeScreen({
     };
   }, [meId]);
 
-  const { all, forYou } = useMemo(
-    () => applyLoungeFilters(people, applied, me),
-    [people, applied, me]
-  );
+  const { all, forYou } = useMemo(() => {
+    const visible = people.filter((p) => !blockedIds.has(p.id));
+    return applyLoungeFilters(visible, applied, me);
+  }, [people, applied, me, blockedIds]);
 
   const filtersActive =
     applied.gender !== "all" ||
@@ -180,6 +183,8 @@ export function LoungeScreen({
     setFilterOpen(false);
   };
 
+  const adult = isAdultAge(me.age);
+
   return (
     <div className="min-h-full bg-[#0f0117] pb-8 text-white">
       <div className="flex items-center justify-between px-4 pt-3">
@@ -208,7 +213,14 @@ export function LoungeScreen({
         </p>
       </div>
 
-      {loading ? (
+      {!adult ? (
+        <div className="px-6 py-16 text-center">
+          <p className="text-[16px] font-semibold text-white">YouNeon is 18+</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-sm text-white/40">
+            Add your age (18 or older) in your profile to use Lounge. Minors cannot match or browse people here.
+          </p>
+        </div>
+      ) : loading ? (
         <LoungeSkeleton />
       ) : people.length === 0 ? (
         <div className="px-6 py-16 text-center">
@@ -316,6 +328,11 @@ function ForYouCard({
           <p className="truncate text-[16px] font-bold text-white">
             {title}
             {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
+            {person.youneonBadge ? (
+              <span className="ml-1 align-middle text-[10px] font-bold uppercase tracking-wide text-pink-300">
+                Badge
+              </span>
+            ) : null}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1">
             {language ? (
@@ -385,6 +402,9 @@ function AllCard({
           <p className="truncate text-[14px] font-bold text-white">
             {title}
             {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
+            {person.youneonBadge ? (
+              <span className="ml-1 text-[10px] font-bold uppercase tracking-wide text-pink-300">Badge</span>
+            ) : null}
           </p>
           {language ? (
             <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-white/70">

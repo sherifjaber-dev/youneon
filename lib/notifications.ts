@@ -16,7 +16,7 @@ import { readAnnouncementIds } from "@/lib/announcements";
 
 export type SocialNotificationType = "follow" | "message" | "gift";
 export type InboxFilter = "all" | "notifications" | "events" | "updates";
-export type InboxKind = SocialNotificationType | "system" | "event" | "promo";
+export type InboxKind = SocialNotificationType | "system" | "event" | "promo" | "online";
 
 export type UserNotification = {
   id: string;
@@ -163,6 +163,13 @@ export async function notifyFollow(input: {
   actorName: string;
   actorPhoto?: string;
 }) {
+  try {
+    const { recipientAllowsFollowNotify } = await import("@/lib/user-settings");
+    const allowed = await recipientAllowsFollowNotify(input.recipientId);
+    if (!allowed) return;
+  } catch {
+    /* write anyway if prefs cannot be read */
+  }
   const name = input.actorName.trim() || "Someone";
   await upsertUserNotification({
     id: `follow__${input.actorId}__${input.recipientId}`,
@@ -428,6 +435,18 @@ export function unreadInboxCount(items: InboxItem[]): number {
     if (notifRead.has(item.id)) return false;
     return true;
   }).length;
+}
+
+export function filterInboxByPrefs(
+  items: InboxItem[],
+  prefs: { marketing: boolean; onlineStatus: boolean; newFollowers: boolean }
+): InboxItem[] {
+  return items.filter((item) => {
+    if (!prefs.newFollowers && item.kind === "follow") return false;
+    if (!prefs.marketing && (item.kind === "promo" || item.kind === "event")) return false;
+    if (!prefs.onlineStatus && item.kind === "online") return false;
+    return true;
+  });
 }
 
 export function inboxActionFor(item: InboxItem): NotificationAction | null {

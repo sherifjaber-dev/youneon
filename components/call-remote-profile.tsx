@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { UserProfile } from "@/lib/firestore-service";
 import { recordProfileView } from "@/lib/profile-views";
+import { badgeFromUserDoc } from "@/lib/safety";
 
 export type CallPartnerHint = {
   userId?: string;
@@ -96,6 +97,11 @@ export function mergeRemoteProfile(
     giftsReceived: gifts,
     initials: initialsFrom(name || ""),
     interests: firestoreUser?.interests?.length ? firestoreUser.interests : hint?.interests || [],
+    youneonBadge: badgeFromUserDoc(firestoreUser as unknown as Record<string, unknown>),
+    hideGender: !!(firestoreUser as UserProfile | null)?.hideGender,
+    gender: (firestoreUser as UserProfile | null)?.hideGender
+      ? undefined
+      : firestoreUser?.gender || hint?.gender,
   };
 }
 
@@ -142,6 +148,8 @@ export function RemoteProfileModal({
   dailyName,
   viewerId,
   standalone = false,
+  onReport,
+  onBlock,
 }: {
   open: boolean;
   onClose: () => void;
@@ -150,6 +158,8 @@ export function RemoteProfileModal({
   dailyName?: string;
   viewerId?: string;
   standalone?: boolean;
+  onReport?: () => void;
+  onBlock?: () => void;
 }) {
   const profile = useMemo(
     () => mergeRemoteProfile(firestoreUser, hint, dailyName),
@@ -235,6 +245,11 @@ export function RemoteProfileModal({
         <div className="yn-remote-profile-body">
           <h2 id="yn-remote-profile-name" className="yn-remote-profile-name">
             {profile.name}
+            {profile.youneonBadge ? (
+              <span className="yn-badge-pill" title="YouNeon Badge">
+                Badge
+              </span>
+            ) : null}
           </h2>
           <dl className="yn-remote-profile-meta">
             <div>
@@ -266,6 +281,21 @@ export function RemoteProfileModal({
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {(onReport || onBlock) && (
+            <div className="yn-remote-profile-actions">
+              {onReport ? (
+                <button type="button" className="yn-remote-profile-action is-report" onClick={onReport}>
+                  Report
+                </button>
+              ) : null}
+              {onBlock ? (
+                <button type="button" className="yn-remote-profile-action is-block" onClick={onBlock}>
+                  Block
+                </button>
+              ) : null}
             </div>
           )}
         </div>

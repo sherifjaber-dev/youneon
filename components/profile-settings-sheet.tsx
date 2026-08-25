@@ -1,20 +1,181 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronRight, LogOut, Trash2, X, Zap } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  ArrowLeft,
+  Ban,
+  ChevronRight,
+  Copy,
+  Crown,
+  Globe,
+  HelpCircle,
+  Languages,
+  LogOut,
+  Package,
+  Shield,
+  ShieldAlert,
+  Sparkles,
+  Trash2,
+  UserRound,
+  X,
+  Zap,
+} from "lucide-react";
 import { SubscribeWithPi } from "@/components/subscribe-with-pi";
 import { AnnouncementsAdmin } from "@/components/announcements-admin";
+import { NeonAvatar } from "@/components/neon-avatar";
 import { isCurrentUserAdmin } from "@/lib/admin";
-import { useLanguage, type Language } from "@/contexts/language-context";
+import { useLanguage } from "@/contexts/language-context";
+import { APP_LANGUAGES } from "@/lib/i18n";
 import { piAuthService } from "@/lib/pi-auth-service";
+import { isPremiumActive } from "@/lib/premium";
+import { useUserSettings } from "@/hooks/use-user-settings";
+import {
+  cancelPremiumLocally,
+  claimPromoCode,
+  remainingLabel,
+  saveBackgroundPlay,
+  saveHideGender,
+  saveNotificationPrefs,
+  savePrivacyConsent,
+  unblockUserForMe,
+  type NotificationPrefs,
+  type PrivacyConsent,
+} from "@/lib/user-settings";
 import type { Announcement } from "@/lib/announcements";
+import { SAFETY_TIPS_SECTIONS, COMMUNITY_GUIDELINES_SECTIONS } from "@/lib/safety-copy";
 
-const APP_LANGUAGES: { code: Language; name: string; flag: string }[] = [
-  { code: "en", name: "English", flag: "🇬🇧" },
-  { code: "ar", name: "العربية", flag: "🇸🇦" },
-  { code: "es", name: "Español", flag: "🇪🇸" },
-  { code: "fr", name: "Français", flag: "🇫🇷" },
-];
+type PageId =
+  | "menu"
+  | "items"
+  | "subscriptions"
+  | "blocked"
+  | "neonId"
+  | "account"
+  | "language"
+  | "safety"
+  | "guidelines"
+  | "privacy"
+  | "help";
+
+const PAGE_TITLE: Record<PageId, string> = {
+  menu: "settings.title",
+  items: "settings.myItems",
+  subscriptions: "settings.subscriptions",
+  blocked: "settings.blockedUsers",
+  neonId: "settings.neonId",
+  account: "settings.manageAccount",
+  language: "settings.appLanguage",
+  safety: "settings.safetyTips",
+  guidelines: "settings.guidelines",
+  privacy: "settings.privacyChoices",
+  help: "settings.help",
+};
+
+function NeonToggle({
+  on,
+  disabled,
+  onChange,
+  label,
+}: {
+  on: boolean;
+  disabled?: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => !disabled && onChange(!on)}
+      className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+        disabled
+          ? "bg-white/15 opacity-70"
+          : on
+            ? "bg-gradient-to-r from-purple-500 to-pink-500"
+            : "bg-white/18"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+          on ? "translate-x-5" : "translate-x-0.5"
+        }`}
+      />
+    </button>
+  );
+}
+
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mt-5">
+      <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+        {title}
+      </h3>
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">{children}</div>
+    </section>
+  );
+}
+
+function RowButton({
+  icon,
+  label,
+  value,
+  onClick,
+  danger,
+  last,
+}: {
+  icon?: ReactNode;
+  label: string;
+  value?: string;
+  onClick?: () => void;
+  danger?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-12 w-full items-center gap-3 px-3.5 py-2.5 text-left ${
+        last ? "" : "border-b border-white/6"
+      }`}
+    >
+      {icon ? <span className="text-pink-300">{icon}</span> : null}
+      <span className={`flex-1 text-[15px] font-medium ${danger ? "text-red-300" : "text-white"}`}>
+        {label}
+      </span>
+      {value ? <span className="max-w-[46%] truncate text-[13px] text-white/45">{value}</span> : null}
+      {onClick ? <ChevronRight size={18} className="shrink-0 text-white/30" /> : null}
+    </button>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  on,
+  disabled,
+  onChange,
+  last,
+}: {
+  label: string;
+  description?: string;
+  on: boolean;
+  disabled?: boolean;
+  onChange: (next: boolean) => void;
+  last?: boolean;
+}) {
+  return (
+    <div className={`flex min-h-12 items-center gap-3 px-3.5 py-2.5 ${last ? "" : "border-b border-white/6"}`}>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-medium text-white">{label}</p>
+        {description ? <p className="mt-0.5 text-[12px] leading-snug text-white/45">{description}</p> : null}
+      </div>
+      <NeonToggle on={on} disabled={disabled} onChange={onChange} label={label} />
+    </div>
+  );
+}
 
 export function ProfileSettingsSheet({
   open,
@@ -35,8 +196,25 @@ export function ProfileSettingsSheet({
   currentUsername?: string;
   onOpenShop?: () => void;
 }) {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const username = currentUsername || piAuthService.getCurrentUser()?.username || "";
+  const settings = useUserSettings(open ? username : undefined);
+  const [page, setPage] = useState<PageId>("menu");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [promo, setPromo] = useState("");
+  const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setPage("menu");
+      setConfirmDelete(false);
+      setPromo("");
+      setPromoMsg(null);
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -67,120 +245,513 @@ export function ProfileSettingsSheet({
     window.location.reload();
   };
 
+  const copyId = async () => {
+    const id = settings.neonId;
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const patchNotif = (key: keyof NotificationPrefs, value: boolean) => {
+    const next = { ...settings.notificationPrefs, [key]: value };
+    void saveNotificationPrefs(username, next);
+  };
+
+  const headerBack = page === "menu" ? onClose : () => setPage("menu");
+  const headerIcon = page === "menu" ? <X size={20} /> : <ArrowLeft size={20} />;
+  const headerLabel = page === "menu" ? t("common.close") : t("common.back");
+
   return (
     <div className="absolute inset-0 z-30 flex flex-col bg-[#0f0117]">
       <header className="flex min-h-12 shrink-0 items-center justify-between border-b border-white/8 px-2 pt-[env(safe-area-inset-top)]">
         <button
           type="button"
-          onClick={onClose}
+          onClick={headerBack}
           className="flex h-11 w-11 items-center justify-center rounded-full text-white/85 hover:bg-white/10"
-          aria-label="Close settings"
+          aria-label={headerLabel}
         >
-          <X size={20} />
+          {headerIcon}
         </button>
-        <h2 className="text-[17px] font-semibold text-white">Settings</h2>
+        <h2 className="text-[17px] font-semibold text-white">{t(PAGE_TITLE[page])}</h2>
         <span className="w-11" />
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-[max(24px,env(safe-area-inset-bottom))]">
-        <button
-          type="button"
-          onClick={() => {
-            onOpenShop?.();
-            onClose();
-          }}
-          className="flex h-14 w-full items-center gap-3 rounded-2xl border border-yellow-400/30 bg-yellow-500/10 px-4 text-left"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 text-black">
-            <Zap size={18} />
-          </span>
-          <span className="flex-1">
-            <span className="block text-[14px] font-semibold text-white">My Neon</span>
-            <span className="text-[12px] font-medium text-yellow-300">{neonBalance} Neon</span>
-          </span>
-          <ChevronRight size={18} className="text-yellow-400/80" />
-        </button>
+      <div className="flex-1 overflow-y-auto px-4 py-3 pb-[max(24px,env(safe-area-inset-bottom))]">
+        {page === "menu" && (
+          <>
+            <Group title={t("settings.activity")}>
+              <RowButton
+                icon={<Zap size={18} />}
+                label={t("settings.myNeon")}
+                value={`${neonBalance} Neon`}
+                onClick={() => {
+                  onOpenShop?.();
+                  onClose();
+                }}
+              />
+              <RowButton
+                icon={<Package size={18} />}
+                label={t("settings.myItems")}
+                onClick={() => setPage("items")}
+              />
+              <RowButton
+                icon={<Crown size={18} />}
+                label={t("settings.subscriptions")}
+                value={isPremium ? t("settings.premiumActive") : undefined}
+                onClick={() => setPage("subscriptions")}
+              />
+              <RowButton
+                icon={<Ban size={18} />}
+                label={t("settings.blockedUsers")}
+                last
+                onClick={() => setPage("blocked")}
+              />
+            </Group>
 
-        <div className="-mx-4 mt-3">
-          <SubscribeWithPi variant="shop" isPremium={isPremium} premiumUntil={premiumUntil} />
-        </div>
+            <Group title={t("settings.account")}>
+              <RowButton
+                icon={<Sparkles size={18} />}
+                label={t("settings.neonId")}
+                value={settings.neonId || "…"}
+                onClick={() => setPage("neonId")}
+              />
+              <RowButton
+                icon={<UserRound size={18} />}
+                label={t("settings.piUsername")}
+                value={username || "—"}
+              />
+              <RowButton
+                icon={<Trash2 size={18} />}
+                label={t("settings.manageAccount")}
+                last
+                onClick={() => setPage("account")}
+              />
+            </Group>
 
-        {isCurrentUserAdmin(currentUsername) && (
-          <div className="mt-4 rounded-2xl border border-purple-400/25 bg-purple-500/10 p-3">
-            <AnnouncementsAdmin announcements={announcements} />
+            <Group title={t("settings.notifications")}>
+              <ToggleRow
+                label={t("settings.marketingNotifs")}
+                on={settings.notificationPrefs.marketing}
+                onChange={(v) => patchNotif("marketing", v)}
+              />
+              <ToggleRow
+                label={t("settings.onlineStatusNotifs")}
+                description={t("settings.onlineStatusNotifsDesc")}
+                on={settings.notificationPrefs.onlineStatus}
+                onChange={(v) => patchNotif("onlineStatus", v)}
+              />
+              <ToggleRow
+                label={t("settings.newFollowersNotifs")}
+                on={settings.notificationPrefs.newFollowers}
+                onChange={(v) => patchNotif("newFollowers", v)}
+                last
+              />
+            </Group>
+
+            <Group title={t("settings.safety")}>
+              <RowButton
+                icon={<ShieldAlert size={18} />}
+                label={t("settings.safetyTips")}
+                onClick={() => setPage("safety")}
+              />
+              <RowButton
+                icon={<Shield size={18} />}
+                label={t("settings.guidelines")}
+                last
+                onClick={() => setPage("guidelines")}
+              />
+            </Group>
+
+            <Group title={t("settings.preferences")}>
+              <ToggleRow
+                label={t("settings.backgroundPlay")}
+                description={t("settings.backgroundPlayDesc")}
+                on={settings.backgroundPlay}
+                onChange={(v) => void saveBackgroundPlay(username, v)}
+              />
+              <ToggleRow
+                label={t("settings.hideGender")}
+                description={t("settings.hideGenderDesc")}
+                on={settings.hideGender}
+                onChange={(v) => void saveHideGender(username, v)}
+              />
+              <RowButton
+                icon={<Languages size={18} />}
+                label={t("settings.appLanguage")}
+                value={APP_LANGUAGES.find((l) => l.code === language)?.native}
+                last
+                onClick={() => setPage("language")}
+              />
+            </Group>
+
+            <Group title={t("settings.services")}>
+              <RowButton
+                icon={<Globe size={18} />}
+                label={t("settings.privacyChoices")}
+                onClick={() => setPage("privacy")}
+              />
+              <RowButton
+                icon={<HelpCircle size={18} />}
+                label={t("settings.help")}
+                onClick={() => setPage("help")}
+              />
+              <RowButton
+                icon={<LogOut size={18} />}
+                label={t("settings.logout")}
+                danger
+                last
+                onClick={logout}
+              />
+            </Group>
+
+            {isCurrentUserAdmin(username) && (
+              <div className="mt-5 rounded-2xl border border-purple-400/25 bg-purple-500/10 p-3">
+                <AnnouncementsAdmin announcements={announcements} />
+              </div>
+            )}
+          </>
+        )}
+
+        {page === "items" && (
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
+              <p className="text-[13px] font-semibold text-white/70">{t("settings.promoCode")}</p>
+              <div className="mt-2 flex gap-2">
+                <input
+                  value={promo}
+                  onChange={(e) => setPromo(e.target.value)}
+                  placeholder={t("settings.promoPlaceholder")}
+                  className="h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 text-[15px] text-white outline-none placeholder:text-white/30"
+                />
+                <button
+                  type="button"
+                  disabled={claiming}
+                  onClick={async () => {
+                    setClaiming(true);
+                    const result = await claimPromoCode(username, promo, {
+                      claimed: settings.claimedPromoCodes,
+                      items: settings.items,
+                    });
+                    setPromoMsg({ ok: result.ok, text: result.message });
+                    if (result.ok) setPromo("");
+                    setClaiming(false);
+                  }}
+                  className="h-12 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 text-[14px] font-semibold text-white"
+                >
+                  {t("settings.claim")}
+                </button>
+              </div>
+              {promoMsg ? (
+                <p className={`mt-2 text-[12px] ${promoMsg.ok ? "text-emerald-300" : "text-red-300"}`}>
+                  {promoMsg.text}
+                </p>
+              ) : null}
+            </div>
+
+            <div>
+              <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+                {t("settings.singleUseItems")}
+              </h3>
+              {settings.items.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] px-4 py-10 text-center">
+                  <p className="text-[14px] text-white/50">{t("settings.noItems")}</p>
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
+                  {settings.items.map((item, i) => (
+                    <div
+                      key={item.id}
+                      className={`flex min-h-12 items-center justify-between px-3.5 py-3 ${
+                        i < settings.items.length - 1 ? "border-b border-white/6" : ""
+                      }`}
+                    >
+                      <div>
+                        <p className="text-[15px] font-medium text-white">{item.label}</p>
+                        <p className="text-[12px] text-white/45">
+                          {t("settings.expiresIn")}: {remainingLabel(item.expiresAt)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        <h3 className="mb-2 mt-6 px-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-          App language
-        </h3>
-        <div className="space-y-1.5">
-          {APP_LANGUAGES.map((lang) => {
-            const on = language === lang.code;
-            return (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setLanguage(lang.code)}
-                className={`flex h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-[14px] font-medium ${
-                  on
-                    ? "border border-pink-400/40 bg-gradient-to-r from-purple-600/30 to-pink-600/30 text-white"
-                    : "bg-white/[0.05] text-white/80"
-                }`}
-              >
-                <span className="text-lg">{lang.flag}</span>
-                <span className="flex-1">{lang.name}</span>
-                {on && <span className="text-pink-300">✓</span>}
-              </button>
-            );
-          })}
-        </div>
+        {page === "subscriptions" && (
+          <div className="-mx-4">
+            <SubscribeWithPi variant="shop" isPremium={isPremium} premiumUntil={premiumUntil} />
+            <div className="px-4">
+              <p className="mt-3 text-[13px] text-white/50">
+                {isPremiumActive(premiumUntil)
+                  ? `${t("settings.premiumUntil")} ${
+                      premiumUntil
+                        ? new Date(premiumUntil).toLocaleDateString(undefined, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : ""
+                    }`
+                  : t("settings.premiumInactive")}
+              </p>
+              {isPremiumActive(premiumUntil) ? (
+                <button
+                  type="button"
+                  disabled={cancelling}
+                  onClick={async () => {
+                    setCancelling(true);
+                    await cancelPremiumLocally(username, settings.profile?.uid);
+                    setCancelling(false);
+                  }}
+                  className="mt-4 flex h-12 w-full items-center justify-center rounded-xl border border-white/12 bg-white/[0.05] text-[14px] font-semibold text-white"
+                >
+                  {t("settings.cancelSubscription")}
+                </button>
+              ) : null}
+              <p className="mt-2 text-[12px] leading-relaxed text-white/40">{t("settings.cancelNote")}</p>
+            </div>
+          </div>
+        )}
 
-        <h3 className="mb-2 mt-6 px-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-          Account
-        </h3>
-        <button
-          type="button"
-          onClick={logout}
-          className="mb-1.5 flex h-12 w-full items-center gap-3 rounded-xl bg-white/[0.05] px-3.5 text-[14px] font-semibold text-pink-200"
-        >
-          <LogOut size={18} />
-          Log out
-        </button>
-        <button
-          type="button"
-          onClick={() => setConfirmDelete(true)}
-          className="flex h-12 w-full items-center gap-3 rounded-xl bg-red-500/10 px-3.5 text-[14px] font-semibold text-red-300"
-        >
-          <Trash2 size={18} />
-          Delete my account
-        </button>
+        {page === "blocked" && (
+          <div>
+            {settings.blockedPeople.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] px-4 py-16 text-center">
+                <Ban className="mx-auto mb-3 text-white/30" size={28} />
+                <p className="text-[14px] text-white/50">{t("settings.noBlocked")}</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
+                {settings.blockedPeople.map((person, i) => (
+                  <div
+                    key={person.id}
+                    className={`flex min-h-14 items-center gap-3 px-3 py-2 ${
+                      i < settings.blockedPeople.length - 1 ? "border-b border-white/6" : ""
+                    }`}
+                  >
+                    <NeonAvatar src={person.photo} name={person.name} size={44} />
+                    <p className="min-w-0 flex-1 truncate text-[15px] font-medium text-white">{person.name}</p>
+                    <button
+                      type="button"
+                      onClick={() => void unblockUserForMe(username, person.id)}
+                      className="h-11 rounded-xl bg-white/10 px-3 text-[13px] font-semibold text-pink-200"
+                    >
+                      {t("settings.unblock")}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {page === "neonId" && (
+          <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-5 text-center">
+            <p className="text-[12px] uppercase tracking-wide text-white/40">{t("settings.neonId")}</p>
+            <p className="mt-3 break-all font-mono text-[22px] font-semibold tracking-wide text-white">
+              {settings.neonId || "…"}
+            </p>
+            <p className="mt-2 text-[12px] text-white/40">{t("settings.notEditable")}</p>
+            <button
+              type="button"
+              onClick={() => void copyId()}
+              className="mx-auto mt-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-5 text-[14px] font-semibold"
+            >
+              <Copy size={16} />
+              {copied ? t("common.copied") : t("common.copy")}
+            </button>
+          </div>
+        )}
+
+        {page === "account" && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="flex h-12 w-full items-center gap-3 rounded-2xl bg-red-500/10 px-3.5 text-[15px] font-semibold text-red-300"
+            >
+              <Trash2 size={18} />
+              {t("settings.deleteAccount")}
+            </button>
+          </div>
+        )}
+
+        {page === "language" && (
+          <div className="space-y-1.5">
+            {APP_LANGUAGES.map((lang) => {
+              const on = language === lang.code;
+              return (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => setLanguage(lang.code)}
+                  className={`flex h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-[14px] font-medium ${
+                    on
+                      ? "border border-pink-400/40 bg-gradient-to-r from-purple-600/30 to-pink-600/30 text-white"
+                      : "bg-white/[0.05] text-white/80"
+                  }`}
+                >
+                  <span className="text-lg">{lang.flag}</span>
+                  <span className="flex-1">{lang.native}</span>
+                  {on && <span className="text-pink-300">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {page === "safety" && (
+          <div className="space-y-3">
+            {SAFETY_TIPS_SECTIONS.map((tip) => (
+              <article key={tip.id} className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                <h3 className="text-[15px] font-semibold text-white">{tip.title}</h3>
+                <p className="mt-2 whitespace-pre-line text-[13px] leading-relaxed text-white/58">{tip.body}</p>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {page === "guidelines" && (
+          <div className="space-y-3">
+            <p className="px-1 text-[13px] leading-relaxed text-white/50">
+              These are YouNeon’s own rules for video chat, gifts, and Pi. They are original copy for this app — not
+              another company’s trademark or policy.
+            </p>
+            {COMMUNITY_GUIDELINES_SECTIONS.map((tip) => (
+              <article key={tip.id} className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                <h3 className="text-[15px] font-semibold text-white">{tip.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-white/58">{tip.body}</p>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {page === "privacy" && (
+          <PrivacyPage
+            consent={settings.privacyConsent}
+            t={t}
+            onChange={(next) => void savePrivacyConsent(username, next)}
+          />
+        )}
+
+        {page === "help" && (
+          <div className="space-y-3">
+            <p className="text-[13px] leading-relaxed text-white/55">{t("settings.helpIntro")}</p>
+            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+              <h3 className="text-[15px] font-semibold text-white">{t("settings.faqPayments")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.faqPaymentsBody")}</p>
+            </article>
+            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+              <h3 className="text-[15px] font-semibold text-white">{t("settings.faqMatching")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.faqMatchingBody")}</p>
+            </article>
+            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+              <h3 className="text-[15px] font-semibold text-white">{t("settings.faqSafety")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.faqSafetyBody")}</p>
+            </article>
+            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+              <h3 className="text-[15px] font-semibold text-white">{t("settings.contact")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.contactBody")}</p>
+              <a href="mailto:support@youneon.pi" className="mt-2 inline-block text-[14px] font-semibold text-pink-300">
+                support@youneon.pi
+              </a>
+            </article>
+          </div>
+        )}
       </div>
 
       {confirmDelete && (
         <div className="absolute inset-0 z-40 flex items-end justify-center bg-black/70 p-4 sm:items-center">
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#1a0a24] p-5">
-            <h3 className="text-[17px] font-semibold text-white">Delete account?</h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-white/55">
-              This cannot be undone. Profile data on this device will be cleared and you will be signed out.
-            </p>
+            <h3 className="text-[17px] font-semibold text-white">{t("settings.deleteConfirmTitle")}</h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-white/55">{t("settings.deleteConfirmBody")}</p>
             <button
               type="button"
               onClick={deleteAccount}
               className="mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-red-600 text-[14px] font-semibold text-white"
             >
-              Delete my account
+              {t("settings.deleteAccount")}
             </button>
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
               className="mt-2 flex h-11 w-full items-center justify-center rounded-xl bg-white/10 text-[14px] font-semibold text-white"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PrivacyPage({
+  consent,
+  t,
+  onChange,
+}: {
+  consent: PrivacyConsent;
+  t: (key: string) => string;
+  onChange: (next: PrivacyConsent) => void;
+}) {
+  return (
+    <div>
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
+        <ToggleRow
+          label={t("settings.necessary")}
+          description={t("settings.necessaryDesc")}
+          on
+          disabled
+          onChange={() => {}}
+        />
+        <ToggleRow
+          label={t("settings.analytics")}
+          description={t("settings.analyticsDesc")}
+          on={consent.analytics}
+          onChange={(v) => onChange({ ...consent, necessary: true, analytics: v })}
+        />
+        <ToggleRow
+          label={t("settings.advertising")}
+          description={t("settings.advertisingDesc")}
+          on={consent.advertising}
+          onChange={(v) => onChange({ ...consent, necessary: true, advertising: v })}
+        />
+        <ToggleRow
+          label={t("settings.marketing")}
+          description={t("settings.marketingDesc")}
+          on={consent.marketing}
+          onChange={(v) => onChange({ ...consent, necessary: true, marketing: v })}
+          last
+        />
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            onChange({ necessary: true, analytics: false, advertising: false, marketing: false })
+          }
+          className="flex h-12 items-center justify-center rounded-xl border border-white/12 bg-white/[0.05] text-[14px] font-semibold"
+        >
+          {t("settings.refuseAll")}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onChange({ necessary: true, analytics: true, advertising: true, marketing: true })
+          }
+          className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[14px] font-semibold"
+        >
+          {t("settings.acceptAll")}
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import { Flame, MessageCircle, Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 export type AppTab = "discover" | "lounge" | "history" | "messages";
 
@@ -10,11 +11,12 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+  const { t } = useLanguage();
   const tabs: { id: AppTab; label: string; icon: typeof Flame }[] = [
-    { id: "discover", label: "Discover", icon: Flame },
-    { id: "lounge", label: "Lounge", icon: Users },
-    { id: "history", label: "History", icon: Clock },
-    { id: "messages", label: "Messages", icon: MessageCircle },
+    { id: "discover", label: t("nav.discover"), icon: Flame },
+    { id: "lounge", label: t("nav.lounge"), icon: Users },
+    { id: "history", label: t("nav.history"), icon: Clock },
+    { id: "messages", label: t("nav.messages"), icon: MessageCircle },
   ];
 
   return (

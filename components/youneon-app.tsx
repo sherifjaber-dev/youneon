@@ -16,6 +16,7 @@ import { countryToFlag } from "@/lib/countries";
 import { piAuthService } from "@/lib/pi-auth-service";
 import { VideoCallScreen } from "@/components/video-call-screen";
 import { usePiAuth } from "@/contexts/pi-auth-context";
+import { useLanguage } from "@/contexts/language-context";
 import {
   hideStaticLoginOverlays,
   PI_AUTH_LOGOUT_EVENT,
@@ -35,6 +36,9 @@ import {
   subscribeToAnnouncements,
   type Announcement,
 } from "@/lib/announcements";
+import { cacheSettingsFromProfile, ensureNeonId } from "@/lib/user-settings";
+import { isLanguage } from "@/lib/i18n";
+import { ensureCreatedAt, isAdultAge } from "@/lib/safety";
 
 type VideoSession = {
   mode: "random" | "direct";
@@ -110,6 +114,7 @@ function stubUser(uid?: string, username?: string): YouNeonUser {
 
 export function YouNeonApp() {
   const { user, isAuthenticated, sessionUnverified } = usePiAuth();
+  const { setLanguage } = useLanguage();
   const isGuestDemo = false;
   const [bootAuthOk, setBootAuthOk] = useState(false);
   const [currentUser, setCurrentUser] = useState<YouNeonUser | null>(null);
@@ -291,10 +296,25 @@ export function YouNeonApp() {
             setNeonBalance(remote.neonBalance);
             localStorage.setItem("youneon_neon_balance", String(remote.neonBalance));
           }
+          cacheSettingsFromProfile({
+            neonId: remote.neonId,
+            hideGender: remote.hideGender,
+            backgroundPlay: remote.backgroundPlay,
+            notificationPrefs: remote.notificationPrefs,
+            privacyConsent: remote.privacyConsent,
+            items: remote.items,
+            claimedPromoCodes: remote.claimedPromoCodes,
+          });
+          if (remote.locale && isLanguage(remote.locale)) {
+            setLanguage(remote.locale);
+          }
         }
       } catch {
         /* keep local/verified identity */
       }
+
+      void ensureNeonId(piUsername);
+      void ensureCreatedAt(piUsername);
 
       if (profileSavedAtRef.current < fetchStartedAt) {
         try {
@@ -365,6 +385,9 @@ export function YouNeonApp() {
   };
 
   const handleProfileSaved = async (saved: ProfileSavePayload) => {
+    if (!isAdultAge(saved.age)) {
+      return;
+    }
     const lite = readLiteSession();
     const base = currentUser || stubUser(user?.uid || lite?.uid, user?.username || lite?.username);
     const place = saved.country || saved.location || base.country || "";
@@ -526,6 +549,10 @@ export function YouNeonApp() {
           otherUser={activeChat.otherUser}
           onBack={() => setActiveChat(null)}
           onCall={() => {
+            if (!isAdultAge(displayUser.age)) {
+              window.alert("YouNeon is 18+. Add your age (18 or older) in your profile before calling.");
+              return;
+            }
             const chat = activeChat;
             setActiveChat(null);
             setVideoSession({
@@ -603,7 +630,13 @@ export function YouNeonApp() {
         {activeTab === "discover" && (
           <div className="h-full">
             <DiscoverScreen
-              onStartVideo={(filters) => setVideoSession({ mode: "random", filters })}
+              onStartVideo={(filters) => {
+                if (!isAdultAge(displayUser.age)) {
+                  window.alert("YouNeon is 18+. Add your age (18 or older) in your profile before matching.");
+                  return;
+                }
+                setVideoSession({ mode: "random", filters });
+              }}
               neonBalance={neonBalance}
               onUpdateBalance={updateNeonBalance}
               currentUserId={currentUserId}

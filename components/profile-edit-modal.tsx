@@ -274,6 +274,10 @@ export function ProfileEditModal({
   }, [isOpen, currentUser]);
 
   const persist = async (next: ProfileSavePayload) => {
+    if (!Number.isFinite(next.age) || next.age < AGE_MIN) {
+      setError(`YouNeon is ${AGE_MIN}+. You cannot save an age under ${AGE_MIN}.`);
+      return;
+    }
     const fullName = next.fullName.trim();
     const photos = uniquePhotos([...(next.photos || []), next.profilePicture]);
     const payload: ProfileSavePayload = {
@@ -292,6 +296,10 @@ export function ProfileEditModal({
     try {
       localStorage.setItem("youneon_user_profile", JSON.stringify(payload));
       await onSave?.(payload);
+      if (currentUsername) {
+        const { refreshYouNeonBadge } = await import("@/lib/safety");
+        void refreshYouNeonBadge(currentUsername);
+      }
     } catch {
       setError("Saved on this device. Cloud sync failed — try again later.");
     } finally {
@@ -985,8 +993,10 @@ export function ProfileEditModal({
         {sheet === "badge" && (
           <BottomSheet title="YouNeon Badge" onClose={() => setSheet(null)}>
             <p className="pb-4 text-[13px] leading-relaxed text-white/60">
-              The badge fills as you complete your profile (photo, name, age, bio, country, languages, and interests).
-              Premium members have the badge immediately. It is not awarded for fake progress.
+              The bar fills as you complete your profile: photo, name, age (18+), bio, country, languages, and
+              interests. Premium counts as complete. You earn the YouNeon Badge only if that is done, you have no
+              reports against you in the last 14 days, and your account is at least a day old or you have finished at
+              least one real video chat. It is not a background check and not awarded for fake progress.
             </p>
           </BottomSheet>
         )}

@@ -13,6 +13,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { badgeFromUserDoc } from "@/lib/safety";
 import type { UserProfile } from "./firestore-service";
 
 export const LOUNGE_RECENT_MS = 72 * 60 * 60 * 1000;
@@ -69,6 +70,7 @@ export type LoungePerson = {
   country: string;
   gender?: string;
   languages: string[];
+  youneonBadge?: boolean;
   lastSeenMs: number;
   lat?: number;
   lng?: number;
@@ -190,6 +192,7 @@ function personFromUserDoc(
     "";
   const ageRaw = asNum(data.age);
   const age = ageRaw && ageRaw > 0 ? Math.round(ageRaw) : undefined;
+  if (!age || age < 18) return null;
   const languages = Array.isArray(data.languages)
     ? data.languages.filter((l): l is string => typeof l === "string" && !!l.trim())
     : [];
@@ -200,8 +203,9 @@ function personFromUserDoc(
     photo,
     age,
     country,
-    gender: typeof data.gender === "string" ? data.gender : undefined,
+    gender: data.hideGender ? undefined : typeof data.gender === "string" ? data.gender : undefined,
     languages,
+    youneonBadge: badgeFromUserDoc(data),
     lastSeenMs,
     lat: coords?.lat,
     lng: coords?.lng,

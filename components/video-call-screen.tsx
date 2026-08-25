@@ -13,6 +13,7 @@ import {
   type MatchFilters,
   type QueueProfile,
 } from "@/lib/match-queue";
+import { blockUserForMe, readLocalBackgroundPlay, readLocalHideGender } from "@/lib/user-settings";
 import { playGiftSound } from "@/lib/gift-sounds";
 import {
   incrementGiftsReceived,
@@ -33,6 +34,13 @@ import {
   RemoteProfileModal,
   mergeRemoteProfile,
 } from "@/components/call-remote-profile";
+import { CallReportSheet } from "@/components/call-report-sheet";
+import { ShieldAlert } from "lucide-react";
+import {
+  dailyRoomIdFromUrl,
+  submitUserReport,
+  type ReportReasonId,
+} from "@/lib/safety";
 
 interface PartnerProfile {
   userId?: string;
@@ -197,6 +205,8 @@ function VideoCallScreen({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const callRef = useRef<DailyCall | null>(null);
+  const roomUrlRef = useRef("");
+  const giftLogRef = useRef<Array<{ giftId: string; emoji?: string; direction: "sent" | "received"; timestamp: number }>>([]);
   const previewStreamRef = useRef<MediaStream | null>(null);
   const nsfwModelRef = useRef<any>(null);
   const nsfwIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -230,6 +240,7 @@ function VideoCallScreen({
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+  const camOnRef = useRef(true);
   const [remoteName, setRemoteName] = useState<string>("");
   const [partner, setPartner] = useState<PartnerProfile | null>(
     partnerProfile || (partnerName ? { name: partnerName } : null)
@@ -251,6 +262,8 @@ function VideoCallScreen({
   const [showGiftPicker, setShowGiftPicker] = useState(false);
   const [giftBurst, setGiftBurst] = useState<{ key: string; giftId: GiftId } | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [remoteUserDoc, setRemoteUserDoc] = useState<FirestoreUserProfile | null>(null);
 
   const [nsfwBlur, setNsfwBlur] = useState(false);
@@ -473,6 +486,8 @@ function VideoCallScreen({
         setRemoteName("");
         setCamOn(true);
         setMicOn(true);
+        giftLogRef.current = [];
+        roomUrlRef.current = "";
         if (opts.matchMode === "direct" && opts.partnerProfile) setPartner(opts.partnerProfile);
         else if (opts.matchMode === "random") setPartner(opts.partnerProfile || null);
 
@@ -490,7 +505,7 @@ function VideoCallScreen({
               avatar: opts.currentUserProfile?.avatar,
               age: opts.currentUserProfile?.age,
               country: opts.currentUserProfile?.country,
-              gender: opts.currentUserProfile?.gender,
+              gender: readLocalHideGender() ? "" : opts.currentUserProfile?.gender,
               bio: opts.currentUserProfile?.bio,
               interests: opts.currentUserProfile?.interests,
             } satisfies QueueProfile,
@@ -509,6 +524,7 @@ function VideoCallScreen({
           });
         }
         if (!url) throw new Error("No room URL");
+        roomUrlRef.current = url;
         if (cancelled) return;
 
         stopPreview();
@@ -535,6 +551,12 @@ function VideoCallScreen({
             if (!giftId) return;
             triggerGiftBurst(giftId);
             const meta = CALL_GIFTS.find((g) => g.id === giftId);
+            giftLogRef.current.push({
+              giftId,
+              emoji: meta?.emoji || String(d.emoji || ""),
+              direction: "received",
+              timestamp: Date.now(),
+            });
             saveReceivedGift(giftId, meta?.emoji || String(d.emoji || ""), partnerRef.current?.name || "Partner");
           }
         });
@@ -566,6 +588,22 @@ function VideoCallScreen({
       stopPreview();
     };
   }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerGiftBurst, saveReceivedGift]);
+
+  useEffect(() => {
+    camOnRef.current = camOn;
+  }, [camOn]);
+
+  useEffect(() => {
+    if (callStatus !== "joined" && callStatus !== "waiting") return;
+    const onVis = () => {
+      const call = callRef.current;
+      if (!call || !readLocalBackgroundPlay()) return;
+      if (document.hidden) call.setLocalVideo(false);
+      else call.setLocalVideo(camOnRef.current);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [callStatus]);
 
   useEffect(() => {
     const userId = partner?.userId;
@@ -635,6 +673,12 @@ function VideoCallScreen({
       console.warn(e);
     }
     triggerGiftBurst(gift.id);
+    giftLogRef.current.push({
+      giftId: gift.id,
+      emoji: gift.emoji,
+      direction: "sent",
+      timestamp: Date.now(),
+    });
     setShowGiftPicker(false);
     const recipientId = partnerRef.current?.userId;
     if (recipientId) {
@@ -697,23 +741,70 @@ function VideoCallScreen({
     bypassTimerRef.current = setTimeout(() => setBypassNsfw(false), 30000);
   };
 
+  const leavePartner = () => {
+    setNsfwBlur(false);
+    setShowReport(false);
+    setShowProfile(false);
+    if (matchMode === "direct") {
+      void handleEnd();
+      return;
+    }
+    setPartner(null);
+    setSessionId((s) => s + 1);
+  };
+
   const handleBlock = () => {
     const userId = currentUserId || "anon";
     const blockedId = partnerRef.current?.userId;
-    if (blockedId) addBlockedUserId(userId, blockedId);
+    if (blockedId) {
+      addBlockedUserId(userId, blockedId);
+      void blockUserForMe(userId, {
+        id: blockedId,
+        name: currentPartner.name,
+        photo: currentPartner.avatar,
+      });
+    }
     try {
       const key = `younn-blocked-${userId}`;
       const blocked = JSON.parse(localStorage.getItem(key) || "[]");
       blocked.push({ name: currentPartner.name, id: blockedId, timestamp: Date.now(), reason: nsfwReason });
       localStorage.setItem(key, JSON.stringify(blocked));
     } catch (e) { /* ignore */ }
-    setNsfwBlur(false);
-    if (matchMode === "direct") {
-      handleEnd();
-      return;
+    leavePartner();
+  };
+
+  const handleReportSubmit = async (input: {
+    reasonId: ReportReasonId;
+    reasonLabel: string;
+    notes: string;
+    alsoBlock: boolean;
+  }) => {
+    const reporterId = currentUserId || "anon";
+    const reportedUserId = partnerRef.current?.userId || "";
+    setReporting(true);
+    try {
+      if (reportedUserId) {
+        await submitUserReport({
+          reporterId,
+          reportedUserId,
+          reportedName: currentPartner.name,
+          reasonId: input.reasonId,
+          reasonLabel: input.reasonLabel,
+          notes: input.notes,
+          evidence: {
+            roomUrl: roomUrlRef.current,
+            roomId: dailyRoomIdFromUrl(roomUrlRef.current),
+            chat: chatHistory.map((m) => ({ from: m.from, text: m.text, timestamp: m.timestamp })),
+            gifts: giftLogRef.current,
+          },
+        });
+      }
+    } catch (e) {
+      console.warn("Report failed", e);
     }
-    setPartner(null);
-    setSessionId((s) => s + 1);
+    setReporting(false);
+    if (input.alsoBlock || !reportedUserId) handleBlock();
+    else leavePartner();
   };
 
   if (permission !== "granted") {
@@ -956,7 +1047,24 @@ function VideoCallScreen({
         hint={partner}
         dailyName={remoteName}
         viewerId={currentUserId}
+        onReport={() => {
+          setShowProfile(false);
+          setShowReport(true);
+        }}
+        onBlock={() => {
+          setShowProfile(false);
+          handleBlock();
+        }}
       />
+
+      {showReport && (
+        <CallReportSheet
+          userName={currentPartner.name}
+          submitting={reporting}
+          onClose={() => setShowReport(false)}
+          onSubmit={(payload) => void handleReportSubmit(payload)}
+        />
+      )}
 
       {callStatus === "waiting" && (
         <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-white pointer-events-none">
@@ -990,6 +1098,22 @@ function VideoCallScreen({
           initials={remotePreview.initials}
           onOpen={openProfile}
         />
+      )}
+      {callStatus === "joined" && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowReport(true);
+            setShowGiftPicker(false);
+            setShowChatInput(false);
+          }}
+          className="absolute z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur-md"
+          style={{ top: "max(12px, env(safe-area-inset-top))", right: 16 }}
+          aria-label="Report this person"
+          data-testid="report-user-btn"
+        >
+          <ShieldAlert size={18} />
+        </button>
       )}
 
       <div className="yn-call-dock">

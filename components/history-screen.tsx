@@ -6,6 +6,7 @@ import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
 import { getUserProfile, subscribeToHistory, type UserProfile } from "@/lib/firestore-service";
 import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
+import { useBlockedIds } from "@/hooks/use-user-settings";
 import { countryToFlag } from "@/lib/countries";
 import { subscribeToProfileViews, type ProfileView } from "@/lib/profile-views";
 import {
@@ -243,6 +244,7 @@ export function HistoryScreen({
     age: currentUser?.age,
   };
   const { followingIds, busyId, toggleFollow } = useFollowGraph(me.id || currentUserId);
+  const blockedIds = useBlockedIds(me.id || currentUserId);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -327,7 +329,7 @@ export function HistoryScreen({
   }, [enriched, liveById]);
 
   const filteredList = useMemo(() => {
-    let rows = enriched;
+    let rows = enriched.filter((r) => !blockedIds.has(r.matchId) && !blockedIds.has(r.id));
     if (updatedFocus !== "all") {
       rows = rows.filter((r) => r.matchId === updatedFocus);
     }
@@ -343,7 +345,7 @@ export function HistoryScreen({
       );
     }
     return rows;
-  }, [enriched, applied, online, updatedFocus]);
+  }, [enriched, applied, online, updatedFocus, blockedIds]);
 
   const openChat = useCallback(
     (user: { id: string; name: string; photo?: string; country?: string; countryFlag?: string }) => {
@@ -812,7 +814,7 @@ function fromUserProfile(profile: UserProfile): LiveProfile {
     photo: profile.profilePicture || profile.photos?.[0] || "",
     name: profile.fullName || "",
     country: profile.country || profile.location || "",
-    gender: profile.gender || "",
+    gender: profile.hideGender ? "" : profile.gender || "",
     languages: Array.isArray(profile.languages) ? profile.languages.filter(Boolean) : [],
     lastProfileUpdateMs: toMillis(profile.lastProfileUpdate) || toMillis(profile.updatedAt),
   };
