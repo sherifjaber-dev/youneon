@@ -1350,19 +1350,24 @@
   position: absolute;
   left: 50%;
   z-index: 40;
-  width: min(92vw, 380px);
+  width: min(94vw, 420px);
   transform: translateX(-50%);
   animation: yn-gift-panel-in 0.28s ease forwards;
-  padding: 18px 18px 20px;
+  padding: 16px 14px 16px;
   border-radius: 24px;
-  background: rgba(10, 2, 20, 0.88);
-  border: 1px solid rgba(192, 132, 252, 0.38);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--yn-card) 88%, transparent) 0%,
+      color-mix(in srgb, var(--yn-nav) 82%, transparent) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--yn-accent) 22%, white);
   box-shadow:
-    0 18px 50px rgba(0, 0, 0, 0.55),
-    0 0 32px rgba(168, 85, 247, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+    0 18px 44px color-mix(in srgb, #3b0764 16%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--yn-accent) 10%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .yn-gift-panel-head {
@@ -1370,12 +1375,12 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .yn-gift-panel-title {
   margin: 0;
-  color: #fff;
+  color: var(--yn-text);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1383,7 +1388,7 @@
 
 .yn-gift-panel-sub {
   margin: 4px 0 0;
-  color: rgba(244, 114, 182, 0.78);
+  color: var(--yn-accent-2);
   font-size: 12px;
   letter-spacing: 0.02em;
 }
@@ -1398,43 +1403,43 @@
   min-height: 44px;
   flex-shrink: 0;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.82);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--yn-muted);
+  background: color-mix(in srgb, var(--yn-card) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yn-accent) 16%, transparent);
 }
 
 .yn-gift-close:hover {
-  color: #fff;
-  background: rgba(236, 72, 153, 0.22);
-  border-color: rgba(244, 114, 182, 0.4);
+  color: var(--yn-text);
+  background: color-mix(in srgb, var(--yn-nav) 80%, white);
+  border-color: color-mix(in srgb, var(--yn-accent) 36%, transparent);
 }
 
 .yn-gift-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .yn-gift-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-height: 118px;
-  padding: 12px 6px 10px;
-  border-radius: 16px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 4px;
+  min-height: 92px;
+  padding: 8px 4px 8px;
+  border-radius: 14px;
+  color: var(--yn-text);
+  background: color-mix(in srgb, var(--yn-card) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--yn-accent) 14%, white);
   transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .yn-gift-tile:hover,
 .yn-gift-tile:focus-visible {
   transform: translateY(-2px);
-  background: rgba(168, 85, 247, 0.16);
-  border-color: rgba(244, 114, 182, 0.45);
-  box-shadow: 0 0 22px rgba(168, 85, 247, 0.28);
+  background: color-mix(in srgb, var(--yn-card) 94%, var(--yn-nav));
+  border-color: color-mix(in srgb, var(--yn-accent-2) 42%, transparent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--yn-accent) 16%, transparent);
   outline: none;
 }
 
@@ -1442,21 +1447,38 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 40px;
+  height: 40px;
+}
+
+.yn-gift-tile-art .yn-gift-art {
+  width: 36px;
+  height: 36px;
 }
 
 .yn-gift-tile-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .yn-gift-tile-tag {
-  font-size: 10px;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.48);
+  font-size: 9px;
+  line-height: 1.15;
+  color: var(--yn-muted);
   text-align: center;
+}
+
+.yn-gift-art {
+  display: block;
+  flex-shrink: 0;
+}
+
+.yn-preview-reactions .yn-gift-art {
+  width: 20px;
+  height: 20px;
 }
 
 .yn-neon-glyph {

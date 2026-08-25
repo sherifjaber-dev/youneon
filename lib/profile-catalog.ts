@@ -1,3 +1,5 @@
+import type { GiftSoundId } from "@/lib/gift-sounds";
+
 export const MAX_PHOTOS = 4;
 export const MAX_INTERESTS = 8;
 export const MAX_LANGUAGES = 5;
@@ -255,6 +257,9 @@ export const REACTION_TYPES = [
   { id: "WOW", emoji: "😲" },
   { id: "Charming", emoji: "❤️" },
   { id: "Rose", emoji: "🌹" },
+  { id: "Naughty", emoji: "😏" },
+  { id: "Beautiful", emoji: "✨" },
+  { id: "Cool", emoji: "😎" },
 ] as const;
 
 export type ReactionId = (typeof REACTION_TYPES)[number]["id"];
@@ -271,6 +276,23 @@ export const GIFT_TO_REACTION: Record<string, ReactionId> = {
   diamond: "WOW",
   gift: "Awesome",
   teddy: "Funny",
+  naughty: "Naughty",
+  funny: "Funny",
+  beautiful: "Beautiful",
+  cool: "Cool",
+};
+
+/** Shared glyph map: profile reaction rows use the matching in-call gift SVG. */
+export const REACTION_TO_GIFT: Partial<Record<ReactionId, GiftSoundId>> = {
+  Rose: "rose",
+  Charming: "heart",
+  Friendly: "bouquet",
+  WOW: "diamond",
+  Awesome: "gift",
+  Funny: "funny",
+  Naughty: "naughty",
+  Beautiful: "beautiful",
+  Cool: "cool",
 };
 
 export type CompletenessInput = {

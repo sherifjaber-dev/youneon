@@ -659,7 +659,7 @@ export function ProfilePreviewSheet({
                   {REACTION_TYPES.map((r) => (
                     <li key={r.id}>
                       <span>
-                        <ReactionIcon id={r.id} size={16} />
+                        <ReactionIcon id={r.id} size={20} />
                         {r.id}
                       </span>
                       <span className="tabular-nums">{reactionCount(profile.reactions, r.id)}</span>

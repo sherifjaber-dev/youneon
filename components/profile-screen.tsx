@@ -44,6 +44,9 @@ export function ProfileScreen() {
     { name: "Magic Rabbit", emoji: "🪄" },
     { name: "Charming", emoji: "❤️" },
     { name: "Rose", emoji: "🌹" },
+    { name: "Naughty", emoji: "😏" },
+    { name: "Beautiful", emoji: "✨" },
+    { name: "Cool", emoji: "😎" },
   ];
 
   useEffect(() => {

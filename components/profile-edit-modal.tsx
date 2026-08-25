@@ -796,8 +796,8 @@ export function ProfileEditModal({
               <ul className="space-y-2.5">
                 {REACTION_TYPES.map((r) => (
                   <li key={r.id} className="flex h-10 items-center gap-3 text-[14px] text-yn-text">
-                    <span className="flex w-7 items-center justify-center">
-                      <ReactionIcon id={r.id} size={18} />
+                    <span className="flex w-8 items-center justify-center">
+                      <ReactionIcon id={r.id} size={22} />
                     </span>
                     <span className="flex-1">{r.id}</span>
                     <span className="tabular-nums text-yn-muted">{reactionCount(reactionsMap, r.id)}</span>

@@ -1,4 +1,14 @@
-export type GiftSoundId = "rose" | "heart" | "bouquet" | "diamond" | "gift" | "teddy";
+export type GiftSoundId =
+  | "rose"
+  | "heart"
+  | "bouquet"
+  | "diamond"
+  | "gift"
+  | "teddy"
+  | "naughty"
+  | "funny"
+  | "beautiful"
+  | "cool";
 
 const SFX_MUTE_KEY = "younn-sfx-muted";
 
@@ -166,6 +176,43 @@ function playTeddy(ctx: AudioContext, t: number, dest: AudioNode) {
   tone(ctx, dest, { freq: 587.33, start: t + 0.48, duration: 0.85, peak: 0.08, attack: 0.06, type: "sine" });
 }
 
+function playNaughty(ctx: AudioContext, t: number, dest: AudioNode) {
+  tone(ctx, dest, { freq: 196, freqEnd: 294, start: t, duration: 0.42, peak: 0.11, attack: 0.04, type: "sine" });
+  tone(ctx, dest, { freq: 392, freqEnd: 247, start: t + 0.18, duration: 0.5, peak: 0.08, attack: 0.05, type: "triangle" });
+  [523.25, 659.25, 784].forEach((freq, i) => {
+    tone(ctx, dest, { freq, start: t + 0.38 + i * 0.08, duration: 0.36, peak: 0.07, attack: 0.02, type: "sine" });
+  });
+}
+
+function playFunny(ctx: AudioContext, t: number, dest: AudioNode) {
+  [392, 494, 392, 587].forEach((freq, i) => {
+    tone(ctx, dest, {
+      freq,
+      start: t + i * 0.11,
+      duration: 0.22,
+      peak: 0.11,
+      attack: 0.01,
+      type: i % 2 === 0 ? "square" : "triangle",
+    });
+  });
+  tone(ctx, dest, { freq: 784, freqEnd: 1046, start: t + 0.48, duration: 0.4, peak: 0.07, attack: 0.03, type: "sine" });
+}
+
+function playBeautiful(ctx: AudioContext, t: number, dest: AudioNode) {
+  const notes = [659.25, 830.61, 987.77, 1318.51];
+  notes.forEach((freq, i) => {
+    tone(ctx, dest, { freq, start: t + i * 0.1, duration: 0.7 - i * 0.06, peak: 0.09, attack: 0.05, type: "sine" });
+    tone(ctx, dest, { freq: freq * 2, start: t + i * 0.1 + 0.03, duration: 0.4, peak: 0.03, attack: 0.06, type: "triangle" });
+  });
+}
+
+function playCool(ctx: AudioContext, t: number, dest: AudioNode) {
+  tone(ctx, dest, { freq: 110, start: t, duration: 0.55, peak: 0.12, attack: 0.02, type: "sine" });
+  tone(ctx, dest, { freq: 146.83, start: t + 0.08, duration: 0.5, peak: 0.08, attack: 0.03, type: "triangle" });
+  tone(ctx, dest, { freq: 220, freqEnd: 330, start: t + 0.28, duration: 0.45, peak: 0.09, attack: 0.04, type: "sine" });
+  tone(ctx, dest, { freq: 880, start: t + 0.52, duration: 0.38, peak: 0.05, attack: 0.02, type: "sine" });
+}
+
 const PLAYERS: Record<GiftSoundId, (ctx: AudioContext, t: number, dest: AudioNode) => void> = {
   rose: playRose,
   heart: playHeart,
@@ -173,6 +220,10 @@ const PLAYERS: Record<GiftSoundId, (ctx: AudioContext, t: number, dest: AudioNod
   diamond: playDiamond,
   gift: playGiftBox,
   teddy: playTeddy,
+  naughty: playNaughty,
+  funny: playFunny,
+  beautiful: playBeautiful,
+  cool: playCool,
 };
 
 export function playGiftSound(giftId: GiftSoundId, opts?: { muted?: boolean }) {
