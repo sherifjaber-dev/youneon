@@ -135,9 +135,10 @@ export function showStaticLoginOverlays(): void {
   }
 }
 
+/** True only after this browsing session’s successful Pi.authenticate. */
 export function isPiAuthOk(): boolean {
   if (typeof window === "undefined") return false;
-  return window.__PI_AUTH_OK === true || !!readLiteSession();
+  return window.__PI_AUTH_OK === true;
 }
 
 function dispatchAuthEvent(name: string, detail?: PiLiteSession): void {
@@ -158,7 +159,7 @@ export function markPiAuthOk(result?: unknown): PiLiteSession | null {
 
   const identity =
     identityFromAuthResult(result) ||
-    (window.__PI_AUTH_OK || readLiteSession() ? readLiteSession() : null);
+    (window.__PI_AUTH_OK === true ? readLiteSession() : null);
 
   if (!identity) return null;
 
@@ -189,7 +190,7 @@ export function markPiAuthOk(result?: unknown): PiLiteSession | null {
 
 export function clearPiAuthOk(): void {
   if (typeof window === "undefined") return;
-  const wasSignedIn = window.__PI_AUTH_OK === true || !!readLiteSession();
+  const wasSignedIn = window.__PI_AUTH_OK === true;
   window.__PI_AUTH_OK = false;
   clearLiteSession();
   showStaticLoginOverlays();

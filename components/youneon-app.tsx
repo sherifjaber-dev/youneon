@@ -31,9 +31,11 @@ import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import {
   hideStaticLoginOverlays,
+  isPiAuthOk,
   PI_AUTH_LOGOUT_EVENT,
   PI_AUTH_OK_EVENT,
   readLiteSession,
+  showStaticLoginOverlays,
 } from "@/lib/pi-client-session";
 import {
   isPremiumActive,
@@ -212,7 +214,7 @@ export function YouNeonApp() {
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.__PI_AUTH_OK || readLiteSession()) {
+    if (isPiAuthOk()) {
       hideStaticLoginOverlays();
       setBootAuthOk(true);
     }
@@ -221,7 +223,7 @@ export function YouNeonApp() {
   useEffect(() => {
     function syncFromBoot() {
       if (typeof window === "undefined") return false;
-      if (window.__PI_AUTH_OK || readLiteSession()) {
+      if (isPiAuthOk()) {
         hideStaticLoginOverlays();
         setBootAuthOk(true);
         return true;
@@ -234,6 +236,8 @@ export function YouNeonApp() {
     };
     const onLogout = () => {
       setBootAuthOk(false);
+      setCurrentUser(null);
+      showStaticLoginOverlays();
     };
 
     window.addEventListener(PI_AUTH_OK_EVENT, onOk);

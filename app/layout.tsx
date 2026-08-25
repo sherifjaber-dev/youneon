@@ -87,7 +87,7 @@ const PI_BOOT_SCRIPT =
   "function wireAuth(p) { try { if (p && typeof p.then === 'function') p.then(function (r) { markOk(r); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); setLast('Last: ' + errMsg(e)); }); } catch (w) { console.log('[Pi] error: ' + errMsg(w)); } }" +
   "window.__youneonMarkPiAuthOk = markOk;" +
   "window.__youneonClearPiAuth = clearAuth;" +
-  "try { var flag = localStorage.getItem('youneon_authenticated'); var raw = localStorage.getItem('youneon_pi_session_lite') || localStorage.getItem('youneon_pi_current_user'); if (flag === '1' || raw) { var lite = {}; try { lite = JSON.parse(raw || '{}'); } catch (p) { lite = {}; } if (lite.uid || lite.username || flag === '1') markOk({ uid: lite.uid || 'pi_user', username: lite.username || lite.uid || 'pi_user' }); } } catch (rs) {}" +
+  "if (!window.__PI_AUTH_OK) showOverlays();" +
   "function callAuthenticate() {" +
   "var P = findPi();" +
   "if (!P || typeof P.authenticate !== 'function') { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
@@ -128,18 +128,15 @@ const PI_BOOT_SCRIPT =
   "var P = findPi();" +
   "if (!P) { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
   "if (!window.__YOUNEON_PI_SDK_LOGGED__) { window.__YOUNEON_PI_SDK_LOGGED__ = true; console.log('[Pi] SDK loaded'); }" +
-  "var authCalled = false;" +
-  "function doAuth() { if (authCalled) return; authCalled = true; callAuthenticate(); }" +
   "try {" +
   "if (P.init) {" +
   "console.log('[Pi] init start');" +
   "var r = P.init({ version: '2.0', sandbox: true });" +
   "if (r && typeof r.then === 'function') {" +
-  "r.then(function () { console.log('[Pi] init success'); doAuth(); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); doAuth(); });" +
-  "} else { console.log('[Pi] init success'); doAuth(); }" +
-  "} else { doAuth(); }" +
-  "} catch (e) { console.log('[Pi] error: ' + errMsg(e)); doAuth(); }" +
-  "setTimeout(function () { doAuth(); }, 500);" +
+  "r.then(function () { console.log('[Pi] init success'); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); });" +
+  "} else { console.log('[Pi] init success'); }" +
+  "}" +
+  "} catch (e) { console.log('[Pi] error: ' + errMsg(e)); }" +
   "}" +
   "renderStatus();" +
   "var piPoll = setInterval(function () { renderStatus(); if (!findPi()) return; clearInterval(piPoll); runInitThenAuth(); }, 200);" +
@@ -248,7 +245,7 @@ export default function RootLayout({
       >
         <StaticPiLogin overlayId="youneon-static-login" />
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=studio-welcome-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=gesture-auth-1"></script>
         <div
           id="youneon-app-tree"
           style={{ position: "relative", zIndex: 0, isolation: "isolate", pointerEvents: "none" }}

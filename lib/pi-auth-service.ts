@@ -1,6 +1,7 @@
 "use client";
 
 import { api, setApiAuthToken } from "@/lib/api";
+import { clearPiAuthOk } from "@/lib/pi-client-session";
 import {
   authenticatePi,
   handleIncompletePayment,
@@ -91,27 +92,15 @@ export const piAuthService = {
 
   logout: (): void => {
     try {
-      if (typeof window !== "undefined") {
-        window.__PI_AUTH_OK = false;
-        try {
-          document.documentElement.classList.remove("youneon-signed-in");
-        } catch {
-          /* ignore */
-        }
-        if (typeof localStorage !== "undefined") {
-          localStorage.removeItem(`${STORAGE_PREFIX}current_user`);
-          localStorage.removeItem(`${STORAGE_PREFIX}current_profile`);
-          localStorage.removeItem("youneon_pi_session_lite");
-          localStorage.removeItem("youneon_authenticated");
-        }
-        if (typeof window.__youneonClearPiAuth === "function") {
-          window.__youneonClearPiAuth();
-        }
+      if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+        localStorage.removeItem(`${STORAGE_PREFIX}current_user`);
+        localStorage.removeItem(`${STORAGE_PREFIX}current_profile`);
       }
     } catch (e) {
       console.error("Error logging out (non-critical):", e);
     }
 
+    clearPiAuthOk();
     setApiAuthToken(null);
     if (typeof window !== "undefined") {
       fetch("/api/pi/auth", { method: "DELETE", credentials: "include" }).catch(() => {});

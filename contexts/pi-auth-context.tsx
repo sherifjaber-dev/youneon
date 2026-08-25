@@ -26,6 +26,7 @@ import {
 import {
   authenticatePi,
   handleIncompletePayment,
+  initPiSdk,
   isPiAvailable,
   PI_AUTH_SCOPES,
   PI_SDK_UNAVAILABLE,
@@ -249,12 +250,13 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
   }, [login]);
 
   useEffect(() => {
-    const restore = readLiteSession();
-    if (restore) {
-      applyVerifiedSession(restore, null, false);
-    } else if (typeof window !== "undefined" && window.__PI_AUTH_OK) {
-      applyVerifiedSession({ uid: "pi_user", username: "pi_user" }, null, false);
-    }
+    const adoptThisSessionAuth = () => {
+      if (typeof window === "undefined" || !window.__PI_AUTH_OK) return;
+      const identity = readLiteSession() || { uid: "pi_user", username: "pi_user" };
+      applyVerifiedSession(identity, accessTokenRef.current, false);
+    };
+
+    adoptThisSessionAuth();
 
     const onOk = (event: Event) => {
       const detail = "detail" in event ? (event as CustomEvent).detail : undefined;
@@ -273,24 +275,18 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener(PI_AUTH_LOGOUT_EVENT, onLogout);
 
     let cancelled = false;
-    (async () => {
-      try {
-        await authenticate(false, false);
-      } catch {
-        /* vanilla boot script already logs [Pi] error */
-      } finally {
-        if (!cancelled) {
-          setPiAvailable(isPiAvailable());
-        }
-      }
-    })();
+    void initPiSdk()
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPiAvailable(isPiAvailable());
+      });
 
     return () => {
       cancelled = true;
       window.removeEventListener(PI_AUTH_OK_EVENT, onOk);
       window.removeEventListener(PI_AUTH_LOGOUT_EVENT, onLogout);
     };
-  }, [applyVerifiedSession, authenticate]);
+  }, [applyVerifiedSession]);
 
   const value = useMemo<PiAuthContextType>(
     () => ({

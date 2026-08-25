@@ -146,19 +146,6 @@
     }
   }
 
-  function restoreLiteSession() {
-    try {
-      var flag = localStorage.getItem("youneon_authenticated");
-      var raw = localStorage.getItem("youneon_pi_session_lite") || localStorage.getItem("youneon_pi_current_user");
-      if (flag !== "1" && !raw) return;
-      var lite = {};
-      try { lite = JSON.parse(raw || "{}"); } catch (p) { lite = {}; }
-      if (lite.uid || lite.username || flag === "1") {
-        markOk({ uid: lite.uid || "pi_user", username: lite.username || lite.uid || "pi_user" });
-      }
-    } catch (rs) {}
-  }
-
   function wireAuth(p) {
     try {
       if (p && typeof p.then === "function") {
@@ -341,22 +328,19 @@
       return;
     }
     logSdkLoaded();
-    var authCalled = false;
-    function doAuth() {
-      if (authCalled) return;
-      authCalled = true;
-      callAuthenticate();
-    }
     try {
       if (P.init) {
         console.log("[Pi] init start");
         var r = P.init({ version: "2.0", sandbox: true });
         if (r && typeof r.then === "function") {
-          r.then(function () { console.log("[Pi] init success"); doAuth(); }, function (e) { console.log("[Pi] error: " + errMsg(e)); doAuth(); });
-        } else { console.log("[Pi] init success"); doAuth(); }
-      } else { doAuth(); }
-    } catch (e) { console.log("[Pi] error: " + errMsg(e)); doAuth(); }
-    setTimeout(function () { doAuth(); }, 500);
+          r.then(function () { console.log("[Pi] init success"); }, function (e) { console.log("[Pi] error: " + errMsg(e)); });
+        } else {
+          console.log("[Pi] init success");
+        }
+      }
+    } catch (e) {
+      console.log("[Pi] error: " + errMsg(e));
+    }
   }
 
   function loadOfficialSdkIfMissing() {
@@ -382,7 +366,7 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
-  restoreLiteSession();
+  if (!window.__PI_AUTH_OK) showOverlays();
   bindLoginHits();
   restoreSigninControls();
   setTimeout(restoreSigninControls, 0);

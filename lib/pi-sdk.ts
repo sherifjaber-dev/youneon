@@ -262,8 +262,8 @@ export function tapPiAuthenticate(): void {
 
 /**
  * Authenticate with Pi Browser. Always invokes window.Pi.authenticate —
- * required for Pi App Studio. Awaits Pi.init before authenticate. Boot scripts
- * still fire authenticate on a 500ms fallback so Studio can detect the call.
+ * required for Pi App Studio. Awaits Pi.init before authenticate.
+ * Must only run from a user gesture (Sign in with Pi Network), never on load.
  */
 export async function authenticatePi(
   scopes: PiScope[] = PI_AUTH_SCOPES,
