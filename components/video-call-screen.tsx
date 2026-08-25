@@ -19,6 +19,7 @@ import {
   subscribeToUserProfile,
   type UserProfile as FirestoreUserProfile,
 } from "@/lib/firestore-service";
+import { recordProfileView } from "@/lib/profile-views";
 import {
   GiftBurstOverlay,
   GiftPickerPanel,
@@ -576,6 +577,24 @@ function VideoCallScreen({
   }, [partner?.userId]);
 
   useEffect(() => {
+    const viewedId = partner?.userId;
+    if (!currentUserId || !viewedId || viewedId === "anon" || viewedId === currentUserId) return;
+    void recordProfileView({
+      viewerId: currentUserId,
+      viewedUserId: viewedId,
+      viewerName: currentUserName,
+      viewerPhoto: currentUserProfile?.avatar,
+      viewerCountry: currentUserProfile?.country,
+    });
+  }, [
+    currentUserId,
+    currentUserName,
+    currentUserProfile?.avatar,
+    currentUserProfile?.country,
+    partner?.userId,
+  ]);
+
+  useEffect(() => {
     if (!partner) {
       setShowProfile(false);
       setRemoteUserDoc(null);
@@ -936,6 +955,7 @@ function VideoCallScreen({
         firestoreUser={remoteUserDoc}
         hint={partner}
         dailyName={remoteName}
+        viewerId={currentUserId}
       />
 
       {callStatus === "waiting" && (

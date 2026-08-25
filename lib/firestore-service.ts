@@ -24,6 +24,8 @@ export interface UserProfile {
   neonBalance?: number;
   giftsReceivedCount?: number;
   createdAt?: Date;
+  updatedAt?: unknown;
+  lastProfileUpdate?: unknown;
 }
 
 export interface ChatMessage {
@@ -40,7 +42,11 @@ export const PAID_CALL_COST = 20;
 export const saveUserProfile = async (profile: UserProfile) => {
   const { neonBalance: _neon, premiumUntil: _until, lastPaymentId: _pay, ...rest } = profile;
   const ref = doc(db, "users", profile.piUsername);
-  await setDoc(ref, { ...rest, updatedAt: Timestamp.now() }, { merge: true });
+  await setDoc(
+    ref,
+    { ...rest, updatedAt: Timestamp.now(), lastProfileUpdate: Timestamp.now() },
+    { merge: true }
+  );
   return profile.piUsername;
 };
 
@@ -282,12 +288,34 @@ export const markConversationAsRead = async (conversationId: string, userId: str
 
 export const addToHistory = async (
   currentUserId: string,
-  match: { id: string; name: string; avatar: string; flag?: string; duration?: string; photo?: string }
+  match: {
+    id: string;
+    name: string;
+    avatar: string;
+    flag?: string;
+    duration?: string;
+    durationSeconds?: number;
+    photo?: string;
+    gender?: string;
+    country?: string;
+    languages?: string[];
+  }
 ) => {
+  const durationSeconds =
+    typeof match.durationSeconds === "number" && Number.isFinite(match.durationSeconds)
+      ? Math.max(0, Math.floor(match.durationSeconds))
+      : null;
   await addDoc(collection(db, "users", currentUserId, "history"), {
-    matchId: match.id, name: match.name, avatar: match.avatar,
+    matchId: match.id,
+    name: match.name,
+    avatar: match.avatar,
     photo: match.photo || "",
-    countryFlag: match.flag || "", duration: match.duration || "Random video chat",
+    countryFlag: match.flag || "",
+    country: match.country || "",
+    gender: match.gender || "",
+    languages: Array.isArray(match.languages) ? match.languages : [],
+    duration: match.duration || "Random video chat",
+    durationSeconds,
     timestamp: serverTimestamp(),
   });
 };

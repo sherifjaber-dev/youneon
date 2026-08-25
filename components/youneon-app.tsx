@@ -10,6 +10,7 @@ import { TopBar } from "@/components/top-bar";
 import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
 import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory } from "@/lib/firestore-service";
+import { formatCallDuration } from "@/lib/history-utils";
 import { countryToFlag } from "@/lib/countries";
 import { piAuthService } from "@/lib/pi-auth-service";
 import { VideoCallScreen } from "@/components/video-call-screen";
@@ -409,18 +410,32 @@ export function YouNeonApp() {
     }
   };
 
-  const handleEndVideoChat = async (info?: { partner: { userId?: string; name: string; avatar?: string; countryFlag?: string } | null; durationSeconds: number }) => {
+  const handleEndVideoChat = async (info?: {
+    partner: {
+      userId?: string;
+      name: string;
+      avatar?: string;
+      countryFlag?: string;
+      country?: string;
+      gender?: string;
+    } | null;
+    durationSeconds: number;
+  }) => {
     const partner = info?.partner;
     const myId = currentUser?.id || currentUser?.piUsername;
     if (myId && !isGuestDemo && partner?.name && partner.name !== "Partner") {
-      const mins = Math.max(1, Math.round((info?.durationSeconds || 0) / 60));
+      const secs = Math.max(0, Math.floor(info?.durationSeconds || 0));
       try {
         await addToHistory(myId, {
           id: partner.userId || partner.name,
           name: partner.name,
           avatar: partner.avatar || "🙂",
+          photo: partner.avatar || "",
           flag: partner.countryFlag,
-          duration: `${mins} min chat`,
+          country: partner.country,
+          gender: partner.gender,
+          durationSeconds: secs,
+          duration: formatCallDuration(secs) || "0s",
         });
       } catch (e) {
         console.warn("History save failed:", e);

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { UserProfile } from "@/lib/firestore-service";
+import { recordProfileView } from "@/lib/profile-views";
 
 export type CallPartnerHint = {
   userId?: string;
@@ -139,17 +140,27 @@ export function RemoteProfileModal({
   firestoreUser,
   hint,
   dailyName,
+  viewerId,
 }: {
   open: boolean;
   onClose: () => void;
   firestoreUser: UserProfile | null;
   hint: CallPartnerHint | null;
   dailyName?: string;
+  viewerId?: string;
 }) {
   const profile = useMemo(
     () => mergeRemoteProfile(firestoreUser, hint, dailyName),
     [firestoreUser, hint, dailyName]
   );
+
+  useEffect(() => {
+    if (!open) return;
+    const viewedId = firestoreUser?.id || firestoreUser?.uid || hint?.userId;
+    if (!viewerId || !viewedId) return;
+    void recordProfileView({ viewerId, viewedUserId: viewedId });
+  }, [open, viewerId, firestoreUser?.id, firestoreUser?.uid, hint?.userId]);
+
   const [activePhoto, setActivePhoto] = useState(0);
   const gallery = profile.photos;
   const current = gallery[Math.min(activePhoto, Math.max(0, gallery.length - 1))] || "";
