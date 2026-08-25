@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   Ban,
   ChevronRight,
   Copy,
   Crown,
+  FileText,
+  FileType,
   Globe,
   HelpCircle,
   Languages,
@@ -147,6 +150,31 @@ function RowButton({
       {value ? <span className="max-w-[46%] truncate text-[13px] text-yn-muted">{value}</span> : null}
       {onClick ? <ChevronRight size={18} className="shrink-0 text-yn-muted" /> : null}
     </button>
+  );
+}
+
+function RowLink({
+  href,
+  icon,
+  label,
+  last,
+}: {
+  href: string;
+  icon?: ReactNode;
+  label: string;
+  last?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex min-h-12 w-full items-center gap-3 px-3.5 py-2.5 text-left ${
+        last ? "" : "border-b border-black/6"
+      }`}
+    >
+      {icon ? <span className="text-yn-accent">{icon}</span> : null}
+      <span className="flex-1 text-[15px] font-medium text-yn-text">{label}</span>
+      <ChevronRight size={18} className="shrink-0 text-yn-muted" />
+    </Link>
   );
 }
 
@@ -356,8 +384,18 @@ export function ProfileSettingsSheet({
               <RowButton
                 icon={<Shield size={18} />}
                 label={t("settings.guidelines")}
-                last
                 onClick={() => setPage("guidelines")}
+              />
+              <RowLink
+                icon={<FileText size={18} />}
+                label={t("settings.privacyPolicy")}
+                href="/privacy"
+              />
+              <RowLink
+                icon={<FileType size={18} />}
+                label={t("settings.termsOfService")}
+                href="/terms"
+                last
               />
             </Group>
 

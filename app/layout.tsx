@@ -1,5 +1,6 @@
 import type React from "react";
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { AppProviders } from "@/components/app-providers";
 import { StaticPiLogin } from "@/components/static-pi-login";
 import "./globals.css";
@@ -8,7 +9,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pine
 
 const CRITICAL_CSS =
   "html,body{background:#0f0117 !important;background-color:#0f0117 !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}" +
-  "html.youneon-signed-in,html.youneon-signed-in body{background:#F6F4F8 !important;background-color:#F6F4F8 !important;color:#1f1f23 !important}" +
+  "html.youneon-signed-in,html.youneon-signed-in body,html.youneon-legal,html.youneon-legal body{background:#F6F4F8 !important;background-color:#F6F4F8 !important;color:#1f1f23 !important}" +
   "@keyframes youneonLivePulse{0%,100%{opacity:1}50%{opacity:.4}}" +
   ".youneon-live-dot{animation:youneonLivePulse 1.4s ease-in-out infinite}" +
   "#youneon-static-login,.youneon-static-login,#youneon-static-login *,.youneon-static-login *{user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;caret-color:transparent !important;cursor:pointer !important}" +
@@ -16,8 +17,8 @@ const CRITICAL_CSS =
   "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p,.youneon-welcome-card,.youneon-welcome-card svg,.youneon-welcome-card img,.youneon-welcome-hero{pointer-events:none !important}" +
   "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin],input[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
   "#youneon-app-tree{pointer-events:none;position:relative;z-index:0}" +
-  "html.youneon-signed-in #youneon-static-login,html.youneon-signed-in .youneon-static-login,html.youneon-signed-in [data-youneon-login-host],html.youneon-signed-in [data-youneon-login-hidden='1']{display:none !important;visibility:hidden !important;pointer-events:none !important;z-index:0 !important}" +
-  "html.youneon-signed-in #youneon-app-tree{pointer-events:auto !important;z-index:1}";
+  "html.youneon-signed-in #youneon-static-login,html.youneon-signed-in .youneon-static-login,html.youneon-signed-in [data-youneon-login-host],html.youneon-signed-in [data-youneon-login-hidden='1'],html.youneon-legal #youneon-static-login,html.youneon-legal .youneon-static-login,html.youneon-legal [data-youneon-login-host],html.youneon-legal [data-youneon-login-hidden='1']{display:none !important;visibility:hidden !important;pointer-events:none !important;z-index:0 !important}" +
+  "html.youneon-signed-in #youneon-app-tree,html.youneon-legal #youneon-app-tree{pointer-events:auto !important;z-index:1}";
 
 /**
  * Vanilla ES5 boot script. No async/await, no arrow functions, no template
@@ -50,6 +51,9 @@ const PI_BOOT_SCRIPT =
   "for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;" +
   "}" +
   "function setLast(text) { window.__YOUNEON_PI_LAST__ = text; renderStatus(); }" +
+  "function isPublicLegalPath() {" +
+  "try { var p = String((location && location.pathname) || ''); return p === '/privacy' || p === '/terms' || p.indexOf('/privacy/') === 0 || p.indexOf('/terms/') === 0; } catch (e) { return false; }" +
+  "}" +
   "function hideOverlays() {" +
   "try { if (document.documentElement.classList) document.documentElement.classList.add('youneon-signed-in'); else document.documentElement.className += ' youneon-signed-in'; } catch (c) {}" +
   "var nodes = document.querySelectorAll('.youneon-static-login, #youneon-static-login, [data-youneon-login-host]');" +
@@ -57,6 +61,7 @@ const PI_BOOT_SCRIPT =
   "var tree = document.getElementById('youneon-app-tree'); if (tree) tree.style.pointerEvents = 'auto';" +
   "}" +
   "function showOverlays() {" +
+  "if (window.__YOUNEON_PUBLIC_PAGE__ || isPublicLegalPath()) { hideOverlays(); return; }" +
   "try { if (document.documentElement.classList) document.documentElement.classList.remove('youneon-signed-in'); else document.documentElement.className = String(document.documentElement.className || '').replace(/youneon-signed-in/g, ''); } catch (c) {}" +
   "var nodes = document.querySelectorAll('.youneon-static-login, #youneon-static-login, [data-youneon-login-host]');" +
   "for (var i = 0; i < nodes.length; i++) { nodes[i].style.display = 'flex'; nodes[i].style.visibility = 'visible'; nodes[i].style.pointerEvents = 'auto'; try { nodes[i].removeAttribute('data-youneon-login-hidden'); } catch (a) {} }" +
@@ -87,7 +92,8 @@ const PI_BOOT_SCRIPT =
   "function wireAuth(p) { try { if (p && typeof p.then === 'function') p.then(function (r) { markOk(r); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); setLast('Last: ' + errMsg(e)); }); } catch (w) { console.log('[Pi] error: ' + errMsg(w)); } }" +
   "window.__youneonMarkPiAuthOk = markOk;" +
   "window.__youneonClearPiAuth = clearAuth;" +
-  "if (!window.__PI_AUTH_OK) showOverlays();" +
+  "if (isPublicLegalPath()) { window.__YOUNEON_PUBLIC_PAGE__ = true; hideOverlays(); }" +
+  "if (!window.__PI_AUTH_OK && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();" +
   "function callAuthenticate() {" +
   "var P = findPi();" +
   "if (!P || typeof P.authenticate !== 'function') { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
@@ -158,6 +164,24 @@ const PI_BOOT_SCRIPT =
   "}" +
   "})();";
 
+const PUBLIC_LEGAL_PATH_SCRIPT =
+  "(function(){" +
+  "try{" +
+  "var p=String((location&&location.pathname)||'');" +
+  "if(p==='/privacy'||p==='/terms'||p.indexOf('/privacy/')===0||p.indexOf('/terms/')===0){" +
+  "window.__YOUNEON_PUBLIC_PAGE__=true;" +
+  "var d=document.documentElement;" +
+  "if(d.classList){d.classList.add('youneon-legal');d.classList.add('youneon-signed-in');}" +
+  "else{d.className+=' youneon-legal youneon-signed-in';}" +
+  "}" +
+  "}catch(e){}" +
+  "})();";
+
+function isPublicLegalPath(pathname: string) {
+  const p = pathname.split("?")[0] || "";
+  return p === "/privacy" || p === "/terms" || p.startsWith("/privacy/") || p.startsWith("/terms/");
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: "YouNeon - Random Video Chat",
@@ -208,16 +232,22 @@ export const viewport: Viewport = {
   themeColor: "#0f0117"
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headerList = await headers();
+  const isPublicLegal = isPublicLegalPath(headerList.get("x-youneon-pathname") || "");
+  const pageBg = isPublicLegal ? "#F6F4F8" : "#0f0117";
+  const pageColor = isPublicLegal ? "#1f1f23" : "#ffffff";
+
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      style={{ background: "#0f0117", backgroundColor: "#0f0117", minHeight: "100%", height: "100%" }}
+      className={isPublicLegal ? "youneon-legal youneon-signed-in" : undefined}
+      style={{ background: pageBg, backgroundColor: pageBg, minHeight: "100%", height: "100%" }}
     >
       <head>
         <meta charSet="utf-8" />
@@ -225,30 +255,36 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="YouNeon" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#0f0117" />
+        <meta name="theme-color" content={isPublicLegal ? "#F6F4F8" : "#0f0117"} />
         <link rel="apple-touch-icon" href="/icon-180.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
+        <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PUBLIC_LEGAL_PATH_SCRIPT }} />
       </head>
       <body
         suppressHydrationWarning
         style={{
-          background: "#0f0117",
-          backgroundColor: "#0f0117",
+          background: pageBg,
+          backgroundColor: pageBg,
           minHeight: "100%",
           height: "100%",
           margin: 0,
-          color: "#ffffff",
+          color: pageColor,
           fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
         }}
       >
-        <StaticPiLogin overlayId="youneon-static-login" />
+        {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=welcome-pro-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=legal-public-1"></script>
         <div
           id="youneon-app-tree"
-          style={{ position: "relative", zIndex: 0, isolation: "isolate", pointerEvents: "none" }}
+          style={{
+            position: "relative",
+            zIndex: 0,
+            isolation: "isolate",
+            pointerEvents: isPublicLegal ? "auto" : "none",
+          }}
         >
           <AppProviders>{children}</AppProviders>
         </div>

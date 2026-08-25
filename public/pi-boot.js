@@ -42,6 +42,15 @@
     renderStatus();
   }
 
+  function isPublicLegalPath() {
+    try {
+      var p = String((location && location.pathname) || "");
+      return p === "/privacy" || p === "/terms" || p.indexOf("/privacy/") === 0 || p.indexOf("/terms/") === 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function hideOverlays() {
     try {
       if (document.documentElement.classList) document.documentElement.classList.add("youneon-signed-in");
@@ -59,6 +68,10 @@
   }
 
   function showOverlays() {
+    if (window.__YOUNEON_PUBLIC_PAGE__ || isPublicLegalPath()) {
+      hideOverlays();
+      return;
+    }
     try {
       if (document.documentElement.classList) document.documentElement.classList.remove("youneon-signed-in");
       else document.documentElement.className = String(document.documentElement.className || "").replace(/youneon-signed-in/g, "");
@@ -365,7 +378,11 @@
     (document.head || document.documentElement).appendChild(s);
   }
 
-  if (!window.__PI_AUTH_OK) showOverlays();
+  if (isPublicLegalPath()) {
+    window.__YOUNEON_PUBLIC_PAGE__ = true;
+    hideOverlays();
+  }
+  if (!window.__PI_AUTH_OK && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();
   bindLoginHits();
   restoreSigninControls();
   setTimeout(restoreSigninControls, 0);
