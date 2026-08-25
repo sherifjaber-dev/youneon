@@ -1,30 +1,33 @@
 "use client";
-import { Flame, MessageCircle, Clock } from "lucide-react";
+import { Flame, MessageCircle, Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+export type AppTab = "discover" | "lounge" | "history" | "messages";
+
 interface BottomNavProps {
-  activeTab: "discover" | "messages" | "history";
-  onTabChange: (tab: "discover" | "messages" | "history") => void;
+  activeTab: AppTab;
+  onTabChange: (tab: AppTab) => void;
 }
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
-  const tabs = [
+  const tabs: { id: AppTab; label: string; icon: typeof Flame }[] = [
     { id: "discover", label: "Discover", icon: Flame },
-    { id: "messages", label: "Messages", icon: MessageCircle },
+    { id: "lounge", label: "Lounge", icon: Users },
     { id: "history", label: "History", icon: Clock },
+    { id: "messages", label: "Messages", icon: MessageCircle },
   ];
 
   return (
     <div className="yn-glass fixed bottom-0 left-0 right-0 z-50 border-t border-white/8 pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex h-14 max-w-lg w-full items-center justify-around px-2">
+      <div className="mx-auto flex h-14 max-w-lg w-full items-center justify-around px-1">
         {tabs.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id;
           return (
             <button
               key={id}
-              onClick={() => onTabChange(id as "discover" | "messages" | "history")}
+              onClick={() => onTabChange(id)}
               className={cn(
-                "flex min-w-[72px] flex-col items-center justify-center gap-0.5 rounded-lg px-3 py-1 transition-colors active:scale-95",
+                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors active:scale-95",
                 active ? "text-white" : "text-white/45"
               )}
             >

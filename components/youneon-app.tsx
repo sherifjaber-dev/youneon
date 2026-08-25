@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { DiscoverScreen } from "@/components/discover-screen";
+import { LoungeScreen } from "@/components/lounge-screen";
 import { MessagesScreen } from "@/components/messages-screen";
 import { HistoryScreen } from "@/components/history-screen";
 import { ChatScreen } from "@/components/chat-screen";
-import { BottomNav } from "@/components/bottom-nav";
+import { BottomNav, type AppTab } from "@/components/bottom-nav";
 import { TopBar } from "@/components/top-bar";
 import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
@@ -101,7 +102,7 @@ export function YouNeonApp() {
   const isGuestDemo = false;
   const [bootAuthOk, setBootAuthOk] = useState(false);
   const [currentUser, setCurrentUser] = useState<YouNeonUser | null>(null);
-  const [activeTab, setActiveTab] = useState<"discover" | "messages" | "history">("discover");
+  const [activeTab, setActiveTab] = useState<AppTab>("discover");
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [videoSession, setVideoSession] = useState<VideoSession | null>(null);
   const [neonBalance, setNeonBalance] = useState(100);
@@ -553,6 +554,21 @@ export function YouNeonApp() {
               announcements={announcements}
             />
           </div>
+        )}
+        {activeTab === "lounge" && (
+          <LoungeScreen
+            currentUserId={currentUserId}
+            currentUser={{
+              id: currentUserId,
+              name: displayUser.fullName,
+              photo: displayUser.profilePicture,
+              country: displayUser.country || displayUser.location,
+              age: displayUser.age,
+              gender: displayUser.gender,
+              languages: displayUser.languages,
+            }}
+            onOpenChat={handleOpenChat}
+          />
         )}
         {activeTab === "messages" && (
           <MessagesScreen
