@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bell, Crown } from "lucide-react";
 import { NotificationsScreen } from "@/components/notifications-screen";
+import { MyItemsSheet } from "@/components/my-items-sheet";
 import { NeonAvatar } from "@/components/neon-avatar";
 import { YouNeonBagIcon } from "@/components/icons/youneon-chat-connect";
 import { useNotificationInbox } from "@/hooks/use-notification-inbox";
@@ -38,6 +39,7 @@ export function TopBar({
   freeUnlocksRemaining = 0,
 }: TopBarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
+  const [itemsOpen, setItemsOpen] = useState(false);
   const { items, unread, markAllRead } = useNotificationInbox(currentUserId, announcements);
   const bagActive = freeUnlocksRemaining > 0;
   const bagCount = Math.min(99, Math.max(0, Math.floor(freeUnlocksRemaining)));
@@ -83,8 +85,10 @@ export function TopBar({
               )}
             </button>
 
-            <span
-              className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+            <button
+              type="button"
+              onClick={() => setItemsOpen(true)}
+              className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors active:scale-95 ${
                 bagActive
                   ? "border-sky-400/40 bg-sky-500/15 text-sky-500"
                   : "border-black/8 bg-white text-yn-muted/50 shadow-sm"
@@ -107,7 +111,7 @@ export function TopBar({
                   {bagCount > 9 ? "9+" : bagCount}
                 </span>
               )}
-            </span>
+            </button>
 
             <button
               onClick={onNeonClick}
@@ -132,6 +136,13 @@ export function TopBar({
         onOpenShop={onNeonClick}
         onOpenChat={onOpenChat}
         onOpenMessages={onOpenMessages}
+      />
+      <MyItemsSheet
+        open={itemsOpen}
+        onClose={() => setItemsOpen(false)}
+        freeUnlocksRemaining={freeUnlocksRemaining}
+        onEnterShop={onNeonClick}
+        username={currentUserId}
       />
     </>
   );
