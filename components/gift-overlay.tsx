@@ -147,7 +147,7 @@ export function GiftPickerPanel({
       className="yn-gift-panel"
       role="dialog"
       aria-label="Send a gift"
-      style={{ bottom: "calc(76px + env(safe-area-inset-bottom, 0px))" }}
+      style={{ bottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}
     >
       <div className="yn-gift-panel-head">
         <div>

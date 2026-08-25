@@ -89,12 +89,22 @@ const NSFW_CHECK_INTERVAL_MS = 2000;
 
 type CallIconName = "mic" | "micOff" | "cam" | "camOff" | "chat" | "gift" | "skip" | "end";
 
-function CallIcon({ name, uid }: { name: CallIconName; uid?: string }) {
+function CallIcon({
+  name,
+  uid,
+  size = 21,
+  tone,
+}: {
+  name: CallIconName;
+  uid?: string;
+  size?: number;
+  tone?: "neon" | "plain";
+}) {
   const gid = `yn-stroke-${uid || name}`;
   const off = name === "micOff" || name === "camOff" || name === "end";
-  const stroke = off ? "currentColor" : `url(#${gid})`;
+  const stroke = tone === "plain" || off ? "currentColor" : `url(#${gid})`;
   return (
-    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" aria-hidden="true">
       <defs>
         <linearGradient id={gid} x1="3" y1="2" x2="21" y2="22">
           <stop stopColor="#c084fc" />
@@ -151,16 +161,28 @@ function CallIcon({ name, uid }: { name: CallIconName; uid?: string }) {
         )}
         {name === "skip" && (
           <>
-            <path d="M5.2 7.1 12.1 12 5.2 16.9z" />
-            <path d="M12.4 7.1 19.3 12l-6.9 4.9z" />
+            <path d="M5.4 7.2 13.2 12 5.4 16.8z" />
+            <path d="M16.7 7.15v9.7" />
           </>
         )}
         {name === "end" && (
           <>
-            <path d="M7.1 14.6c3.3 2.4 6.5 2.4 9.8 0" strokeWidth="2.05" />
-            <path d="M5.4 12.4 7.2 14.8M18.6 12.4 16.8 14.8" strokeWidth="2.05" />
+            <path d="M7.2 14.8c3.2 2.15 6.4 2.15 9.6 0" strokeWidth="2.05" />
+            <path d="M5.5 12.55c.2.85.95 1.45 1.9 1.45h1.05M18.5 12.55c-.2.85-.95 1.45-1.9 1.45h-1.05" strokeWidth="2.05" />
           </>
         )}
+      </g>
+    </svg>
+  );
+}
+
+function WaitSilhouette({ face }: { face: "left" | "right" }) {
+  return (
+    <svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true">
+      <circle cx="24" cy="24" r="24" fill="#161022" />
+      <g transform={face === "right" ? "translate(48 0) scale(-1 1)" : undefined} fill="#7a6a92">
+        <ellipse cx="24" cy="18.5" rx="7.4" ry="8.2" />
+        <path d="M9 42.5c1.6-9.4 7.2-14.2 15-14.2S38.4 33.1 40 42.5" />
       </g>
     </svg>
   );
@@ -177,15 +199,47 @@ function WaitingMatchPanel({
 }) {
   return (
     <div className="yn-wait-overlay">
-      <div className="yn-wait-orb" aria-hidden="true">
-        <span className="yn-wait-ring" />
-        <span className="yn-wait-ring yn-wait-ring-delay" />
-        <span className="yn-wait-core" />
+      <header className="yn-wait-header">
+        <div className="yn-wait-brand">
+          <span className="yn-script-logo yn-wait-logo">
+            <span className="yn-script-you">You</span>
+            <span className="yn-script-neon">Neon</span>
+          </span>
+          <svg className="yn-wait-brand-cam" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="yn-wait-brand-cam-g" x1="3" y1="4" x2="21" y2="20">
+                <stop stopColor="#ff4ec8" />
+                <stop offset="1" stopColor="#c084fc" />
+              </linearGradient>
+            </defs>
+            <rect x="3.2" y="6.4" width="11.4" height="11.2" rx="2.3" stroke="url(#yn-wait-brand-cam-g)" strokeWidth="1.7" />
+            <path d="M14.8 10.2 20.2 7.5v9.1L14.8 13.9z" stroke="url(#yn-wait-brand-cam-g)" strokeWidth="1.7" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <p className="yn-wait-online">
+          <span className="yn-wait-online-dot" />
+          Online
+        </p>
+      </header>
+      <div className="yn-wait-center">
+        <div className="yn-wait-constellation" aria-hidden="true">
+          <span className="yn-wait-avatar yn-wait-av-tl"><WaitSilhouette face="right" /></span>
+          <span className="yn-wait-avatar yn-wait-av-tr"><WaitSilhouette face="left" /></span>
+          <span className="yn-wait-avatar yn-wait-av-bl"><WaitSilhouette face="right" /></span>
+          <span className="yn-wait-avatar yn-wait-av-br"><WaitSilhouette face="left" /></span>
+          <div className="yn-wait-ringbox">
+            <span className="yn-wait-halo" />
+            <span className="yn-wait-ring-outer" />
+            <span className="yn-wait-ring-inner" />
+            <span className="yn-wait-cam">
+              <CallIcon name="cam" uid="wait-hero" size={42} />
+            </span>
+          </div>
+        </div>
+        {premium && <p className="yn-wait-priority">Priority matching</p>}
+        <p className="yn-wait-title">{title}</p>
+        <p className="yn-wait-sub">{subtitle}</p>
       </div>
-      <span className="yn-call-wordmark text-[1.65rem]">YouNeon</span>
-      {premium && <p className="yn-wait-priority">Priority matching</p>}
-      <p className="yn-wait-title">{title}</p>
-      <p className="yn-wait-sub">{subtitle}</p>
     </div>
   );
 }
@@ -899,25 +953,24 @@ function VideoCallScreen({
 
   if (callStatus === "preview") {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-yn-bg p-6">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/4 top-16 h-72 w-72 rounded-full bg-fuchsia-200/45 blur-3xl" />
-          <div className="absolute bottom-20 right-1/5 h-72 w-72 rounded-full bg-pink-200/40 blur-3xl" />
-        </div>
+      <div className="fixed inset-0 z-50 overflow-hidden bg-[#07040f]">
         <video
           ref={localVideoRef}
           autoPlay
           playsInline
           muted
-          className="yn-call-pip object-cover scale-x-[-1]"
+          className="yn-call-pip yn-call-pip-hidden object-cover scale-x-[-1]"
         />
-        <WaitingMatchPanel
-          title="Finding a match…"
-          subtitle="Looking for someone in the same room…"
-        />
+        <div className="yn-wait-screen">
+          <WaitingMatchPanel
+            title="Finding a match…"
+            subtitle="Looking for someone in the same room…"
+          />
+        </div>
         <button
           onClick={() => onEnd()}
-          className="absolute right-4 top-[max(12px,env(safe-area-inset-top))] rounded-full border border-black/10 bg-yn-card px-4 py-2 text-sm font-medium text-yn-text shadow-sm backdrop-blur-md hover:bg-white"
+          className="absolute right-4 z-40 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md hover:bg-white/16"
+          style={{ top: "max(12px, env(safe-area-inset-top))" }}
           aria-label="Cancel matching"
         >
           Cancel
@@ -970,7 +1023,7 @@ function VideoCallScreen({
         </div>
       )}
 
-      <div className="yn-call-pip">
+      <div className={`yn-call-pip${callStatus === "joined" ? "" : " yn-call-pip-hidden"}`}>
         <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" data-testid="local-video" />
         {!camOn && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[#1f1228]/90 text-xs text-white/80">
@@ -1028,7 +1081,7 @@ function VideoCallScreen({
       )}
 
       {showChatInput && (
-        <div className="absolute left-1/2 z-40 w-[90%] max-w-md -translate-x-1/2" style={{ bottom: "calc(76px + env(safe-area-inset-bottom, 0px))", animation: "yn-slide-up 0.25s ease forwards" }}>
+        <div className="absolute left-1/2 z-40 w-[90%] max-w-md -translate-x-1/2" style={{ bottom: "calc(96px + env(safe-area-inset-bottom, 0px))", animation: "yn-slide-up 0.25s ease forwards" }}>
           <div className="yn-call-glass flex gap-2 rounded-2xl p-3">
             <input
               type="text" value={chatInputValue} onChange={(e) => setChatInputValue(e.target.value)}
@@ -1075,7 +1128,7 @@ function VideoCallScreen({
       )}
 
       {callStatus === "waiting" && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 pointer-events-none">
+        <div className="yn-wait-screen">
           <WaitingMatchPanel
             title="Waiting for match…"
             subtitle={isPremium ? "You are in the priority queue." : "Stay on this screen — the next person joins the same room."}
@@ -1084,7 +1137,7 @@ function VideoCallScreen({
         </div>
       )}
       {callStatus === "joining" && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 pointer-events-none">
+        <div className="yn-wait-screen">
           <WaitingMatchPanel title="Starting video…" subtitle="Connecting your camera and microphone." />
         </div>
       )}
@@ -1134,7 +1187,10 @@ function VideoCallScreen({
             aria-label={micOn ? "Mute microphone" : "Unmute microphone"}
             aria-pressed={!micOn}
           >
-            <CallIcon name={micOn ? "mic" : "micOff"} />
+            <span className="yn-call-btn-ring">
+              <CallIcon name={micOn ? "mic" : "micOff"} tone="plain" />
+            </span>
+            <span className="yn-call-btn-label">Mute</span>
           </button>
 
           <button
@@ -1145,7 +1201,10 @@ function VideoCallScreen({
             aria-label={camOn ? "Turn camera off" : "Turn camera on"}
             aria-pressed={!camOn}
           >
-            <CallIcon name={camOn ? "cam" : "camOff"} />
+            <span className="yn-call-btn-ring">
+              <CallIcon name={camOn ? "cam" : "camOff"} tone="plain" />
+            </span>
+            <span className="yn-call-btn-label">Camera</span>
           </button>
 
           <button
@@ -1159,10 +1218,13 @@ function VideoCallScreen({
             data-testid="chat-btn"
             aria-label="Open chat"
           >
-            <CallIcon name="chat" />
-            {chatHistory.length > 0 && !displayedMessage && (
-              <span className="yn-call-btn-badge">{chatHistory.length > 9 ? "9+" : chatHistory.length}</span>
-            )}
+            <span className="yn-call-btn-ring">
+              <CallIcon name="chat" tone="plain" />
+              {chatHistory.length > 0 && !displayedMessage && (
+                <span className="yn-call-btn-badge">{chatHistory.length > 9 ? "9+" : chatHistory.length}</span>
+              )}
+            </span>
+            <span className="yn-call-btn-label">Chat</span>
           </button>
 
           <button
@@ -1172,7 +1234,10 @@ function VideoCallScreen({
             data-testid="gift-btn"
             aria-label="Send gift"
           >
-            <CallIcon name="gift" />
+            <span className="yn-call-btn-ring">
+              <CallIcon name="gift" tone="plain" />
+            </span>
+            <span className="yn-call-btn-label">Gifts</span>
           </button>
 
           {matchMode !== "direct" && (
@@ -1184,11 +1249,14 @@ function VideoCallScreen({
               data-testid="skip-btn"
               aria-label={skipRemaining > 0 ? `Skip to next person in ${skipRemaining} seconds` : "Skip to next person"}
             >
-              {skipRemaining > 0 ? (
-                <span className="yn-call-btn-count">{skipRemaining}</span>
-              ) : (
-                <CallIcon name="skip" />
-              )}
+              <span className="yn-call-btn-ring">
+                {skipRemaining > 0 ? (
+                  <span className="yn-call-btn-count">{skipRemaining}</span>
+                ) : (
+                  <CallIcon name="skip" tone="plain" />
+                )}
+              </span>
+              <span className="yn-call-btn-label">Skip</span>
             </button>
           )}
 
@@ -1199,7 +1267,10 @@ function VideoCallScreen({
             data-testid="end-call-btn"
             aria-label="End call"
           >
-            <CallIcon name="end" />
+            <span className="yn-call-btn-ring">
+              <CallIcon name="end" tone="plain" />
+            </span>
+            <span className="yn-call-btn-label">End Call</span>
           </button>
         </div>
       </div>
