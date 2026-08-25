@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, MessageCircle, SlidersHorizontal, Video } from "lucide-react";
+import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
 import { getUserProfile, subscribeToHistory, type UserProfile } from "@/lib/firestore-service";
 import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
@@ -235,6 +236,7 @@ export function HistoryScreen({
   const [applied, setApplied] = useState<AppliedFilter>(EMPTY_FILTER);
   const [draft, setDraft] = useState<AppliedFilter>(EMPTY_FILTER);
   const [updatedFocus, setUpdatedFocus] = useState<string | "all">("all");
+  const [previewUserId, setPreviewUserId] = useState<string | null>(null);
 
   const me: FollowSnapshot = {
     id: currentUser?.id || currentUserId || "",
@@ -439,7 +441,12 @@ export function HistoryScreen({
                           key={`perfect-${u.id}`}
                           className="w-[210px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-[#1a0828] shadow-[0_12px_28px_rgba(76,29,149,0.22)]"
                         >
-                          <div className="relative aspect-[3/4] overflow-hidden">
+                          <button
+                            type="button"
+                            className="relative aspect-[3/4] w-full overflow-hidden"
+                            onClick={() => setPreviewUserId(u.matchId)}
+                            aria-label={`View ${u.name}'s profile`}
+                          >
                             {photo ? (
                               <img src={u.photo} alt="" className="h-full w-full object-cover" />
                             ) : (
@@ -468,7 +475,7 @@ export function HistoryScreen({
                                 {displayDuration(u)}
                               </p>
                             </div>
-                          </div>
+                          </button>
                           <div className="flex items-center gap-1.5 px-2.5 py-2.5">
                             <button
                               type="button"
@@ -533,10 +540,9 @@ export function HistoryScreen({
                       <button
                         key={person.id}
                         type="button"
-                        onClick={() =>
-                          setUpdatedFocus((prev) => (prev === person.id ? "all" : person.id))
-                        }
+                        onClick={() => setPreviewUserId(person.id)}
                         className="flex w-[58px] shrink-0 flex-col items-center gap-1.5"
+                        aria-label={`View ${person.name}'s profile`}
                       >
                         <span className="relative">
                           <NeonAvatar
@@ -585,13 +591,24 @@ export function HistoryScreen({
                         key={u.id}
                         className="flex items-center gap-3 rounded-2xl px-1 py-2.5"
                       >
-                        <SquarePhoto
-                          src={u.photo}
-                          name={u.name}
-                          size={82}
-                          showPhoto={hasOwnPhoto}
-                        />
-                        <div className="min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewUserId(u.matchId)}
+                          aria-label={`View ${u.name}'s profile`}
+                          className="shrink-0"
+                        >
+                          <SquarePhoto
+                            src={u.photo}
+                            name={u.name}
+                            size={82}
+                            showPhoto={hasOwnPhoto}
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left"
+                          onClick={() => setPreviewUserId(u.matchId)}
+                        >
                           <p className="truncate text-[16px] font-bold text-white">
                             {u.name}
                             {flag ? <span className="ml-1.5 font-normal">{flag}</span> : null}
@@ -603,7 +620,7 @@ export function HistoryScreen({
                             <Video size={13} />
                             {displayDuration(u)}
                           </p>
-                        </div>
+                        </button>
                         <FollowMessageActions
                           following={following}
                           busy={busyId === u.matchId || !me.id}
@@ -651,21 +668,32 @@ export function HistoryScreen({
                 const following = followingIds.has(view.viewerId);
                 return (
                   <div key={view.id} className="flex items-center gap-3 py-3">
-                    <NeonAvatar
-                      src={photo}
-                      name={name}
-                      size={56}
-                      showPhoto={hasOwnPhoto}
-                      online={online[view.viewerId] || false}
-                    />
-                    <div className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      className="shrink-0"
+                      onClick={() => setPreviewUserId(view.viewerId)}
+                      aria-label={`View ${name}'s profile`}
+                    >
+                      <NeonAvatar
+                        src={photo}
+                        name={name}
+                        size={56}
+                        showPhoto={hasOwnPhoto}
+                        online={online[view.viewerId] || false}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 text-left"
+                      onClick={() => setPreviewUserId(view.viewerId)}
+                    >
                       <p className="truncate text-[16px] font-bold text-white">{name}</p>
                       <p className="mt-0.5 truncate text-[12px] text-white/45">
                         {flag ? <span>{flag}</span> : null}
                         {flag && language ? <span> · </span> : null}
                         {language || (!flag ? "Recent viewer" : "")}
                       </p>
-                    </div>
+                    </button>
                     <FollowMessageActions
                       following={following}
                       busy={busyId === view.viewerId || !me.id}
@@ -805,6 +833,18 @@ export function HistoryScreen({
           </div>
         </div>
       ) : null}
+
+      <ProfilePreviewSheet
+        open={!!previewUserId}
+        onClose={() => setPreviewUserId(null)}
+        userId={previewUserId || undefined}
+        viewerId={me.id || currentUserId}
+        standalone
+        onMessage={(user) => {
+          setPreviewUserId(null);
+          openChat(user);
+        }}
+      />
     </div>
   );
 }

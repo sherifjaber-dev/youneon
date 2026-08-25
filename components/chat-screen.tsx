@@ -15,6 +15,7 @@ import {
   ChatMessage,
 } from "@/lib/firestore-service";
 
+import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { PremiumBadge } from "@/components/premium-badge";
 import { NeonAvatar } from "@/components/neon-avatar";
 import { countryToFlag } from "@/lib/countries";
@@ -61,6 +62,7 @@ export function ChatScreen({
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [showNoReplyToast, setShowNoReplyToast] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -211,7 +213,12 @@ export function ChatScreen({
         <button onClick={onBack} className="p-2 hover:bg-purple-800/50 rounded-full" data-testid="chat-back-btn">
           <ArrowLeft className="text-white" size={22} />
         </button>
-        <div className="relative">
+        <button
+          type="button"
+          className="relative"
+          onClick={() => setPreviewOpen(true)}
+          aria-label={`View ${otherUser.name}'s profile`}
+        >
           <NeonAvatar
             src={otherUser.photo}
             name={otherUser.name}
@@ -219,8 +226,12 @@ export function ChatScreen({
             showPhoto={canSeeOtherPhoto}
             online={!!otherUser.isOnline}
           />
-        </div>
-        <div className="flex-1 min-w-0">
+        </button>
+        <button
+          type="button"
+          className="flex-1 min-w-0 text-left"
+          onClick={() => setPreviewOpen(true)}
+        >
           <div className="flex items-center gap-1.5">
             <p className="font-semibold text-white truncate">{otherUser.name}</p>
             {otherUser.countryFlag ? (
@@ -231,7 +242,7 @@ export function ChatScreen({
           <p className="text-xs text-purple-300/70">
             {otherUser.isOnline ? "Online" : "Offline"}
           </p>
-        </div>
+        </button>
         <button
           onClick={handleVideoCall}
           disabled={callDisabled}
@@ -476,6 +487,19 @@ export function ChatScreen({
           </div>
         </div>
       )}
+      <ProfilePreviewSheet
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        userId={otherUser.id}
+        viewerId={currentUserId}
+        hint={{
+          userId: otherUser.id,
+          name: otherUser.name,
+          avatar: otherUser.photo,
+          countryFlag: otherUser.countryFlag,
+        }}
+        standalone
+      />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { FollowersScreen, type ChatTarget } from "@/components/followers-screen"
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
 import { countryToFlag } from "@/lib/countries";
-import type { FollowSnapshot } from "@/lib/follow-service";
+import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 
 interface MessagesScreenProps {
   currentUserId?: string;
@@ -48,6 +48,7 @@ export function MessagesScreen({
 }: MessagesScreenProps) {
   const [conversations, setConversations] = useState<any[]>([]);
   const [peopleView, setPeopleView] = useState<PeopleView>("inbox");
+  const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const me: FollowSnapshot = {
     id: currentUser?.id || currentUserId || "",
     name: currentUser?.name,
@@ -88,22 +89,40 @@ export function MessagesScreen({
     return map;
   }, [following, followers]);
 
+  const previewSheet = (
+    <ProfilePreviewSheet
+      open={!!previewUserId}
+      onClose={() => setPreviewUserId(null)}
+      userId={previewUserId || undefined}
+      viewerId={graphUserId}
+      standalone
+      onMessage={(user) => {
+        setPreviewUserId(null);
+        openChat(user);
+      }}
+    />
+  );
+
   if (peopleView !== "inbox") {
     return (
-      <FollowersScreen
-        key={peopleView}
-        initialTab={peopleView}
-        currentUserId={currentUserId || ""}
-        hasOwnPhoto={hasOwnPhoto}
-        followers={followers}
-        following={following}
-        followingIds={followingIds}
-        online={online}
-        busyId={busyId}
-        onBack={() => setPeopleView("inbox")}
-        onToggleFollow={handleToggleFollow}
-        onOpenChat={openChat}
-      />
+      <>
+        <FollowersScreen
+          key={peopleView}
+          initialTab={peopleView}
+          currentUserId={currentUserId || ""}
+          hasOwnPhoto={hasOwnPhoto}
+          followers={followers}
+          following={following}
+          followingIds={followingIds}
+          online={online}
+          busyId={busyId}
+          onBack={() => setPeopleView("inbox")}
+          onToggleFollow={handleToggleFollow}
+          onOpenChat={openChat}
+          onOpenProfile={(id) => setPreviewUserId(id)}
+        />
+        {previewSheet}
+      </>
     );
   }
 
@@ -172,16 +191,23 @@ export function MessagesScreen({
                 className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-white/8 bg-white/[0.045] px-2.5 pb-3 pt-3"
                 data-testid={`follow-card-${person.id}`}
               >
-                <NeonAvatar
-                  src={person.photo}
-                  name={person.name}
-                  size={80}
-                  showPhoto={hasOwnPhoto}
-                  online={!!online[person.id]}
-                />
-                <p className="mt-2.5 w-full truncate text-center text-[13px] font-bold text-white">
-                  {person.name}
-                </p>
+                <button
+                  type="button"
+                  className="flex w-full flex-col items-center"
+                  onClick={() => setPreviewUserId(person.id)}
+                  aria-label={`View ${person.name}'s profile`}
+                >
+                  <NeonAvatar
+                    src={person.photo}
+                    name={person.name}
+                    size={80}
+                    showPhoto={hasOwnPhoto}
+                    online={!!online[person.id]}
+                  />
+                  <p className="mt-2.5 w-full truncate text-center text-[13px] font-bold text-white">
+                    {person.name}
+                  </p>
+                </button>
                 <button
                   type="button"
                   onClick={() =>
@@ -271,42 +297,68 @@ export function MessagesScreen({
               );
               const unread = conv.unreadCount?.[currentUserId || ""] || 0;
               return (
-                <button
+                <div
                   key={conv.id}
-                  type="button"
-                  onClick={() =>
-                    openChat({
-                      id: otherId,
-                      name,
-                      avatar: name,
-                      photo,
-                      countryFlag: flag,
-                      isOnline: !!online[otherId],
-                    })
-                  }
-                  className="flex min-h-[76px] w-full items-start gap-3 py-3.5 text-left transition active:opacity-80"
+                  className="flex min-h-[76px] w-full items-start gap-3 py-3.5"
                   data-testid={`conversation-${otherId}`}
                 >
-                  <NeonAvatar
-                    src={photo}
-                    name={name}
-                    size={64}
-                    showPhoto={hasOwnPhoto}
-                    online={!!online[otherId]}
-                  />
+                  <button
+                    type="button"
+                    className="shrink-0"
+                    onClick={() => setPreviewUserId(otherId)}
+                    aria-label={`View ${name}'s profile`}
+                  >
+                    <NeonAvatar
+                      src={photo}
+                      name={name}
+                      size={64}
+                      showPhoto={hasOwnPhoto}
+                      online={!!online[otherId]}
+                    />
+                  </button>
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="flex min-w-0 items-center gap-1.5 truncate text-[16px] font-bold text-white">
+                      <button
+                        type="button"
+                        className="flex min-w-0 items-center gap-1.5 truncate text-left text-[16px] font-bold text-white"
+                        onClick={() => setPreviewUserId(otherId)}
+                      >
                         <span className="truncate" data-testid={`conversation-name-${otherId}`}>
                           {name}
                         </span>
                         {flag ? <span className="shrink-0 text-[15px]">{flag}</span> : null}
-                      </p>
-                      <span className="shrink-0 pt-0.5 text-[11px] text-white/35">
+                      </button>
+                      <button
+                        type="button"
+                        className="shrink-0 pt-0.5 text-[11px] text-white/35"
+                        onClick={() =>
+                          openChat({
+                            id: otherId,
+                            name,
+                            avatar: name,
+                            photo,
+                            countryFlag: flag,
+                            isOnline: !!online[otherId],
+                          })
+                        }
+                      >
                         {formatConvDate(conv.lastMessageTime)}
-                      </span>
+                      </button>
                     </div>
-                    <div className="mt-1 flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openChat({
+                          id: otherId,
+                          name,
+                          avatar: name,
+                          photo,
+                          countryFlag: flag,
+                          isOnline: !!online[otherId],
+                        })
+                      }
+                      className="mt-1 flex w-full items-center justify-between gap-3 text-left transition active:opacity-80"
+                    >
                       <p className="truncate text-[13px] text-white/40">
                         {conv.lastMessage || "Start the conversation..."}
                       </p>
@@ -315,14 +367,15 @@ export function MessagesScreen({
                           {unread}
                         </span>
                       )}
-                    </div>
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
         )}
       </div>
+      {previewSheet}
     </div>
   );
 }

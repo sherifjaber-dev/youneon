@@ -16,7 +16,7 @@ import {
 import { PremiumBadge } from "@/components/premium-badge";
 import { ProfileInterestsPage } from "@/components/profile-interests-page";
 import { ProfileSettingsSheet } from "@/components/profile-settings-sheet";
-import { RemoteProfileModal } from "@/components/call-remote-profile";
+import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { compressImageFile } from "@/lib/compress-image";
 import { COUNTRY_OPTIONS, isCountryOption } from "@/lib/countries";
 import type { Announcement } from "@/lib/announcements";
@@ -75,6 +75,12 @@ export type ProfileModalUser = {
   reactionsReceived?: Record<string, number>;
   giftsReceivedCount?: number;
   premiumUntil?: string;
+  neonId?: string;
+  hideGender?: boolean;
+  youneonBadge?: boolean;
+  createdAt?: unknown;
+  lastReportedAt?: unknown;
+  successfulChats?: number;
 };
 
 interface ProfileEditModalProps {
@@ -451,6 +457,7 @@ export function ProfileEditModal({
 
   const previewUser: UserProfile = useMemo(
     () => ({
+      id: currentUsername || "",
       piUsername: currentUsername || "",
       fullName: formData.fullName,
       age: formData.age,
@@ -463,8 +470,16 @@ export function ProfileEditModal({
       photos: formData.photos,
       bio: formData.bio,
       giftsReceivedCount: currentUser?.giftsReceivedCount || 0,
+      reactionsReceived: currentUser?.reactionsReceived,
+      neonId: currentUser?.neonId,
+      hideGender: currentUser?.hideGender,
+      youneonBadge: currentUser?.youneonBadge,
+      createdAt: currentUser?.createdAt,
+      lastReportedAt: currentUser?.lastReportedAt,
+      successfulChats: currentUser?.successfulChats,
+      premiumUntil: currentUser?.premiumUntil || undefined,
     }),
-    [formData, currentUsername, currentUser?.giftsReceivedCount]
+    [formData, currentUsername, currentUser]
   );
 
   const nameValid =
@@ -1020,11 +1035,13 @@ export function ProfileEditModal({
           onOpenShop={onOpenShop}
         />
 
-        <RemoteProfileModal
+        <ProfilePreviewSheet
           open={showPreview}
           onClose={() => setShowPreview(false)}
-          firestoreUser={previewUser}
-          hint={null}
+          userId={currentUsername}
+          viewerId={currentUsername}
+          seed={previewUser}
+          isSelf
           standalone
         />
       </div>

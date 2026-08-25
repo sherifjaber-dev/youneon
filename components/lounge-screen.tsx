@@ -17,6 +17,7 @@ import {
   type LoungeMe,
   type LoungePerson,
 } from "@/lib/lounge-service";
+import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
 import { isAdultAge } from "@/lib/safety";
@@ -114,6 +115,7 @@ export function LoungeScreen({
   const [filterOpen, setFilterOpen] = useState(false);
   const [applied, setApplied] = useState<LoungeFilters>(DEFAULT_LOUNGE_FILTERS);
   const [draft, setDraft] = useState<LoungeFilters>(DEFAULT_LOUNGE_FILTERS);
+  const [previewUserId, setPreviewUserId] = useState<string | null>(null);
 
   const { followingIds, busyId, toggleFollow } = useFollowGraph(meId);
   const blockedIds = useBlockedIds(meId);
@@ -264,6 +266,7 @@ export function LoungeScreen({
                     busy={busyId === person.id || !meId}
                     onFollow={() => followPerson(person)}
                     onMessage={() => openChat(person)}
+                    onOpenProfile={() => setPreviewUserId(person.id)}
                   />
                 ))}
               </div>
@@ -281,6 +284,7 @@ export function LoungeScreen({
                   busy={busyId === person.id || !meId}
                   onFollow={() => followPerson(person)}
                   onMessage={() => openChat(person)}
+                  onOpenProfile={() => setPreviewUserId(person.id)}
                 />
               ))}
             </div>
@@ -296,6 +300,18 @@ export function LoungeScreen({
           onClose={() => setFilterOpen(false)}
         />
       ) : null}
+
+      <ProfilePreviewSheet
+        open={!!previewUserId}
+        onClose={() => setPreviewUserId(null)}
+        userId={previewUserId || undefined}
+        viewerId={meId}
+        standalone
+        onMessage={(user) => {
+          setPreviewUserId(null);
+          onOpenChat?.(user);
+        }}
+      />
     </div>
   );
 }
@@ -307,6 +323,7 @@ function ForYouCard({
   busy,
   onFollow,
   onMessage,
+  onOpenProfile,
 }: {
   person: LoungePerson;
   me: LoungeMe;
@@ -314,6 +331,7 @@ function ForYouCard({
   busy: boolean;
   onFollow: () => void;
   onMessage: () => void;
+  onOpenProfile: () => void;
 }) {
   const flag = countryToFlag(person.country);
   const language = person.languages[0]?.trim() || "";
@@ -323,8 +341,15 @@ function ForYouCard({
   return (
     <article className="w-[236px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-[#1a0828] shadow-[0_12px_28px_rgba(76,29,149,0.22)]">
       <div className="relative aspect-[3/4] overflow-hidden">
-        <CardPhoto src={person.photo} name={person.name} />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-16">
+        <button
+          type="button"
+          className="absolute inset-0 z-0"
+          onClick={onOpenProfile}
+          aria-label={`View ${person.name}'s profile`}
+        >
+          <CardPhoto src={person.photo} name={person.name} />
+        </button>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-16">
           <p className="truncate text-[16px] font-bold text-white">
             {title}
             {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
@@ -345,7 +370,7 @@ function ForYouCard({
               Online recently
             </Tag>
           </div>
-          <div className="mt-2.5 flex gap-1.5">
+          <div className="pointer-events-auto mt-2.5 flex gap-1.5">
             <button
               type="button"
               disabled={busy}
@@ -380,12 +405,14 @@ function AllCard({
   busy,
   onFollow,
   onMessage,
+  onOpenProfile,
 }: {
   person: LoungePerson;
   following: boolean;
   busy: boolean;
   onFollow: () => void;
   onMessage: () => void;
+  onOpenProfile: () => void;
 }) {
   const flag = countryToFlag(person.country);
   const language = person.languages[0]?.trim() || "";
@@ -394,11 +421,18 @@ function AllCard({
   return (
     <article className="overflow-hidden rounded-[20px] border border-white/10 bg-[#1a0828] shadow-[0_8px_20px_rgba(76,29,149,0.18)]">
       <div className="relative aspect-[3/4] overflow-hidden">
-        <CardPhoto src={person.photo} name={person.name} />
-        <div className="absolute left-2 top-2">
+        <button
+          type="button"
+          className="absolute inset-0 z-0"
+          onClick={onOpenProfile}
+          aria-label={`View ${person.name}'s profile`}
+        >
+          <CardPhoto src={person.photo} name={person.name} />
+        </button>
+        <div className="pointer-events-none absolute left-2 top-2 z-10">
           <OnlineBadge compact />
         </div>
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/88 via-black/40 to-transparent px-2.5 pb-2.5 pt-10">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/40 to-transparent px-2.5 pb-2.5 pt-10">
           <p className="truncate text-[14px] font-bold text-white">
             {title}
             {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
@@ -412,7 +446,7 @@ function AllCard({
               {language}
             </p>
           ) : null}
-          <div className="mt-2 flex gap-1.5">
+          <div className="pointer-events-auto mt-2 flex gap-1.5">
             <button
               type="button"
               disabled={busy}

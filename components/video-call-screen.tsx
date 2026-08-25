@@ -1047,6 +1047,7 @@ function VideoCallScreen({
         hint={partner}
         dailyName={remoteName}
         viewerId={currentUserId}
+        standalone
         onReport={() => {
           setShowProfile(false);
           setShowReport(true);

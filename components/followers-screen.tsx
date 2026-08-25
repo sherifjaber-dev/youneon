@@ -28,6 +28,7 @@ interface FollowersScreenProps {
   onBack: () => void;
   onToggleFollow: (person: FollowPerson) => void;
   onOpenChat: (user: ChatTarget) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
 function toChatTarget(person: FollowPerson, online?: boolean): ChatTarget {
@@ -54,6 +55,7 @@ export function FollowersScreen({
   onBack,
   onToggleFollow,
   onOpenChat,
+  onOpenProfile,
 }: FollowersScreenProps) {
   const [tab, setTab] = useState<"followers" | "following">(initialTab);
   const people = tab === "followers" ? followers : following;
@@ -134,7 +136,12 @@ export function FollowersScreen({
                 className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_8px_24px_rgba(76,29,149,0.18)]"
                 data-testid={`people-card-${person.id}`}
               >
-                <div className="relative aspect-[4/5] overflow-hidden bg-[#1a0828]">
+                <button
+                  type="button"
+                  className="relative aspect-[4/5] w-full overflow-hidden bg-[#1a0828]"
+                  onClick={() => onOpenProfile?.(person.id)}
+                  aria-label={`View ${person.name}'s profile`}
+                >
                   {hasOwnPhoto && isPhotoSrc(person.photo) ? (
                     <img src={person.photo} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -153,15 +160,19 @@ export function FollowersScreen({
                   {online[person.id] ? (
                     <span className="absolute bottom-2 right-2 h-3.5 w-3.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_#1a0828]" />
                   ) : null}
-                </div>
+                </button>
                 <div className="px-3 pb-3 pt-2.5">
-                  <p className="truncate text-[15px] font-bold text-white">
+                  <button
+                    type="button"
+                    className="w-full truncate text-left text-[15px] font-bold text-white"
+                    onClick={() => onOpenProfile?.(person.id)}
+                  >
                     {person.name}
                     {person.age ? (
                       <span className="font-semibold text-white/80">, {person.age}</span>
                     ) : null}
                     {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
-                  </p>
+                  </button>
                   <div className="mt-2.5 flex gap-1.5">
                     <button
                       type="button"

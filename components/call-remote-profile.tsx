@@ -1,9 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { UserProfile } from "@/lib/firestore-service";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Ban, Check, Copy, Languages, MessageCircle, ShieldAlert, UserPlus } from "lucide-react";
+import { CallReportSheet } from "@/components/call-report-sheet";
+import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
+import { countryLabel, countryToFlag } from "@/lib/countries";
+import { subscribeToUserProfile, type UserProfile } from "@/lib/firestore-service";
+import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
+import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { recordProfileView } from "@/lib/profile-views";
-import { badgeFromUserDoc } from "@/lib/safety";
+import {
+  interestIcon,
+  languageLabel,
+  reactionCount,
+  REACTION_TYPES,
+  totalReactions,
+} from "@/lib/profile-catalog";
+import { badgeFromUserDoc, submitUserReport, type ReportReasonId } from "@/lib/safety";
+import { blockUserForMe, ensureNeonId } from "@/lib/user-settings";
 
 export type CallPartnerHint = {
   userId?: string;
@@ -17,25 +31,18 @@ export type CallPartnerHint = {
   gender?: string;
 };
 
-function isPhotoSrc(value?: string | null): boolean {
-  if (!value || typeof value !== "string") return false;
-  const v = value.trim();
-  return (
-    v.startsWith("data:image") ||
-    v.startsWith("https://") ||
-    v.startsWith("http://") ||
-    v.startsWith("blob:")
-  );
-}
+export type ProfileChatTarget = {
+  id: string;
+  name: string;
+  avatar: string;
+  photo?: string;
+  countryFlag?: string;
+  country?: string;
+  isOnline?: boolean;
+};
 
 function initialsFrom(name: string): string {
-  const cleaned = name.replace(/[—–-]/g, " ").trim();
-  if (!cleaned || cleaned === "Partner" || cleaned === "Someone") return "?";
-  const parts = cleaned.split(/\s+/).filter(Boolean);
-  const a = parts[0]?.[0] || "";
-  const b = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  const letters = `${a}${b}`.toUpperCase();
-  return letters || "?";
+  return neonInitial(name);
 }
 
 function displayOrDash(value?: string | number | null): string {
@@ -58,6 +65,48 @@ function collectPhotos(firestoreUser: UserProfile | null, hint: CallPartnerHint 
   }
   add(hint?.avatar);
   return out;
+}
+
+function genderLabel(raw?: string | null): string | null {
+  if (!raw || !raw.trim()) return null;
+  const v = raw.trim().toLowerCase();
+  if (v === "man" || v === "male") return "Male";
+  if (v === "woman" || v === "female") return "Female";
+  if (v === "prefer not to say" || v === "hidden") return "Prefer not to say";
+  return raw.trim();
+}
+
+function genderMark(label: string): string {
+  if (label === "Male") return "♂";
+  if (label === "Female") return "♀";
+  return "⚥";
+}
+
+function YouNeonBadgeMark() {
+  return (
+    <span className="yn-preview-badge" title="YouNeon Badge" aria-label="YouNeon Badge">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path
+          d="M12 2.4 4.6 5.6v6.2c0 4.7 3.1 8.9 7.4 9.8 4.3-.9 7.4-5.1 7.4-9.8V5.6L12 2.4z"
+          fill="url(#yn-badge-fill)"
+        />
+        <path
+          d="M9.2 12.1 11 14l3.8-4.2"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <defs>
+          <linearGradient id="yn-badge-fill" x1="4" y1="3" x2="20" y2="21">
+            <stop stopColor="#c084fc" />
+            <stop offset="1" stopColor="#ec4899" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </span>
+  );
 }
 
 export function mergeRemoteProfile(
@@ -86,22 +135,28 @@ export function mergeRemoteProfile(
     typeof firestoreUser?.giftsReceivedCount === "number" && firestoreUser.giftsReceivedCount >= 0
       ? firestoreUser.giftsReceivedCount
       : 0;
+  const hideGender = !!(firestoreUser as UserProfile | null)?.hideGender;
+  const genderRaw = hideGender ? undefined : firestoreUser?.gender || hint?.gender;
 
   return {
     name: name || "—",
     age,
     location,
+    countryFlag: countryToFlag(location) || countryToFlag(hint?.countryFlag) || "",
+    countryName: countryLabel(location) || location,
     bio,
     photos,
     heroPhoto: photos[0] || "",
     giftsReceived: gifts,
     initials: initialsFrom(name || ""),
     interests: firestoreUser?.interests?.length ? firestoreUser.interests : hint?.interests || [],
+    languages: Array.isArray(firestoreUser?.languages) ? firestoreUser!.languages.filter(Boolean) : [],
     youneonBadge: badgeFromUserDoc(firestoreUser as unknown as Record<string, unknown>),
-    hideGender: !!(firestoreUser as UserProfile | null)?.hideGender,
-    gender: (firestoreUser as UserProfile | null)?.hideGender
-      ? undefined
-      : firestoreUser?.gender || hint?.gender,
+    hideGender,
+    gender: genderLabel(genderRaw),
+    neonId: (firestoreUser?.neonId || "").trim(),
+    reactions: firestoreUser?.reactionsReceived,
+    userId: firestoreUser?.id || firestoreUser?.uid || firestoreUser?.piUsername || hint?.userId || "",
   };
 }
 
@@ -140,46 +195,113 @@ export function RemoteProfileAvatar({
   );
 }
 
-export function RemoteProfileModal({
+export function ProfilePreviewSheet({
   open,
   onClose,
-  firestoreUser,
+  userId,
+  viewerId,
+  seed,
   hint,
   dailyName,
-  viewerId,
+  isSelf,
   standalone = false,
+  onMessage,
   onReport,
   onBlock,
 }: {
   open: boolean;
   onClose: () => void;
-  firestoreUser: UserProfile | null;
-  hint: CallPartnerHint | null;
-  dailyName?: string;
+  userId?: string;
   viewerId?: string;
+  seed?: UserProfile | null;
+  hint?: CallPartnerHint | null;
+  dailyName?: string;
+  isSelf?: boolean;
   standalone?: boolean;
+  onMessage?: (user: ProfileChatTarget) => void;
   onReport?: () => void;
   onBlock?: () => void;
 }) {
-  const profile = useMemo(
-    () => mergeRemoteProfile(firestoreUser, hint, dailyName),
-    [firestoreUser, hint, dailyName]
-  );
+  const [live, setLive] = useState<UserProfile | null>(null);
+  const [online, setOnline] = useState(false);
+  const [activePhoto, setActivePhoto] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [ensuredId, setEnsuredId] = useState("");
+  const [reporting, setReporting] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const touchX = useRef<number | null>(null);
+
+  const resolvedId = (userId || hint?.userId || seed?.id || seed?.uid || seed?.piUsername || "").trim();
+  const self = isSelf ?? (!!viewerId && !!resolvedId && viewerId === resolvedId);
+
+  const followMe: FollowSnapshot = { id: viewerId || "" };
+  const { followingIds, busyId, toggleFollow } = useFollowGraph(viewerId);
+
+  useEffect(() => {
+    if (!open || !resolvedId) {
+      setLive(null);
+      return;
+    }
+    return subscribeToUserProfile(resolvedId, setLive);
+  }, [open, resolvedId]);
+
+  useEffect(() => {
+    if (!open || !resolvedId) {
+      setOnline(false);
+      return;
+    }
+    return subscribeToOnlineMap([resolvedId], (map) => setOnline(!!map[resolvedId]));
+  }, [open, resolvedId]);
 
   useEffect(() => {
     if (!open) return;
-    const viewedId = firestoreUser?.id || firestoreUser?.uid || hint?.userId;
-    if (!viewerId || !viewedId) return;
-    void recordProfileView({ viewerId, viewedUserId: viewedId });
-  }, [open, viewerId, firestoreUser?.id, firestoreUser?.uid, hint?.userId]);
+    if (!viewerId || !resolvedId || self) return;
+    void recordProfileView({ viewerId, viewedUserId: resolvedId });
+  }, [open, viewerId, resolvedId, self]);
 
-  const [activePhoto, setActivePhoto] = useState(0);
+  const mergedUser = useMemo(() => {
+    if (!seed && !live) return live;
+    const compact: Record<string, unknown> = {};
+    if (seed) {
+      for (const [k, v] of Object.entries(seed)) {
+        if (v !== undefined && v !== null) compact[k] = v;
+      }
+    }
+    return { ...(live || {}), ...compact } as UserProfile;
+  }, [live, seed]);
+
+  const profile = useMemo(
+    () => mergeRemoteProfile(mergedUser, hint || null, dailyName),
+    [mergedUser, hint, dailyName]
+  );
+
+  const neonId = (profile.neonId || (self ? ensuredId : "")).trim();
+
+  useEffect(() => {
+    if (!open || !self || !resolvedId) return;
+    if (profile.neonId) {
+      setEnsuredId(profile.neonId);
+      return;
+    }
+    let cancelled = false;
+    void ensureNeonId(resolvedId, profile.neonId).then((id) => {
+      if (!cancelled) setEnsuredId(id);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, self, resolvedId, profile.neonId]);
+
   const gallery = profile.photos;
   const current = gallery[Math.min(activePhoto, Math.max(0, gallery.length - 1))] || "";
+  const reactionTotal = totalReactions(profile.reactions);
 
   useEffect(() => {
     setActivePhoto(0);
-  }, [profile.heroPhoto, open]);
+    setCopied(false);
+    setShowReport(false);
+  }, [profile.heroPhoto, open, resolvedId]);
 
   useEffect(() => {
     if (!open) return;
@@ -190,116 +312,370 @@ export function RemoteProfileModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  const cyclePhoto = useCallback(
+    (dir: number) => {
+      if (gallery.length < 2) return;
+      setActivePhoto((i) => (i + dir + gallery.length) % gallery.length);
+    },
+    [gallery.length]
+  );
+
+  const copyCode = async () => {
+    if (!neonId) return;
+    try {
+      await navigator.clipboard.writeText(neonId);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleFollow = () => {
+    if (!viewerId || !resolvedId || self) return;
+    void toggleFollow(followMe, {
+      id: resolvedId,
+      name: profile.name,
+      photo: profile.heroPhoto,
+      country: profile.location,
+      age: profile.age,
+    });
+  };
+
+  const handleMessage = () => {
+    if (!resolvedId || !onMessage) return;
+    onMessage({
+      id: resolvedId,
+      name: profile.name === "—" ? resolvedId : profile.name,
+      avatar: profile.name,
+      photo: profile.heroPhoto,
+      country: profile.location,
+      countryFlag: profile.countryFlag,
+      isOnline: online,
+    });
+    onClose();
+  };
+
+  const handleBlockClick = async () => {
+    if (onBlock) {
+      onBlock();
+      return;
+    }
+    if (!viewerId || !resolvedId || self) return;
+    setBlocking(true);
+    try {
+      await blockUserForMe(viewerId, {
+        id: resolvedId,
+        name: profile.name,
+        photo: profile.heroPhoto,
+      });
+    } catch {
+      /* ignore */
+    }
+    setBlocking(false);
+    onClose();
+  };
+
+  const handleReportSubmit = async (input: {
+    reasonId: ReportReasonId;
+    reasonLabel: string;
+    notes: string;
+    alsoBlock: boolean;
+  }) => {
+    if (!viewerId || !resolvedId) return;
+    setReporting(true);
+    try {
+      await submitUserReport({
+        reporterId: viewerId,
+        reportedUserId: resolvedId,
+        reportedName: profile.name,
+        reasonId: input.reasonId,
+        reasonLabel: input.reasonLabel,
+        notes: input.notes,
+      });
+      if (input.alsoBlock) {
+        await blockUserForMe(viewerId, {
+          id: resolvedId,
+          name: profile.name,
+          photo: profile.heroPhoto,
+        });
+      }
+    } catch (e) {
+      console.warn("Report failed", e);
+    }
+    setReporting(false);
+    setShowReport(false);
+    onClose();
+  };
+
   if (!open) return null;
+
+  const following = !!(resolvedId && followingIds.has(resolvedId));
+  const countryLine = profile.countryFlag || profile.countryName ? (
+    <>
+      {profile.countryFlag ? <span>{profile.countryFlag}</span> : null}
+      <span>{displayOrDash(profile.countryName || profile.location)}</span>
+    </>
+  ) : (
+    <span>—</span>
+  );
 
   return (
     <div
-      className={`yn-remote-profile-overlay${standalone ? " yn-remote-profile-overlay--standalone" : ""}`}
+      className={`yn-preview-overlay${standalone ? " yn-preview-overlay--standalone" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="yn-remote-profile-name"
+      aria-labelledby="yn-preview-name"
       onClick={onClose}
+      data-testid="profile-preview-sheet"
     >
-      <div
-        className="yn-remote-profile-card"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          className="yn-remote-profile-close"
-          onClick={onClose}
-          aria-label="Close profile"
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </button>
-
-        <div className="yn-remote-profile-hero">
-          {isPhotoSrc(current) ? (
-            <img src={current} alt="" />
-          ) : (
-            <div className="yn-remote-profile-hero-fallback">
-              <span>{profile.initials}</span>
-            </div>
-          )}
-          <div className="yn-remote-profile-hero-fade" />
-        </div>
-
-        {gallery.length > 1 && (
-          <div className="yn-remote-profile-thumbs" aria-label="Photos">
-            {gallery.map((src, i) => (
-              <button
-                key={`${i}-${src.slice(0, 24)}`}
-                type="button"
-                className={`yn-remote-profile-thumb ${i === activePhoto ? "is-active" : ""}`}
-                onClick={() => setActivePhoto(i)}
-                aria-label={`Photo ${i + 1}`}
-              >
-                <img src={src} alt="" />
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="yn-remote-profile-body">
-          <h2 id="yn-remote-profile-name" className="yn-remote-profile-name">
-            {profile.name}
-            {profile.youneonBadge ? (
-              <span className="yn-badge-pill" title="YouNeon Badge">
-                Badge
-              </span>
-            ) : null}
-          </h2>
-          <dl className="yn-remote-profile-meta">
-            <div>
-              <dt>Age</dt>
-              <dd>{displayOrDash(profile.age)}</dd>
-            </div>
-            <div>
-              <dt>Location</dt>
-              <dd>{displayOrDash(profile.location)}</dd>
-            </div>
-            <div>
-              <dt>Gifts</dt>
-              <dd>{profile.giftsReceived}</dd>
-            </div>
-          </dl>
-
-          <div className="yn-remote-profile-section">
-            <p className="yn-remote-profile-label">About</p>
-            <p className="yn-remote-profile-bio">{displayOrDash(profile.bio)}</p>
-          </div>
-
-          {profile.interests.length > 0 && (
-            <div className="yn-remote-profile-section">
-              <p className="yn-remote-profile-label">Interests</p>
-              <div className="yn-remote-profile-tags">
-                {profile.interests.map((tag) => (
-                  <span key={tag} className="yn-remote-profile-tag">
-                    {tag}
-                  </span>
+      <div className="yn-preview-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="yn-preview-handle" aria-hidden="true" />
+        <div className="yn-preview-scroll">
+          <div
+            className="yn-preview-photo"
+            onTouchStart={(e) => {
+              touchX.current = e.changedTouches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(e) => {
+              const start = touchX.current;
+              touchX.current = null;
+              if (start == null) return;
+              const dx = (e.changedTouches[0]?.clientX ?? start) - start;
+              if (dx < -40) cyclePhoto(1);
+              else if (dx > 40) cyclePhoto(-1);
+            }}
+            onClick={() => {
+              if (gallery.length > 1) cyclePhoto(1);
+            }}
+          >
+            {gallery.length > 1 ? (
+              <div className="yn-preview-segments" aria-hidden="true">
+                {gallery.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`yn-preview-segment ${i === activePhoto ? "is-on" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePhoto(i);
+                    }}
+                    aria-label={`Photo ${i + 1}`}
+                  />
                 ))}
               </div>
-            </div>
-          )}
+            ) : null}
+            {online ? (
+              <span className={`yn-preview-online${gallery.length > 1 ? "" : " is-solo"}`}>
+                <span className="yn-preview-online-dot" />
+                Online
+              </span>
+            ) : null}
+            {isPhotoSrc(current) ? (
+              <img src={current} alt="" />
+            ) : (
+              <div className="yn-preview-photo-fallback">
+                <NeonAvatar src="" name={profile.name} size={96} showPhoto={false} />
+              </div>
+            )}
+          </div>
 
-          {(onReport || onBlock) && (
-            <div className="yn-remote-profile-actions">
-              {onReport ? (
-                <button type="button" className="yn-remote-profile-action is-report" onClick={onReport}>
-                  Report
+          <div className="yn-preview-body">
+            <h2 id="yn-preview-name" className="yn-preview-name">
+              <span>
+                {profile.name}
+                {profile.age ? <span className="yn-preview-age">, {profile.age}</span> : null}
+              </span>
+              {profile.youneonBadge ? <YouNeonBadgeMark /> : null}
+            </h2>
+
+            <p className="yn-preview-row">{countryLine}</p>
+
+            {!profile.hideGender && profile.gender ? (
+              <p className="yn-preview-row">
+                <span className="yn-preview-gender-mark">{genderMark(profile.gender)}</span>
+                {profile.gender}
+              </p>
+            ) : null}
+
+            <p className="yn-preview-row yn-preview-code">
+              <span className="yn-preview-id-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                  <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="8.5" cy="12" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+                  <path d="M12.5 10.5h6M12.5 13.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className="text-white/45">Code</span>
+              <span className="yn-preview-code-value">{neonId || "—"}</span>
+              {neonId ? (
+                <button
+                  type="button"
+                  className="yn-preview-copy"
+                  onClick={() => void copyCode()}
+                  aria-label="Copy Neon ID"
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
                 </button>
               ) : null}
-              {onBlock ? (
-                <button type="button" className="yn-remote-profile-action is-block" onClick={onBlock}>
-                  Block
+            </p>
+
+            {profile.interests.length > 0 ? (
+              <section className="yn-preview-section">
+                <h3>Interests</h3>
+                <div className="yn-preview-tags">
+                  {profile.interests.map((tag) => (
+                    <span key={tag} className="yn-preview-tag">
+                      <span>{interestIcon(tag)}</span>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {profile.languages.length > 0 ? (
+              <section className="yn-preview-section">
+                <h3>Languages</h3>
+                <div className="yn-preview-tags">
+                  {profile.languages.map((lang) => (
+                    <span key={lang} className="yn-preview-tag">
+                      <Languages size={13} className="text-white/45" />
+                      {languageLabel(lang)}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="yn-preview-section">
+              <h3>About me</h3>
+              <div className="yn-preview-about">{displayOrDash(profile.bio)}</div>
+            </section>
+
+            <section className="yn-preview-section">
+              <h3>Reactions Received</h3>
+              <div className="yn-preview-reactions">
+                <p className="yn-preview-reactions-sum">
+                  <span className="yn-preview-smile" aria-hidden="true">
+                    😊
+                  </span>
+                  {reactionTotal} video chat reactions earned!
+                </p>
+                <ul>
+                  {REACTION_TYPES.map((r) => (
+                    <li key={r.id}>
+                      <span>
+                        {r.emoji} {r.id}
+                      </span>
+                      <span className="tabular-nums">{reactionCount(profile.reactions, r.id)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {!self ? (
+          <div className="yn-preview-actions">
+            <div className="yn-preview-actions-row">
+              <button
+                type="button"
+                disabled={!viewerId || !resolvedId || busyId === resolvedId}
+                onClick={handleFollow}
+                className={`yn-preview-btn ${following ? "is-ghost" : "is-primary"}`}
+              >
+                <UserPlus size={15} />
+                {following ? "Following" : "Follow"}
+              </button>
+              {onMessage ? (
+                <button type="button" onClick={handleMessage} className="yn-preview-btn is-message">
+                  <MessageCircle size={15} />
+                  Message
                 </button>
               ) : null}
             </div>
-          )}
-        </div>
+            <div className="yn-preview-actions-row">
+              <button
+                type="button"
+                className="yn-preview-btn is-ghost"
+                onClick={() => {
+                  if (onReport) onReport();
+                  else setShowReport(true);
+                }}
+              >
+                <ShieldAlert size={15} />
+                Report
+              </button>
+              <button
+                type="button"
+                className="yn-preview-btn is-danger"
+                disabled={blocking}
+                onClick={() => void handleBlockClick()}
+              >
+                <Ban size={15} />
+                Block
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
+
+      {showReport ? (
+        <div className="yn-preview-report" onClick={(e) => e.stopPropagation()}>
+          <CallReportSheet>
+            userName={profile.name === "—" ? "this person" : profile.name}
+            submitting={reporting}
+            onClose={() => setShowReport(false)}
+            onSubmit={(payload) => void handleReportSubmit(payload)}
+          />
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+/** @deprecated Use ProfilePreviewSheet — same UI. */
+export function RemoteProfileModal({
+  open,
+  onClose,
+  firestoreUser,
+  hint,
+  dailyName,
+  viewerId,
+  standalone = false,
+  onReport,
+  onBlock,
+  onMessage,
+  isSelf,
+}: {
+  open: boolean;
+  onClose: () => void;
+  firestoreUser: UserProfile | null;
+  hint: CallPartnerHint | null;
+  dailyName?: string;
+  viewerId?: string;
+  standalone?: boolean;
+  onReport?: () => void;
+  onBlock?: () => void;
+  onMessage?: (user: ProfileChatTarget) => void;
+  isSelf?: boolean;
+}) {
+  return (
+    <ProfilePreviewSheet
+      open={open}
+      onClose={onClose}
+      userId={firestoreUser?.id || firestoreUser?.uid || firestoreUser?.piUsername || hint?.userId}
+      viewerId={viewerId}
+      seed={firestoreUser}
+      hint={hint}
+      dailyName={dailyName}
+      isSelf={isSelf}
+      standalone={standalone}
+      onMessage={onMessage}
+      onReport={onReport}
+      onBlock={onBlock}
+    />
   );
 }
