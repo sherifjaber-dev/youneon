@@ -1,24 +1,62 @@
 "use client";
-import { useState, useEffect } from "react";
-import { MessageCircle, Users, Search, Camera } from "lucide-react";
+
+import { useEffect, useMemo, useState } from "react";
+import { Camera, ChevronRight, MessageCircle, UserPlus } from "lucide-react";
 import { subscribeToConversations } from "@/lib/firestore-service";
+import { NeonAvatar } from "@/components/neon-avatar";
+import { FollowersScreen, type ChatTarget } from "@/components/followers-screen";
+import { useFollowGraph } from "@/hooks/use-follow-graph";
+import { countryToFlag } from "@/lib/countries";
+import type { FollowSnapshot } from "@/lib/follow-service";
 
 interface MessagesScreenProps {
   currentUserId?: string;
   hasOwnPhoto?: boolean;
-  onOpenChat?: (user: {
-    id: string;
-    name: string;
-    avatar: string;
-    photo?: string;
-    countryFlag?: string;
-    isOnline?: boolean;
-  }) => void;
+  currentUser?: FollowSnapshot;
+  onOpenChat?: (user: ChatTarget) => void;
 }
 
-export function MessagesScreen({ currentUserId, hasOwnPhoto = false, onOpenChat }: MessagesScreenProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+type PeopleView = "inbox" | "followers" | "following";
+
+function formatConvDate(ts: unknown) {
+  if (!ts) return "";
+  const d =
+    typeof ts === "object" && ts !== null && "toDate" in ts
+      ? (ts as { toDate: () => Date }).toDate()
+      : new Date(ts as string | number | Date);
+  if (Number.isNaN(d.getTime())) return "";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const now = new Date();
+  const sameDay =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+  if (sameDay) {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+export function MessagesScreen({
+  currentUserId,
+  hasOwnPhoto = false,
+  currentUser,
+  onOpenChat,
+}: MessagesScreenProps) {
   const [conversations, setConversations] = useState<any[]>([]);
+  const [peopleView, setPeopleView] = useState<PeopleView>("inbox");
+  const me: FollowSnapshot = {
+    id: currentUser?.id || currentUserId || "",
+    name: currentUser?.name,
+    photo: currentUser?.photo,
+    avatar: currentUser?.avatar,
+    country: currentUser?.country,
+    age: currentUser?.age,
+  };
+  const { following, followers, followingIds, online, busyId, toggleFollow } =
+    useFollowGraph(currentUserId);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -26,131 +64,243 @@ export function MessagesScreen({ currentUserId, hasOwnPhoto = false, onOpenChat 
     return () => unsub();
   }, [currentUserId]);
 
-  const formatTime = (ts: any) => {
-    if (!ts) return "";
-    const d = ts.toDate ? ts.toDate() : new Date(ts);
-    const now = new Date();
-    const diff = (now.getTime() - d.getTime()) / 1000;
-    if (diff < 60) return "Just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return d.toLocaleDateString();
+  const handleToggleFollow = (person: { id: string; name: string; photo: string; country: string; age?: number }) => {
+    if (!me.id) return;
+    toggleFollow(me, person);
   };
 
-  const filtered = conversations.filter((c) => {
-    if (!currentUserId) return false;
-    const otherId = c.participants?.find((p: string) => p !== currentUserId);
-    const name = c.participantNames?.[otherId] || "";
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
-
-  const handleClick = (conv: any) => {
-    if (!currentUserId) return;
-    const otherId = conv.participants?.find((p: string) => p !== currentUserId);
-    if (!otherId) return;
+  const openChat = (user: ChatTarget) => {
     onOpenChat?.({
-      id: otherId,
-      name: conv.participantNames?.[otherId] || "User",
-      avatar: conv.participantAvatars?.[otherId] || "🙂",
-      photo: conv.participantPhotos?.[otherId] || "",
-      countryFlag: conv.participantFlags?.[otherId] || "",
-      isOnline: false,
+      ...user,
+      countryFlag: user.countryFlag || countryToFlag(user.country),
     });
   };
 
+  const recentFollowerAvatars = useMemo(() => followers.slice(0, 3), [followers]);
+  const peopleById = useMemo(() => {
+    const map: Record<string, (typeof following)[number]> = {};
+    [...following, ...followers].forEach((p) => {
+      map[p.id] = p;
+    });
+    return map;
+  }, [following, followers]);
+
+  if (peopleView !== "inbox") {
+    return (
+      <FollowersScreen
+        key={peopleView}
+        initialTab={peopleView}
+        currentUserId={currentUserId || ""}
+        hasOwnPhoto={hasOwnPhoto}
+        followers={followers}
+        following={following}
+        followingIds={followingIds}
+        online={online}
+        busyId={busyId}
+        onBack={() => setPeopleView("inbox")}
+        onToggleFollow={handleToggleFollow}
+        onOpenChat={openChat}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-full bg-[#0f0117] pb-4 text-white">
-      <div className="mb-4 px-4 pt-3">
-        <div className="mb-3 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">Messages</h1>
-          <button className="rounded-lg p-1.5 text-purple-300 transition hover:bg-white/6">
-            <Users size={18} />
-          </button>
-        </div>
+    <div className="min-h-full bg-[#0f0117] pb-6 text-white">
+      <div className="px-4 pt-3">
+        <h1 className="text-[32px] font-bold leading-none tracking-tight">Message</h1>
+      </div>
 
-        {!hasOwnPhoto && (
-          <div className="mb-3 flex items-center gap-3 rounded-xl border border-purple-500/25 bg-purple-900/25 p-3" data-testid="messages-photo-gate">
-            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-purple-700/50">
-              <Camera size={16} className="text-white" />
-            </div>
-            <div className="text-sm">
-              <p className="font-semibold text-white">Add your profile photo</p>
-              <p className="text-[12px] text-white/55">Upload a photo to see others’ profile pictures</p>
-            </div>
+      {!hasOwnPhoto && (
+        <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-purple-500/25 bg-purple-900/20 p-3" data-testid="messages-photo-gate">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600">
+            <Camera size={16} className="text-white" />
           </div>
-        )}
+          <div className="text-sm">
+            <p className="font-semibold text-white">Add your profile photo</p>
+            <p className="text-[12px] text-white/50">Upload a photo to see others’ profile pictures</p>
+          </div>
+        </div>
+      )}
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" size={16} />
-          <input
-            type="text"
-            placeholder="Search conversations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-10 text-[15px] text-white placeholder:text-white/35 focus:border-purple-500/50 focus:outline-none"
-            data-testid="messages-search-input"
-          />
+      <div className="mt-5">
+        <button
+          type="button"
+          onClick={() => setPeopleView("following")}
+          className="flex h-11 items-center gap-0.5 px-4 text-[13px] font-medium text-white/40"
+          data-testid="follow-section-link"
+        >
+          Follow
+          <ChevronRight size={14} />
+        </button>
+
+        <div
+          className="mt-3 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+        >
+          {following.length === 0 ? (
+            <button
+              type="button"
+              onClick={() => setPeopleView("following")}
+              className="flex h-[188px] w-[118px] shrink-0 flex-col items-center justify-center rounded-2xl border border-dashed border-purple-400/25 bg-white/[0.03] px-3 text-center"
+            >
+              <UserPlus size={22} className="mb-2 text-pink-300/80" />
+              <p className="text-[12px] font-medium leading-snug text-white/45">
+                People you follow appear here
+              </p>
+            </button>
+          ) : (
+            following.map((person) => (
+              <div
+                key={person.id}
+                className="flex w-[118px] shrink-0 flex-col items-center rounded-2xl border border-white/8 bg-white/[0.045] px-2.5 pb-3 pt-3"
+                data-testid={`follow-card-${person.id}`}
+              >
+                <NeonAvatar
+                  src={person.photo}
+                  name={person.name}
+                  size={64}
+                  showPhoto={hasOwnPhoto}
+                  online={!!online[person.id]}
+                />
+                <p className="mt-2 w-full truncate text-center text-[13px] font-bold text-white">
+                  {person.name}
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    openChat({
+                      id: person.id,
+                      name: person.name,
+                      avatar: person.name,
+                      photo: person.photo,
+                      country: person.country,
+                      countryFlag: countryToFlag(person.country),
+                      isOnline: !!online[person.id],
+                    })
+                  }
+                  className="mt-2 flex h-11 w-full items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-white/80 transition active:scale-[0.98]"
+                >
+                  Message
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      <div className="px-4">
-        <div className="mb-3 flex items-center justify-between px-0.5">
-          <span className="text-[12px] font-medium text-white/45">Inbox</span>
-          <span className="text-[12px] text-purple-300/80">{filtered.length} conversations</span>
-        </div>
+      <div className="mt-6 px-4">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">Messages</p>
 
-        {filtered.length === 0 ? (
-          <div className="py-12 text-center">
-            <MessageCircle size={36} className="mx-auto mb-3 text-white/20" />
-            <p className="text-white/55">No conversations yet</p>
-            <p className="mt-1.5 text-sm text-white/35">
-              Go to History and tap the message icon to start chatting
+        <button
+          type="button"
+          onClick={() => setPeopleView("followers")}
+          className="mt-3 flex min-h-[72px] w-full items-center gap-3 py-3 text-left"
+          data-testid="see-my-followers"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500/90 to-fuchsia-500/90 shadow-[0_4px_14px_rgba(168,85,247,0.35)]">
+            <UserPlus size={22} className="text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center text-[16px] font-bold text-white">
+              See My Followers
+              <ChevronRight size={16} className="ml-0.5 text-white/50" />
+            </p>
+            <p className="mt-0.5 text-[12px] leading-snug text-white/40">
+              See who just followed you. Start a chat!
+            </p>
+          </div>
+          {recentFollowerAvatars.length > 0 && (
+            <div className="flex shrink-0 pr-1">
+              {recentFollowerAvatars.map((person, i) => (
+                <div
+                  key={person.id}
+                  className="relative"
+                  style={{ marginLeft: i === 0 ? 0 : -10, zIndex: 3 - i }}
+                >
+                  <div className="rounded-full ring-2 ring-[#0f0117]">
+                    <NeonAvatar
+                      src={person.photo}
+                      name={person.name}
+                      size={28}
+                      showPhoto={hasOwnPhoto}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </button>
+
+        {conversations.length === 0 ? (
+          <div className="py-14 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-600/35 to-pink-600/35 ring-1 ring-pink-400/25">
+              <MessageCircle size={26} className="text-pink-200/80" />
+            </div>
+            <p className="text-[15px] font-semibold text-white/80">No conversations yet</p>
+            <p className="mx-auto mt-1.5 max-w-xs text-[13px] text-white/40">
+              After a video chat, tap Message in History to start a real thread.
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((conv) => {
+          <div className="divide-y divide-white/[0.06]">
+            {conversations.map((conv) => {
               const otherId = conv.participants?.find((p: string) => p !== currentUserId);
-              const name = conv.participantNames?.[otherId] || "User";
-              const avatar = conv.participantAvatars?.[otherId] || "🙂";
-              const photo = conv.participantPhotos?.[otherId] || "";
-              const flag = conv.participantFlags?.[otherId] || "";
+              if (!otherId) return null;
+              const known = peopleById[otherId];
+              const name = conv.participantNames?.[otherId] || known?.name || "User";
+              const photo = conv.participantPhotos?.[otherId] || known?.photo || "";
+              const flag = countryToFlag(
+                conv.participantFlags?.[otherId] || known?.country || ""
+              );
               const unread = conv.unreadCount?.[currentUserId || ""] || 0;
-              const showPhoto = hasOwnPhoto && !!photo;
               return (
-                <div
+                <button
                   key={conv.id}
-                  onClick={() => handleClick(conv)}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3 transition-all hover:border-purple-500/40 active:scale-[0.99]"
+                  type="button"
+                  onClick={() =>
+                    openChat({
+                      id: otherId,
+                      name,
+                      avatar: name,
+                      photo,
+                      countryFlag: flag,
+                      isOnline: !!online[otherId],
+                    })
+                  }
+                  className="flex min-h-[76px] w-full items-start gap-3 py-3.5 text-left transition active:opacity-80"
                   data-testid={`conversation-${otherId}`}
                 >
-                  <div className="relative flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-lg">
-                    {showPhoto ? (
-                      <img src={photo} alt={name} className="h-full w-full object-cover" data-testid={`avatar-photo-${otherId}`} />
-                    ) : (
-                      <span data-testid={`avatar-emoji-${otherId}`}>{avatar}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-white" data-testid={`conversation-name-${otherId}`}>{name}</span>
-                        {flag && <span className="text-lg">{flag}</span>}
-                      </div>
-                      <span className="text-xs text-white/35">{formatTime(conv.lastMessageTime)}</span>
+                  <NeonAvatar
+                    src={photo}
+                    name={name}
+                    size={64}
+                    showPhoto={hasOwnPhoto}
+                    online={!!online[otherId]}
+                  />
+                  <div className="min-w-0 flex-1 pt-0.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="flex min-w-0 items-center gap-1.5 truncate text-[16px] font-bold text-white">
+                        <span className="truncate" data-testid={`conversation-name-${otherId}`}>
+                          {name}
+                        </span>
+                        {flag ? <span className="shrink-0 text-[15px]">{flag}</span> : null}
+                      </p>
+                      <span className="shrink-0 pt-0.5 text-[11px] text-white/35">
+                        {formatConvDate(conv.lastMessageTime)}
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-sm text-white/45 truncate pr-4">
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <p className="truncate text-[13px] text-white/40">
                         {conv.lastMessage || "Start the conversation..."}
                       </p>
                       {unread > 0 && (
-                        <div className="bg-pink-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[18px] text-center">
+                        <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-pink-500 px-1.5 text-[10px] font-bold text-white">
                           {unread}
-                        </div>
+                        </span>
                       )}
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

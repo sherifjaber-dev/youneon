@@ -1,22 +1,50 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Heart, MessageSquare } from "lucide-react";
+import { MessageSquare, UserPlus } from "lucide-react";
 import { OnlineBadge } from "@/components/online-badge";
+import { NeonAvatar } from "@/components/neon-avatar";
 import { subscribeToHistory } from "@/lib/firestore-service";
+import { subscribeToOnlineMap } from "@/lib/follow-service";
+import { useFollowGraph } from "@/hooks/use-follow-graph";
+import { countryToFlag } from "@/lib/countries";
+import type { FollowSnapshot } from "@/lib/follow-service";
 
 interface HistoryScreenProps {
   currentUserId?: string;
-  onOpenChat?: (user: { id: string; name: string; avatar: string; countryFlag?: string; isOnline?: boolean }) => void;
+  hasOwnPhoto?: boolean;
+  currentUser?: FollowSnapshot;
+  onOpenChat?: (user: {
+    id: string;
+    name: string;
+    avatar: string;
+    photo?: string;
+    countryFlag?: string;
+    country?: string;
+    isOnline?: boolean;
+  }) => void;
 }
 
 const MESSAGE_COST = 50;
 
-export function HistoryScreen({ currentUserId, onOpenChat }: HistoryScreenProps) {
+export function HistoryScreen({
+  currentUserId,
+  hasOwnPhoto = false,
+  currentUser,
+  onOpenChat,
+}: HistoryScreenProps) {
   const [history, setHistory] = useState<any[]>([]);
   const [neonBalance, setNeonBalance] = useState(100);
   const [confirmUser, setConfirmUser] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState(false);
   const [online, setOnline] = useState<Record<string, boolean>>({});
+  const me: FollowSnapshot = {
+    id: currentUser?.id || currentUserId || "",
+    name: currentUser?.name,
+    photo: currentUser?.photo,
+    country: currentUser?.country,
+    age: currentUser?.age,
+  };
+  const { followingIds, busyId, toggleFollow } = useFollowGraph(currentUserId);
 
   useEffect(() => {
     const bal = localStorage.getItem("youneon_neon_balance");
@@ -24,12 +52,14 @@ export function HistoryScreen({ currentUserId, onOpenChat }: HistoryScreenProps)
     if (!currentUserId) return;
     const unsub = subscribeToHistory(currentUserId, (items) => {
       setHistory(items);
-      const s: Record<string, boolean> = {};
-      items.forEach((u) => (s[u.matchId] = Math.random() > 0.4));
-      setOnline(s);
     });
     return () => unsub();
   }, [currentUserId]);
+
+  useEffect(() => {
+    const ids = history.map((u) => u.matchId).filter(Boolean);
+    return subscribeToOnlineMap(ids, setOnline);
+  }, [history]);
 
   const formatTime = (ts: any) => {
     if (!ts) return "Just now";
@@ -57,8 +87,10 @@ export function HistoryScreen({ currentUserId, onOpenChat }: HistoryScreenProps)
     onOpenChat?.({
       id: u.matchId,
       name: u.name,
-      avatar: u.avatar,
-      countryFlag: u.countryFlag,
+      avatar: u.avatar || u.name,
+      photo: u.photo || "",
+      countryFlag: countryToFlag(u.countryFlag || u.country),
+      country: u.country,
       isOnline: online[u.matchId] || false,
     });
   };
@@ -77,31 +109,65 @@ export function HistoryScreen({ currentUserId, onOpenChat }: HistoryScreenProps)
             <p className="mt-1.5 text-sm text-white/35">Start a random chat from Discover</p>
           </div>
         ) : (
-          history.map((u) => (
-            <div key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-xl">
-                  {u.avatar}
+          history.map((u) => {
+            const isFollowing = followingIds.has(u.matchId);
+            const flag = countryToFlag(u.countryFlag || u.country);
+            return (
+              <div key={u.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <NeonAvatar
+                    src={u.photo}
+                    name={u.name}
+                    size={44}
+                    showPhoto={hasOwnPhoto}
+                    online={online[u.matchId] || false}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-[15px] font-semibold text-white">{u.name}</p>
+                      {flag ? <span className="text-sm">{flag}</span> : null}
+                      <OnlineBadge isOnline={online[u.matchId] || false} />
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-[12px] text-white/40">
+                      <span>{formatTime(u.timestamp)}</span>
+                      <span>•</span>
+                      <span>{u.duration}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-[15px] font-semibold text-white">{u.name}</p>
-                    <span className="text-sm">{u.countryFlag}</span>
-                    <OnlineBadge isOnline={online[u.matchId] || false} />
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-[12px] text-white/40">
-                    <span>{formatTime(u.timestamp)}</span>
-                    <span>•</span>
-                    <span>{u.duration}</span>
-                  </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    disabled={busyId === u.matchId || !me.id}
+                    onClick={() =>
+                      toggleFollow(me, {
+                        id: u.matchId,
+                        name: u.name,
+                        photo: u.photo || "",
+                        country: u.country || u.countryFlag || "",
+                      })
+                    }
+                    className={`flex h-11 w-11 items-center justify-center rounded-lg text-white ${
+                      isFollowing
+                        ? "border border-white/15 bg-white/10"
+                        : "bg-gradient-to-r from-purple-500 to-pink-500"
+                    }`}
+                    aria-label={isFollowing ? "Unfollow" : "Follow"}
+                  >
+                    <UserPlus size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmUser(u)}
+                    className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-600 text-white"
+                    aria-label="Message"
+                  >
+                    <MessageSquare size={15} />
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-1.5">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white" aria-label="Like"><Heart size={15} /></button>
-                <button onClick={() => setConfirmUser(u)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white" aria-label="Message"><MessageSquare size={15} /></button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

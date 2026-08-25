@@ -10,6 +10,7 @@ import { TopBar } from "@/components/top-bar";
 import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
 import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory } from "@/lib/firestore-service";
+import { countryToFlag } from "@/lib/countries";
 import { piAuthService } from "@/lib/pi-auth-service";
 import { VideoCallScreen } from "@/components/video-call-screen";
 import { usePiAuth } from "@/contexts/pi-auth-context";
@@ -391,13 +392,14 @@ export function YouNeonApp() {
           name: currentUser.fullName || "Me",
           avatar: currentUser.avatar || "🙂",
           photo: currentUser.profilePicture || "",
+          flag: countryToFlag(currentUser.country || currentUser.location),
         },
         {
           id: other.id,
           name: other.name,
-          avatar: other.avatar,
+          avatar: other.avatar || other.name || "🙂",
           photo: other.photo || "",
-          flag: other.countryFlag,
+          flag: other.countryFlag || countryToFlag(other.country),
         }
       );
       setActiveChat({ conversationId: cid, otherUser: other });
@@ -517,6 +519,7 @@ export function YouNeonApp() {
         isPremium={isPremium}
         announcements={announcements}
         profilePicture={displayUser.profilePicture}
+        profileName={displayUser.fullName || displayUser.piUsername}
       />
       <div className={`fixed inset-x-0 top-[calc(48px+env(safe-area-inset-top))] bottom-[calc(56px+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (
@@ -536,11 +539,30 @@ export function YouNeonApp() {
           <MessagesScreen
             currentUserId={currentUserId}
             hasOwnPhoto={hasOwnPhoto}
+            currentUser={{
+              id: currentUserId,
+              name: displayUser.fullName,
+              avatar: displayUser.avatar,
+              photo: displayUser.profilePicture,
+              country: displayUser.country || displayUser.location,
+              age: displayUser.age,
+            }}
             onOpenChat={handleOpenChat}
           />
         )}
         {activeTab === "history" && (
-          <HistoryScreen currentUserId={currentUserId} onOpenChat={handleOpenChat} />
+          <HistoryScreen
+            currentUserId={currentUserId}
+            hasOwnPhoto={hasOwnPhoto}
+            currentUser={{
+              id: currentUserId,
+              name: displayUser.fullName,
+              photo: displayUser.profilePicture,
+              country: displayUser.country || displayUser.location,
+              age: displayUser.age,
+            }}
+            onOpenChat={handleOpenChat}
+          />
         )}
       </div>
       <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />

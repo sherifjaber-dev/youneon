@@ -16,6 +16,8 @@ import {
 } from "@/lib/firestore-service";
 
 import { PremiumBadge } from "@/components/premium-badge";
+import { NeonAvatar } from "@/components/neon-avatar";
+import { countryToFlag } from "@/lib/countries";
 
 const UNLOCK_COST = 100;
 
@@ -210,21 +212,20 @@ export function ChatScreen({
           <ArrowLeft className="text-white" size={22} />
         </button>
         <div className="relative">
-          <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-2xl overflow-hidden border-2 border-white/10">
-            {canSeeOtherPhoto ? (
-              <img src={otherUser.photo} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span>{otherUser.avatar}</span>
-            )}
-          </div>
-          {otherUser.isOnline && (
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-purple-950"></div>
-          )}
+          <NeonAvatar
+            src={otherUser.photo}
+            name={otherUser.name}
+            size={44}
+            showPhoto={canSeeOtherPhoto}
+            online={!!otherUser.isOnline}
+          />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="font-semibold text-white truncate">{otherUser.name}</p>
-            {otherUser.countryFlag && <span>{otherUser.countryFlag}</span>}
+            {otherUser.countryFlag ? (
+              <span>{countryToFlag(otherUser.countryFlag) || otherUser.countryFlag}</span>
+            ) : null}
             {isPremium && <PremiumBadge />}
           </div>
           <p className="text-xs text-purple-300/70">

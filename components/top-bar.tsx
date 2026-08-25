@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Crown } from "lucide-react";
 import { NotificationPanel } from "@/components/notification-panel";
+import { NeonAvatar } from "@/components/neon-avatar";
 import type { Announcement } from "@/lib/announcements";
 import { markAnnouncementsRead, unreadAnnouncementCount } from "@/lib/announcements";
 
@@ -13,6 +14,7 @@ interface TopBarProps {
   isPremium?: boolean;
   announcements?: Announcement[];
   profilePicture?: string;
+  profileName?: string;
 }
 
 export function TopBar({
@@ -22,10 +24,10 @@ export function TopBar({
   isPremium = false,
   announcements = [],
   profilePicture = "",
+  profileName = "",
 }: TopBarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [unread, setUnread] = useState(0);
-  const photo = typeof profilePicture === "string" ? profilePicture.trim() : "";
 
   useEffect(() => {
     setUnread(unreadAnnouncementCount(announcements));
@@ -44,22 +46,12 @@ export function TopBar({
         <div className="flex h-12 items-center justify-between gap-2">
           <button
             onClick={onProfileClick}
-            className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-white/20 transition-transform active:scale-95"
+            className="relative h-8 w-8 shrink-0 overflow-visible rounded-full transition-transform active:scale-95"
             aria-label="Open profile"
           >
-            {photo ? (
-              <img
-                src={photo}
-                alt="Your Profile"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 text-sm text-white">
-                👤
-              </div>
-            )}
+            <NeonAvatar src={profilePicture} name={profileName} size={32} showPhoto />
             {isPremium && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#0f0117] bg-gradient-to-br from-amber-400 to-pink-500">
+              <span className="absolute -bottom-0.5 -right-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#0f0117] bg-gradient-to-br from-amber-400 to-pink-500">
                 <Crown size={8} className="text-white" />
               </span>
             )}
