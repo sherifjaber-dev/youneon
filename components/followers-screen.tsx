@@ -71,13 +71,13 @@ export function FollowersScreen({
         };
 
   return (
-    <div className="min-h-full bg-[#0f0117] pb-6 text-white">
-      <div className="sticky top-0 z-10 yn-glass border-b border-white/8 px-2 pt-1">
+    <div className="min-h-full bg-yn-bg pb-6 text-yn-text">
+      <div className="sticky top-0 z-10 yn-glass border-b border-black/6 px-2 pt-1">
         <div className="flex h-12 items-center gap-1">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 transition active:scale-95"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-yn-muted transition active:scale-95"
             aria-label="Back to messages"
             data-testid="followers-back-btn"
           >
@@ -103,7 +103,7 @@ export function FollowersScreen({
                 className={`h-10 min-w-[44px] flex-1 rounded-full text-[13px] font-semibold transition ${
                   active
                     ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_4px_14px_rgba(168,85,247,0.35)]"
-                    : "border border-white/10 bg-white/[0.04] text-white/55"
+                    : "border border-black/8 bg-yn-card text-yn-muted"
                 }`}
                 data-testid={`people-tab-${item.id}`}
               >
@@ -116,11 +116,11 @@ export function FollowersScreen({
 
       {people.length === 0 ? (
         <div className="px-6 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600/40 to-pink-600/40 ring-1 ring-pink-400/30">
-            <Users size={28} className="text-pink-200" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-100 to-pink-100 ring-1 ring-pink-200">
+            <Users size={28} className="text-yn-accent" />
           </div>
-          <p className="text-[16px] font-semibold text-white">{emptyCopy.title}</p>
-          <p className="mx-auto mt-2 max-w-xs text-[13px] leading-relaxed text-white/45">
+          <p className="text-[16px] font-semibold text-yn-text">{emptyCopy.title}</p>
+          <p className="mx-auto mt-2 max-w-xs text-[13px] leading-relaxed text-yn-muted">
             {emptyCopy.body}
           </p>
         </div>
@@ -133,12 +133,12 @@ export function FollowersScreen({
             return (
               <article
                 key={person.id}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-[0_8px_24px_rgba(76,29,149,0.18)]"
+                className="overflow-hidden rounded-2xl border border-black/6 bg-yn-card shadow-[0_8px_24px_rgba(88,28,135,0.08)]"
                 data-testid={`people-card-${person.id}`}
               >
                 <button
                   type="button"
-                  className="relative aspect-[4/5] w-full overflow-hidden bg-[#1a0828]"
+                  className="relative aspect-[4/5] w-full overflow-hidden bg-yn-nav"
                   onClick={() => onOpenProfile?.(person.id)}
                   aria-label={`View ${person.name}'s profile`}
                 >
@@ -158,18 +158,18 @@ export function FollowersScreen({
                     </div>
                   )}
                   {online[person.id] ? (
-                    <span className="absolute bottom-2 right-2 h-3.5 w-3.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_#1a0828]" />
+                    <span className="absolute bottom-2 right-2 h-3.5 w-3.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_var(--yn-card)]" />
                   ) : null}
                 </button>
                 <div className="px-3 pb-3 pt-2.5">
                   <button
                     type="button"
-                    className="w-full truncate text-left text-[15px] font-bold text-white"
+                    className="w-full truncate text-left text-[15px] font-bold text-yn-text"
                     onClick={() => onOpenProfile?.(person.id)}
                   >
                     {person.name}
                     {person.age ? (
-                      <span className="font-semibold text-white/80">, {person.age}</span>
+                      <span className="font-semibold text-yn-muted">, {person.age}</span>
                     ) : null}
                     {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
                   </button>
@@ -180,8 +180,8 @@ export function FollowersScreen({
                       onClick={() => onToggleFollow(person)}
                       className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full text-[12px] font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
                         isFollowing
-                          ? "border border-white/15 bg-white/[0.06] text-white/80"
-                          : "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(168,85,247,0.32)]"
+                          ? "border border-black/10 bg-yn-bg text-yn-muted"
+                          : "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(192,38,211,0.22)]"
                       }`}
                       data-testid={`follow-btn-${person.id}`}
                     >
@@ -191,7 +191,7 @@ export function FollowersScreen({
                     <button
                       type="button"
                       onClick={() => onOpenChat(toChatTarget(person, online[person.id]))}
-                      className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full border border-pink-400/25 bg-pink-500/15 text-[12px] font-semibold text-pink-100 transition active:scale-[0.98]"
+                      className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full border border-pink-200 bg-pink-50 text-[12px] font-semibold text-pink-700 transition active:scale-[0.98]"
                       data-testid={`message-btn-${person.id}`}
                     >
                       <MessageCircle size={13} />

@@ -127,19 +127,19 @@ export function MessagesScreen({
   }
 
   return (
-    <div className="min-h-full bg-[#0f0117] pb-6 text-white">
+    <div className="min-h-full bg-yn-bg pb-6 text-yn-text">
       <div className="px-4 pt-3">
         <h1 className="text-[32px] font-bold leading-none tracking-tight">Message</h1>
       </div>
 
       {!hasOwnPhoto && (
-        <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-purple-500/25 bg-purple-900/20 p-3" data-testid="messages-photo-gate">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-pink-600">
+        <div className="mx-4 mt-4 flex items-center gap-3 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 p-3" data-testid="messages-photo-gate">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-600 to-pink-600">
             <Camera size={16} className="text-white" />
           </div>
           <div className="text-sm">
-            <p className="font-semibold text-white">Add your profile photo</p>
-            <p className="text-[12px] text-white/50">Upload a photo to see others’ profile pictures</p>
+            <p className="font-semibold text-yn-text">Add your profile photo</p>
+            <p className="text-[12px] text-yn-muted">Upload a photo to see others’ profile pictures</p>
           </div>
         </div>
       )}
@@ -148,7 +148,7 @@ export function MessagesScreen({
         <button
           type="button"
           onClick={() => setPeopleView("following")}
-          className="flex h-11 items-center gap-0.5 px-4 text-[13px] font-medium text-white/40"
+          className="flex h-11 items-center gap-0.5 px-4 text-[13px] font-medium text-yn-muted"
           data-testid="follow-section-link"
         >
           Follow
@@ -164,23 +164,23 @@ export function MessagesScreen({
             [0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-white/8 bg-white/[0.04] px-2.5 pb-3 pt-3"
+                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-black/6 bg-yn-card px-2.5 pb-3 pt-3 shadow-sm"
               >
                 <div className="h-20 w-20 animate-pulse rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/25" />
-                <div className="mt-3 h-3 w-16 animate-pulse rounded-full bg-white/10" />
-                <div className="mt-3 h-11 w-full animate-pulse rounded-full bg-white/8" />
+                <div                 className="mt-3 h-3 w-16 animate-pulse rounded-full bg-black/8" />
+                <div className="mt-3 h-11 w-full animate-pulse rounded-full bg-black/6" />
               </div>
             ))
           ) : following.length === 0 ? (
             <div
-              className="flex min-h-[196px] w-full min-w-[280px] flex-col items-center justify-center rounded-2xl border border-pink-400/20 bg-gradient-to-b from-purple-600/20 via-[#1a0828]/80 to-[#12061c] px-5 py-6 text-center shadow-[0_8px_28px_rgba(88,28,135,0.28)]"
+              className="flex min-h-[196px] w-full min-w-[280px] flex-col items-center justify-center rounded-2xl border border-fuchsia-200 bg-gradient-to-b from-fuchsia-50 via-yn-card to-pink-50 px-5 py-6 text-center shadow-[0_8px_28px_rgba(88,28,135,0.08)]"
               data-testid="follow-strip-empty"
             >
-              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shadow-[0_0_24px_rgba(236,72,153,0.35)]">
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-pink-500 shadow-[0_8px_20px_rgba(192,38,211,0.22)]">
                 <UserPlus size={22} className="text-white" />
               </div>
-              <p className="text-[15px] font-semibold text-white">No one here yet</p>
-              <p className="mt-1 max-w-[240px] text-[12px] leading-relaxed text-white/45">
+              <p className="text-[15px] font-semibold text-yn-text">No one here yet</p>
+              <p className="mt-1 max-w-[240px] text-[12px] leading-relaxed text-yn-muted">
                 Follow people from History and they appear here instantly — with a photo, name, and Message.
               </p>
             </div>
@@ -188,7 +188,7 @@ export function MessagesScreen({
             following.map((person) => (
               <div
                 key={person.id}
-                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-white/8 bg-white/[0.045] px-2.5 pb-3 pt-3"
+                className="flex w-[128px] shrink-0 flex-col items-center rounded-2xl border border-black/6 bg-yn-card px-2.5 pb-3 pt-3 shadow-sm"
                 data-testid={`follow-card-${person.id}`}
               >
                 <button
@@ -204,7 +204,7 @@ export function MessagesScreen({
                     showPhoto={hasOwnPhoto}
                     online={!!online[person.id]}
                   />
-                  <p className="mt-2.5 w-full truncate text-center text-[13px] font-bold text-white">
+                  <p className="mt-2.5 w-full truncate text-center text-[13px] font-bold text-yn-text">
                     {person.name}
                   </p>
                 </button>
@@ -221,7 +221,7 @@ export function MessagesScreen({
                       isOnline: !!online[person.id],
                     })
                   }
-                  className="mt-2 flex h-11 w-full items-center justify-center rounded-full bg-white/10 text-[12px] font-semibold text-white/80 transition active:scale-[0.98]"
+                  className="mt-2 flex h-11 w-full items-center justify-center rounded-full bg-yn-bg text-[12px] font-semibold text-yn-muted transition active:scale-[0.98]"
                 >
                   Message
                 </button>
@@ -232,7 +232,7 @@ export function MessagesScreen({
       </div>
 
       <div className="mt-6 px-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/35">Messages</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-yn-muted">Messages</p>
 
         <button
           type="button"
@@ -244,11 +244,11 @@ export function MessagesScreen({
             <UserPlus size={22} className="text-white" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="flex items-center text-[16px] font-bold text-white">
+            <p className="flex items-center text-[16px] font-bold text-yn-text">
               See My Followers
-              <ChevronRight size={16} className="ml-0.5 text-white/50" />
+              <ChevronRight size={16} className="ml-0.5 text-yn-muted" />
             </p>
-            <p className="mt-0.5 text-[12px] leading-snug text-white/40">
+            <p className="mt-0.5 text-[12px] leading-snug text-yn-muted">
               See who just followed you. Start a chat!
             </p>
           </div>
@@ -260,7 +260,7 @@ export function MessagesScreen({
                   className="relative"
                   style={{ marginLeft: i === 0 ? 0 : -10, zIndex: 3 - i }}
                 >
-                  <div className="rounded-full ring-2 ring-[#0f0117]">
+                  <div className="rounded-full ring-2 ring-yn-bg">
                     <NeonAvatar
                       src={person.photo}
                       name={person.name}
@@ -276,16 +276,16 @@ export function MessagesScreen({
 
         {conversations.length === 0 ? (
           <div className="py-14 text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-600/35 to-pink-600/35 ring-1 ring-pink-400/25">
-              <MessageCircle size={26} className="text-pink-200/80" />
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-100 to-pink-100 ring-1 ring-pink-200">
+              <MessageCircle size={26} className="text-yn-accent" />
             </div>
-            <p className="text-[15px] font-semibold text-white/80">No conversations yet</p>
-            <p className="mx-auto mt-1.5 max-w-xs text-[13px] text-white/40">
+            <p className="text-[15px] font-semibold text-yn-text">No conversations yet</p>
+            <p className="mx-auto mt-1.5 max-w-xs text-[13px] text-yn-muted">
               After a video chat, tap Message in History to start a real thread.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/[0.06]">
+          <div className="divide-y divide-black/6">
             {conversations.map((conv) => {
               const otherId = conv.participants?.find((p: string) => p !== currentUserId);
               if (!otherId || blockedIds.has(otherId)) return null;
@@ -320,7 +320,7 @@ export function MessagesScreen({
                     <div className="flex items-start justify-between gap-2">
                       <button
                         type="button"
-                        className="flex min-w-0 items-center gap-1.5 truncate text-left text-[16px] font-bold text-white"
+                        className="flex min-w-0 items-center gap-1.5 truncate text-left text-[16px] font-bold text-yn-text"
                         onClick={() => setPreviewUserId(otherId)}
                       >
                         <span className="truncate" data-testid={`conversation-name-${otherId}`}>
@@ -330,7 +330,7 @@ export function MessagesScreen({
                       </button>
                       <button
                         type="button"
-                        className="shrink-0 pt-0.5 text-[11px] text-white/35"
+                        className="shrink-0 pt-0.5 text-[11px] text-yn-muted"
                         onClick={() =>
                           openChat({
                             id: otherId,
@@ -359,7 +359,7 @@ export function MessagesScreen({
                       }
                       className="mt-1 flex w-full items-center justify-between gap-3 text-left transition active:opacity-80"
                     >
-                      <p className="truncate text-[13px] text-white/40">
+                      <p className="truncate text-[13px] text-yn-muted">
                         {conv.lastMessage || "Start the conversation..."}
                       </p>
                       {unread > 0 && (

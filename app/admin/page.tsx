@@ -34,7 +34,7 @@ export default function AdminPage() {
 
   if (!ready) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#0f0117] text-white/60">
+      <div className="flex min-h-dvh items-center justify-center bg-yn-bg text-yn-muted">
         Loading...
       </div>
     );
@@ -42,12 +42,12 @@ export default function AdminPage() {
 
   if (!isCurrentUserAdmin(username)) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#0f0117] px-6 text-center text-white">
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-yn-bg px-6 text-center text-yn-text">
         <p className="text-lg font-semibold">Admin only</p>
-        <p className="mt-2 text-sm text-white/50">
+        <p className="mt-2 text-sm text-yn-muted">
           Sign in with an admin Pi username, or set localStorage youneon_admin=1 for testing.
         </p>
-        <Link href="/" className="mt-6 text-sm font-semibold text-pink-300">
+        <Link href="/" className="mt-6 text-sm font-semibold text-yn-accent">
           Back to YouNeon
         </Link>
       </div>
@@ -55,13 +55,13 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0f0117] px-4 py-8 text-white">
+    <div className="min-h-dvh bg-yn-bg px-4 py-8 text-yn-text">
       <div className="mx-auto max-w-lg">
-        <Link href="/" className="text-[13px] font-semibold text-pink-300">
+        <Link href="/" className="text-[13px] font-semibold text-yn-accent">
           ← YouNeon
         </Link>
         <h1 className="mt-4 text-2xl font-semibold">Admin</h1>
-        <p className="mt-1 text-sm text-white/45">Announcements appear in the notification bell and can feed ads.</p>
+        <p className="mt-1 text-sm text-yn-muted">Announcements appear in the notification bell and can feed ads.</p>
         <div className="mt-6">
           <AnnouncementsAdmin announcements={announcements} compact />
         </div>

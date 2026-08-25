@@ -84,14 +84,14 @@ export function SettingsScreen({ onBack, onLogOut }: SettingsScreenProps) {
 
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-yn-bg flex items-center justify-center">
         <p className="text-gray-600">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white pt-24 pb-24">
+    <div className="min-h-screen bg-yn-bg pt-24 pb-24">
       {/* Settings Header */}
       <div className="px-4 py-4 border-b border-gray-200 flex items-center gap-3">
         <button

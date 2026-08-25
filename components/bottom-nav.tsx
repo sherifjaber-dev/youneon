@@ -20,7 +20,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   ];
 
   return (
-    <div className="yn-glass fixed bottom-0 left-0 right-0 z-50 border-t border-white/8 pb-[env(safe-area-inset-bottom)]">
+    <div className="yn-glass fixed bottom-0 left-0 right-0 z-50 border-t border-black/6 pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex h-14 max-w-lg w-full items-center justify-around px-1">
         {tabs.map(({ id, label, icon: Icon }) => {
           const active = activeTab === id;
@@ -30,11 +30,11 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               onClick={() => onTabChange(id)}
               className={cn(
                 "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors active:scale-95",
-                active ? "text-white" : "text-white/45"
+                active ? "text-yn-text" : "text-yn-muted"
               )}
             >
-              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} className={active ? "text-pink-400" : undefined} />
-              <span className={cn("text-[10px] font-medium leading-none", active && "text-pink-300")}>
+              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} className={active ? "text-yn-accent-2" : undefined} />
+              <span className={cn("text-[10px] font-medium leading-none", active && "text-yn-accent")}>
                 {label}
               </span>
             </button>

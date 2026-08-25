@@ -92,10 +92,10 @@ function NeonToggle({
       onClick={() => !disabled && onChange(!on)}
       className={`relative h-7 w-12 shrink-0 rounded-full transition ${
         disabled
-          ? "bg-white/15 opacity-70"
+          ? "bg-black/15 opacity-70"
           : on
-            ? "bg-gradient-to-r from-purple-500 to-pink-500"
-            : "bg-white/18"
+            ? "bg-gradient-to-r from-fuchsia-500 to-pink-500"
+            : "bg-black/15"
       }`}
     >
       <span
@@ -110,10 +110,10 @@ function NeonToggle({
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-5">
-      <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+      <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-yn-muted">
         {title}
       </h3>
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">{children}</div>
+      <div className="overflow-hidden rounded-2xl border border-black/6 bg-yn-card">{children}</div>
     </section>
   );
 }
@@ -138,15 +138,15 @@ function RowButton({
       type="button"
       onClick={onClick}
       className={`flex min-h-12 w-full items-center gap-3 px-3.5 py-2.5 text-left ${
-        last ? "" : "border-b border-white/6"
+        last ? "" : "border-b border-black/6"
       }`}
     >
-      {icon ? <span className="text-pink-300">{icon}</span> : null}
-      <span className={`flex-1 text-[15px] font-medium ${danger ? "text-red-300" : "text-white"}`}>
+      {icon ? <span className="text-yn-accent">{icon}</span> : null}
+      <span className={`flex-1 text-[15px] font-medium ${danger ? "text-red-600" : "text-yn-text"}`}>
         {label}
       </span>
-      {value ? <span className="max-w-[46%] truncate text-[13px] text-white/45">{value}</span> : null}
-      {onClick ? <ChevronRight size={18} className="shrink-0 text-white/30" /> : null}
+      {value ? <span className="max-w-[46%] truncate text-[13px] text-yn-muted">{value}</span> : null}
+      {onClick ? <ChevronRight size={18} className="shrink-0 text-yn-muted" /> : null}
     </button>
   );
 }
@@ -167,10 +167,10 @@ function ToggleRow({
   last?: boolean;
 }) {
   return (
-    <div className={`flex min-h-12 items-center gap-3 px-3.5 py-2.5 ${last ? "" : "border-b border-white/6"}`}>
+    <div className={`flex min-h-12 items-center gap-3 px-3.5 py-2.5 ${last ? "" : "border-b border-black/6"}`}>
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-medium text-white">{label}</p>
-        {description ? <p className="mt-0.5 text-[12px] leading-snug text-white/45">{description}</p> : null}
+        <p className="text-[15px] font-medium text-yn-text">{label}</p>
+        {description ? <p className="mt-0.5 text-[12px] leading-snug text-yn-muted">{description}</p> : null}
       </div>
       <NeonToggle on={on} disabled={disabled} onChange={onChange} label={label} />
     </div>
@@ -267,17 +267,17 @@ export function ProfileSettingsSheet({
   const headerLabel = page === "menu" ? t("common.close") : t("common.back");
 
   return (
-    <div className="absolute inset-0 z-30 flex flex-col bg-[#0f0117]">
-      <header className="flex min-h-12 shrink-0 items-center justify-between border-b border-white/8 px-2 pt-[env(safe-area-inset-top)]">
+    <div className="absolute inset-0 z-30 flex flex-col bg-yn-bg text-yn-text">
+      <header className="flex min-h-12 shrink-0 items-center justify-between border-b border-black/6 px-2 pt-[env(safe-area-inset-top)]">
         <button
           type="button"
           onClick={headerBack}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-white/85 hover:bg-white/10"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-yn-text hover:bg-black/5"
           aria-label={headerLabel}
         >
           {headerIcon}
         </button>
-        <h2 className="text-[17px] font-semibold text-white">{t(PAGE_TITLE[page])}</h2>
+        <h2 className="text-[17px] font-semibold text-yn-text">{t(PAGE_TITLE[page])}</h2>
         <span className="w-11" />
       </header>
 
@@ -419,14 +419,14 @@ export function ProfileSettingsSheet({
 
         {page === "items" && (
           <div className="space-y-5">
-            <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
-              <p className="text-[13px] font-semibold text-white/70">{t("settings.promoCode")}</p>
+            <div className="rounded-2xl border border-black/6 bg-yn-card p-3.5">
+              <p className="text-[13px] font-semibold text-yn-muted">{t("settings.promoCode")}</p>
               <div className="mt-2 flex gap-2">
                 <input
                   value={promo}
                   onChange={(e) => setPromo(e.target.value)}
                   placeholder={t("settings.promoPlaceholder")}
-                  className="h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 text-[15px] text-white outline-none placeholder:text-white/30"
+                  className="h-12 min-w-0 flex-1 rounded-xl border border-black/10 bg-white px-3 text-[15px] text-yn-text outline-none placeholder:text-yn-muted"
                 />
                 <button
                   type="button"
@@ -441,7 +441,7 @@ export function ProfileSettingsSheet({
                     if (result.ok) setPromo("");
                     setClaiming(false);
                   }}
-                  className="h-12 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 text-[14px] font-semibold text-white"
+                  className="h-12 rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 px-4 text-[14px] font-semibold text-white"
                 >
                   {t("settings.claim")}
                 </button>
@@ -454,25 +454,25 @@ export function ProfileSettingsSheet({
             </div>
 
             <div>
-              <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+              <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-yn-muted">
                 {t("settings.singleUseItems")}
               </h3>
               {settings.items.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] px-4 py-10 text-center">
-                  <p className="text-[14px] text-white/50">{t("settings.noItems")}</p>
+                <div className="rounded-2xl border border-dashed border-black/10 bg-yn-card px-4 py-10 text-center">
+                  <p className="text-[14px] text-yn-muted">{t("settings.noItems")}</p>
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
+                <div className="overflow-hidden rounded-2xl border border-black/6 bg-yn-card">
                   {settings.items.map((item, i) => (
                     <div
                       key={item.id}
                       className={`flex min-h-12 items-center justify-between px-3.5 py-3 ${
-                        i < settings.items.length - 1 ? "border-b border-white/6" : ""
+                        i < settings.items.length - 1 ? "border-b border-black/6" : ""
                       }`}
                     >
                       <div>
-                        <p className="text-[15px] font-medium text-white">{item.label}</p>
-                        <p className="text-[12px] text-white/45">
+                        <p className="text-[15px] font-medium text-yn-text">{item.label}</p>
+                        <p className="text-[12px] text-yn-muted">
                           {t("settings.expiresIn")}: {remainingLabel(item.expiresAt)}
                         </p>
                       </div>
@@ -488,7 +488,7 @@ export function ProfileSettingsSheet({
           <div className="-mx-4">
             <SubscribeWithPi variant="shop" isPremium={isPremium} premiumUntil={premiumUntil} />
             <div className="px-4">
-              <p className="mt-3 text-[13px] text-white/50">
+              <p className="mt-3 text-[13px] text-yn-muted">
                 {isPremiumActive(premiumUntil)
                   ? `${t("settings.premiumUntil")} ${
                       premiumUntil
@@ -510,12 +510,12 @@ export function ProfileSettingsSheet({
                     await cancelPremiumLocally(username, settings.profile?.uid);
                     setCancelling(false);
                   }}
-                  className="mt-4 flex h-12 w-full items-center justify-center rounded-xl border border-white/12 bg-white/[0.05] text-[14px] font-semibold text-white"
+                  className="mt-4 flex h-12 w-full items-center justify-center rounded-xl border border-black/10 bg-yn-card text-[14px] font-semibold text-yn-text"
                 >
                   {t("settings.cancelSubscription")}
                 </button>
               ) : null}
-              <p className="mt-2 text-[12px] leading-relaxed text-white/40">{t("settings.cancelNote")}</p>
+              <p className="mt-2 text-[12px] leading-relaxed text-yn-muted">{t("settings.cancelNote")}</p>
             </div>
           </div>
         )}
@@ -523,25 +523,25 @@ export function ProfileSettingsSheet({
         {page === "blocked" && (
           <div>
             {settings.blockedPeople.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/12 bg-white/[0.03] px-4 py-16 text-center">
-                <Ban className="mx-auto mb-3 text-white/30" size={28} />
-                <p className="text-[14px] text-white/50">{t("settings.noBlocked")}</p>
+              <div className="rounded-2xl border border-dashed border-black/10 bg-yn-card px-4 py-16 text-center">
+                <Ban className="mx-auto mb-3 text-yn-muted" size={28} />
+                <p className="text-[14px] text-yn-muted">{t("settings.noBlocked")}</p>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
+              <div className="overflow-hidden rounded-2xl border border-black/6 bg-yn-card">
                 {settings.blockedPeople.map((person, i) => (
                   <div
                     key={person.id}
                     className={`flex min-h-14 items-center gap-3 px-3 py-2 ${
-                      i < settings.blockedPeople.length - 1 ? "border-b border-white/6" : ""
+                      i < settings.blockedPeople.length - 1 ? "border-b border-black/6" : ""
                     }`}
                   >
                     <NeonAvatar src={person.photo} name={person.name} size={44} />
-                    <p className="min-w-0 flex-1 truncate text-[15px] font-medium text-white">{person.name}</p>
+                    <p className="min-w-0 flex-1 truncate text-[15px] font-medium text-yn-text">{person.name}</p>
                     <button
                       type="button"
                       onClick={() => void unblockUserForMe(username, person.id)}
-                      className="h-11 rounded-xl bg-white/10 px-3 text-[13px] font-semibold text-pink-200"
+                      className="h-11 rounded-xl bg-pink-50 px-3 text-[13px] font-semibold text-pink-700"
                     >
                       {t("settings.unblock")}
                     </button>
@@ -553,16 +553,16 @@ export function ProfileSettingsSheet({
         )}
 
         {page === "neonId" && (
-          <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-5 text-center">
-            <p className="text-[12px] uppercase tracking-wide text-white/40">{t("settings.neonId")}</p>
-            <p className="mt-3 break-all font-mono text-[22px] font-semibold tracking-wide text-white">
+          <div className="rounded-2xl border border-black/6 bg-yn-card p-5 text-center">
+            <p className="text-[12px] uppercase tracking-wide text-yn-muted">{t("settings.neonId")}</p>
+            <p className="mt-3 break-all font-mono text-[22px] font-semibold tracking-wide text-yn-text">
               {settings.neonId || "…"}
             </p>
-            <p className="mt-2 text-[12px] text-white/40">{t("settings.notEditable")}</p>
+            <p className="mt-2 text-[12px] text-yn-muted">{t("settings.notEditable")}</p>
             <button
               type="button"
               onClick={() => void copyId()}
-              className="mx-auto mt-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-5 text-[14px] font-semibold"
+              className="mx-auto mt-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 px-5 text-[14px] font-semibold text-white"
             >
               <Copy size={16} />
               {copied ? t("common.copied") : t("common.copy")}
@@ -594,13 +594,13 @@ export function ProfileSettingsSheet({
                   onClick={() => setLanguage(lang.code)}
                   className={`flex h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-[14px] font-medium ${
                     on
-                      ? "border border-pink-400/40 bg-gradient-to-r from-purple-600/30 to-pink-600/30 text-white"
-                      : "bg-white/[0.05] text-white/80"
+                      ? "border border-pink-300 bg-gradient-to-r from-fuchsia-50 to-pink-50 text-yn-text"
+                      : "bg-yn-card text-yn-muted"
                   }`}
                 >
                   <span className="text-lg">{lang.flag}</span>
                   <span className="flex-1">{lang.native}</span>
-                  {on && <span className="text-pink-300">✓</span>}
+                  {on && <span className="text-yn-accent">✓</span>}
                 </button>
               );
             })}
@@ -610,9 +610,9 @@ export function ProfileSettingsSheet({
         {page === "safety" && (
           <div className="space-y-3">
             {SAFETY_TIPS_SECTIONS.map((tip) => (
-              <article key={tip.id} className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
-                <h3 className="text-[15px] font-semibold text-white">{tip.title}</h3>
-                <p className="mt-2 whitespace-pre-line text-[13px] leading-relaxed text-white/58">{tip.body}</p>
+              <article key={tip.id} className="rounded-2xl border border-black/6 bg-yn-card p-4">
+                <h3 className="text-[15px] font-semibold text-yn-text">{tip.title}</h3>
+                <p className="mt-2 whitespace-pre-line text-[13px] leading-relaxed text-yn-muted">{tip.body}</p>
               </article>
             ))}
           </div>
@@ -620,14 +620,14 @@ export function ProfileSettingsSheet({
 
         {page === "guidelines" && (
           <div className="space-y-3">
-            <p className="px-1 text-[13px] leading-relaxed text-white/50">
+            <p className="px-1 text-[13px] leading-relaxed text-yn-muted">
               These are YouNeon’s own rules for video chat, gifts, and Pi. They are original copy for this app — not
               another company’s trademark or policy.
             </p>
             {COMMUNITY_GUIDELINES_SECTIONS.map((tip) => (
-              <article key={tip.id} className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
-                <h3 className="text-[15px] font-semibold text-white">{tip.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-white/58">{tip.body}</p>
+              <article key={tip.id} className="rounded-2xl border border-black/6 bg-yn-card p-4">
+                <h3 className="text-[15px] font-semibold text-yn-text">{tip.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-yn-muted">{tip.body}</p>
               </article>
             ))}
           </div>
@@ -643,23 +643,23 @@ export function ProfileSettingsSheet({
 
         {page === "help" && (
           <div className="space-y-3">
-            <p className="text-[13px] leading-relaxed text-white/55">{t("settings.helpIntro")}</p>
-            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
-              <h3 className="text-[15px] font-semibold text-white">{t("settings.faqPayments")}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.faqPaymentsBody")}</p>
+            <p className="text-[13px] leading-relaxed text-yn-muted">{t("settings.helpIntro")}</p>
+            <article className="rounded-2xl border border-black/6 bg-yn-card p-4">
+              <h3 className="text-[15px] font-semibold text-yn-text">{t("settings.faqPayments")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{t("settings.faqPaymentsBody")}</p>
             </article>
-            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
-              <h3 className="text-[15px] font-semibold text-white">{t("settings.faqMatching")}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.faqMatchingBody")}</p>
+            <article className="rounded-2xl border border-black/6 bg-yn-card p-4">
+              <h3 className="text-[15px] font-semibold text-yn-text">{t("settings.faqMatching")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{t("settings.faqMatchingBody")}</p>
             </article>
-            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
-              <h3 className="text-[15px] font-semibold text-white">{t("settings.faqSafety")}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.faqSafetyBody")}</p>
+            <article className="rounded-2xl border border-black/6 bg-yn-card p-4">
+              <h3 className="text-[15px] font-semibold text-yn-text">{t("settings.faqSafety")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{t("settings.faqSafetyBody")}</p>
             </article>
-            <article className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
-              <h3 className="text-[15px] font-semibold text-white">{t("settings.contact")}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{t("settings.contactBody")}</p>
-              <a href="mailto:support@youneon.pi" className="mt-2 inline-block text-[14px] font-semibold text-pink-300">
+            <article className="rounded-2xl border border-black/6 bg-yn-card p-4">
+              <h3 className="text-[15px] font-semibold text-yn-text">{t("settings.contact")}</h3>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{t("settings.contactBody")}</p>
+              <a href="mailto:support@youneon.pi" className="mt-2 inline-block text-[14px] font-semibold text-yn-accent">
                 support@youneon.pi
               </a>
             </article>
@@ -669,9 +669,9 @@ export function ProfileSettingsSheet({
 
       {confirmDelete && (
         <div className="absolute inset-0 z-40 flex items-end justify-center bg-black/70 p-4 sm:items-center">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#1a0a24] p-5">
-            <h3 className="text-[17px] font-semibold text-white">{t("settings.deleteConfirmTitle")}</h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-white/55">{t("settings.deleteConfirmBody")}</p>
+          <div className="w-full max-w-sm rounded-2xl border border-black/8 bg-yn-card p-5">
+            <h3 className="text-[17px] font-semibold text-yn-text">{t("settings.deleteConfirmTitle")}</h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-yn-muted">{t("settings.deleteConfirmBody")}</p>
             <button
               type="button"
               onClick={deleteAccount}
@@ -682,7 +682,7 @@ export function ProfileSettingsSheet({
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="mt-2 flex h-11 w-full items-center justify-center rounded-xl bg-white/10 text-[14px] font-semibold text-white"
+              className="mt-2 flex h-11 w-full items-center justify-center rounded-xl bg-yn-bg text-[14px] font-semibold text-yn-text"
             >
               {t("common.cancel")}
             </button>
@@ -704,7 +704,7 @@ function PrivacyPage({
 }) {
   return (
     <div>
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04]">
+      <div className="overflow-hidden rounded-2xl border border-black/6 bg-yn-card">
         <ToggleRow
           label={t("settings.necessary")}
           description={t("settings.necessaryDesc")}
@@ -738,7 +738,7 @@ function PrivacyPage({
           onClick={() =>
             onChange({ necessary: true, analytics: false, advertising: false, marketing: false })
           }
-          className="flex h-12 items-center justify-center rounded-xl border border-white/12 bg-white/[0.05] text-[14px] font-semibold"
+          className="flex h-12 items-center justify-center rounded-xl border border-black/10 bg-yn-card text-[14px] font-semibold text-yn-text"
         >
           {t("settings.refuseAll")}
         </button>
@@ -747,7 +747,7 @@ function PrivacyPage({
           onClick={() =>
             onChange({ necessary: true, analytics: true, advertising: true, marketing: true })
           }
-          className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[14px] font-semibold"
+          className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 text-[14px] font-semibold text-white"
         >
           {t("settings.acceptAll")}
         </button>

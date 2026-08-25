@@ -809,12 +809,12 @@ function VideoCallScreen({
 
   if (permission !== "granted") {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f0117] p-6">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-yn-bg p-6">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-24 left-1/4 h-64 w-64 rounded-full bg-[#a855f7]/20 blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-[#ec4899]/15 blur-3xl" />
+          <div className="absolute -top-24 left-1/4 h-64 w-64 rounded-full bg-fuchsia-200/50 blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-pink-200/40 blur-3xl" />
         </div>
-        <div className="yn-call-glass relative w-full max-w-md rounded-2xl p-6 text-white">
+        <div className="yn-card relative w-full max-w-md rounded-2xl p-6 text-yn-text">
           {permission === "checking" && (
             <div className="flex flex-col items-center py-8">
               <div className="yn-wait-orb mb-5" aria-hidden="true">
@@ -823,7 +823,7 @@ function VideoCallScreen({
                 <span className="yn-wait-core" />
               </div>
               <span className="yn-call-wordmark mb-3 text-2xl">YouNeon</span>
-              <p className="text-[15px] text-white/70">Checking camera and microphone…</p>
+              <p className="text-[15px] text-yn-muted">Checking camera and microphone…</p>
             </div>
           )}
           {permission === "denied" && (
@@ -831,13 +831,13 @@ function VideoCallScreen({
               <div className="mb-5 text-center">
                 <span className="yn-call-wordmark mb-4 inline-block text-2xl">YouNeon</span>
                 <h2 className="mb-2 text-xl font-semibold tracking-tight">Camera blocked</h2>
-                <p className="text-white/80 text-sm">Your browser is blocking camera and microphone access. In Pi Browser, allow camera and microphone for this site.</p>
+                <p className="text-yn-muted text-sm">Your browser is blocking camera and microphone access. In Pi Browser, allow camera and microphone for this site.</p>
               </div>
-              <div className="bg-black/30 rounded-xl p-4 mb-5 text-sm">
+              <div className="bg-yn-bg rounded-xl p-4 mb-5 text-sm">
                 {browser === "edge" && (
                   <>
                     <p className="font-semibold text-yellow-300 mb-2">How to allow in Edge:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-white/90">
+                    <ol className="list-decimal list-inside space-y-1 text-yn-text">
                       <li>Tap the <b>lock icon</b> in the address bar</li>
                       <li>Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b></li>
                       <li>Reload the page</li>
@@ -847,7 +847,7 @@ function VideoCallScreen({
                 {browser === "chrome" && (
                   <>
                     <p className="font-semibold text-yellow-300 mb-2">How to allow in Chrome:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-white/90">
+                    <ol className="list-decimal list-inside space-y-1 text-yn-text">
                       <li>Tap the <b>lock icon</b></li>
                       <li>Set <b>Camera</b> and <b>Microphone</b> to <b>Allow</b></li>
                       <li>Reload the page</li>
@@ -860,7 +860,7 @@ function VideoCallScreen({
               </div>
               <div className="flex gap-2">
                 <button onClick={checkPermissions} className="yn-cta flex-1 text-white">Try again</button>
-                <button onClick={() => onEnd()} className="flex-1 rounded-[14px] border border-white/15 bg-white/5 py-3 font-semibold">Cancel</button>
+                <button onClick={() => onEnd()} className="flex-1 rounded-[14px] border border-black/10 bg-yn-bg py-3 font-semibold">Cancel</button>
               </div>
             </>
           )}
@@ -873,7 +873,7 @@ function VideoCallScreen({
                   {permission === "in-use" && "Camera is in use"}
                   {permission === "error" && "Something went wrong"}
                 </h2>
-                <p className="text-white/80 text-sm break-words">
+                <p className="text-yn-muted text-sm break-words">
                   {permission === "not-found" && "Connect a camera and try again."}
                   {permission === "in-use" && "Close Zoom, Teams, or other video apps."}
                   {permission === "error" && errorMsg}
@@ -881,7 +881,7 @@ function VideoCallScreen({
               </div>
               <div className="flex gap-2">
                 <button onClick={checkPermissions} className="yn-cta flex-1 text-white">Try again</button>
-                <button onClick={() => onEnd()} className="flex-1 rounded-[14px] border border-white/15 bg-white/5 py-3 font-semibold">Close</button>
+                <button onClick={() => onEnd()} className="flex-1 rounded-[14px] border border-black/10 bg-yn-bg py-3 font-semibold">Close</button>
               </div>
             </>
           )}
@@ -892,10 +892,10 @@ function VideoCallScreen({
 
   if (callStatus === "preview") {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-[#0f0117] p-6">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-yn-bg p-6">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/4 top-16 h-72 w-72 rounded-full bg-[#a855f7]/18 blur-3xl" />
-          <div className="absolute bottom-20 right-1/5 h-72 w-72 rounded-full bg-[#ec4899]/14 blur-3xl" />
+          <div className="absolute left-1/4 top-16 h-72 w-72 rounded-full bg-fuchsia-200/45 blur-3xl" />
+          <div className="absolute bottom-20 right-1/5 h-72 w-72 rounded-full bg-pink-200/40 blur-3xl" />
         </div>
         <video
           ref={localVideoRef}
@@ -910,7 +910,7 @@ function VideoCallScreen({
         />
         <button
           onClick={() => onEnd()}
-          className="absolute right-4 top-[max(12px,env(safe-area-inset-top))] rounded-full border border-white/15 bg-black/40 px-4 py-2 text-sm font-medium text-white/85 backdrop-blur-md hover:bg-black/55"
+          className="absolute right-4 top-[max(12px,env(safe-area-inset-top))] rounded-full border border-black/10 bg-yn-card px-4 py-2 text-sm font-medium text-yn-text shadow-sm backdrop-blur-md hover:bg-white"
           aria-label="Cancel matching"
         >
           Cancel

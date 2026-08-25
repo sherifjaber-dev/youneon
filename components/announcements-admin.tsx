@@ -38,10 +38,10 @@ export function AnnouncementsAdmin({ announcements, compact = false }: Announcem
   return (
     <section className={compact ? "space-y-3" : "space-y-4"}>
       <div>
-        <h3 className={`font-semibold ${compact ? "text-[13px] text-white" : "text-sm text-gray-900"}`}>
+        <h3 className="text-sm font-semibold text-yn-text">
           Announcements
         </h3>
-        <p className={compact ? "mt-0.5 text-[11px] text-white/45" : "mt-0.5 text-xs text-gray-500"}>
+        <p className="mt-0.5 text-xs text-yn-muted">
           Post system updates, news, promos, or ads. They appear in the notification bell.
         </p>
       </div>
@@ -51,22 +51,14 @@ export function AnnouncementsAdmin({ announcements, compact = false }: Announcem
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Title"
-          className={
-            compact
-              ? "h-11 w-full rounded-xl border border-white/12 bg-white/5 px-3 text-[15px] text-white placeholder:text-white/35"
-              : "h-11 w-full rounded-xl border border-gray-300 px-3 text-[15px]"
-          }
+          className="h-11 w-full rounded-xl border border-black/10 bg-yn-card px-3 text-[15px] text-yn-text placeholder:text-yn-muted"
         />
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Message"
           rows={3}
-          className={
-            compact
-              ? "w-full rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-[15px] text-white placeholder:text-white/35"
-              : "w-full rounded-xl border border-gray-300 px-3 py-2 text-[15px]"
-          }
+          className="w-full rounded-xl border border-black/10 bg-yn-card px-3 py-2 text-[15px] text-yn-text placeholder:text-yn-muted"
         />
         <div className="flex flex-wrap gap-1.5">
           {TYPES.map((option) => (
@@ -76,10 +68,8 @@ export function AnnouncementsAdmin({ announcements, compact = false }: Announcem
               onClick={() => setType(option)}
               className={`h-9 rounded-full px-3 text-[12px] font-semibold capitalize ${
                 type === option
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                  : compact
-                    ? "border border-white/12 text-white/60"
-                    : "border border-gray-300 text-gray-600"
+                  ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white"
+                  : "border border-black/10 text-yn-muted"
               }`}
             >
               {option}
@@ -103,18 +93,14 @@ export function AnnouncementsAdmin({ announcements, compact = false }: Announcem
         {announcements.map((item) => (
           <li
             key={item.id}
-            className={
-              compact
-                ? "rounded-xl border border-white/8 bg-white/[0.04] p-3"
-                : "rounded-xl border border-gray-200 bg-white p-3"
-            }
+            className="rounded-xl border border-black/8 bg-yn-card p-3"
           >
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className={compact ? "text-[13px] font-semibold text-white" : "text-sm font-semibold text-gray-900"}>
+                <p className="text-sm font-semibold text-yn-text">
                   {item.title}
                 </p>
-                <p className={compact ? "mt-0.5 text-[11px] text-white/50" : "mt-0.5 text-xs text-gray-500"}>
+                <p className="mt-0.5 text-xs text-yn-muted">
                   {item.type} · {item.active ? "active" : "inactive"}
                 </p>
               </div>
@@ -123,12 +109,8 @@ export function AnnouncementsAdmin({ announcements, compact = false }: Announcem
                 onClick={() => setAnnouncementActive(item.id, !item.active)}
                 className={`h-9 shrink-0 rounded-lg px-3 text-[12px] font-semibold ${
                   item.active
-                    ? compact
-                      ? "border border-white/15 text-white/70"
-                      : "border border-gray-300 text-gray-600"
-                    : compact
-                      ? "bg-emerald-500/20 text-emerald-300"
-                      : "bg-emerald-100 text-emerald-700"
+                    ? "border border-black/10 text-yn-muted"
+                    : "bg-emerald-100 text-emerald-700"
                 }`}
               >
                 {item.active ? "Deactivate" : "Activate"}

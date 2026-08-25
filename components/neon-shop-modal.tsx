@@ -112,7 +112,7 @@ export function NeonShopModal({
         onMouseDown={stopOverlayTheft}
         onTouchStart={stopOverlayTheft}
         onClick={stopOverlayTheft}
-        className="z-[2147483647] max-h-[90vh] max-w-[360px] gap-0 overflow-y-auto rounded-2xl border border-white/10 bg-[#0f0117] p-0 shadow-xl"
+        className="z-[2147483647] max-h-[90vh] max-w-[360px] gap-0 overflow-y-auto rounded-2xl border border-black/8 bg-yn-card p-0 text-yn-text shadow-xl"
       >
         <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3">
           <button
@@ -139,7 +139,7 @@ export function NeonShopModal({
         <SubscribeWithPi variant="shop" isPremium={isPremium} premiumUntil={premiumUntil} />
 
         <div className="px-4 pt-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Neon packs</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-yn-muted">Neon packs</p>
         </div>
 
         <div className="grid grid-cols-2 gap-2 p-3">
@@ -150,8 +150,8 @@ export function NeonShopModal({
                 key={pkg.id}
                 className={`relative flex flex-col rounded-lg border px-3 py-2.5 ${
                   pkg.badge
-                    ? "border-pink-500/35 bg-gradient-to-b from-pink-500/10 to-white/[0.03]"
-                    : "border-white/[0.08] bg-white/[0.03]"
+                    ? "border-pink-300 bg-gradient-to-b from-pink-50 to-white"
+                    : "border-black/8 bg-yn-bg"
                 }`}
               >
                 {pkg.badge && (
@@ -161,10 +161,10 @@ export function NeonShopModal({
                 )}
 
                 <div className="flex items-baseline justify-between gap-1">
-                  <div className="text-[22px] font-semibold leading-none tabular-nums text-yellow-300">
+                  <div className="text-[22px] font-semibold leading-none tabular-nums text-amber-600">
                     {pkg.neon.toLocaleString()}
                   </div>
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-white/40">Neon</div>
+                  <div className="text-[10px] font-medium uppercase tracking-wide text-yn-muted">Neon</div>
                 </div>
 
                 <Button
@@ -182,7 +182,7 @@ export function NeonShopModal({
         </div>
 
         <div className="px-4 pb-3.5 text-center">
-          <p className="text-[10px] text-white/35">
+          <p className="text-[10px] text-yn-muted">
             Secure payment via Pi Network
           </p>
         </div>
@@ -193,7 +193,7 @@ export function NeonShopModal({
               ? "border border-green-500/30 bg-green-500/15 text-green-400"
               : message.type === "error"
                 ? "border border-red-500/30 bg-red-500/15 text-red-400"
-                : "border border-purple-400/25 bg-purple-500/15 text-purple-200"
+                : "border border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800"
           }`}>
             {message.text}
           </div>

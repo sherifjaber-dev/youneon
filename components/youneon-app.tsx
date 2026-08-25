@@ -734,7 +734,7 @@ export function YouNeonApp() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0f0117]">
+    <div className="min-h-dvh bg-yn-bg text-yn-text">
       {sessionUnverified && (
         <div className="fixed left-0 right-0 top-[calc(48px+env(safe-area-inset-top))] z-40 bg-amber-100/95 px-3 py-1 text-center text-[11px] text-amber-950">
           Signed in. Pi account verification is still pending.

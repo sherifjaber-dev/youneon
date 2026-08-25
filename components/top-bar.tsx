@@ -49,7 +49,7 @@ export function TopBar({
 
   return (
     <>
-      <div className="yn-glass fixed top-0 left-0 right-0 z-50 border-b border-white/8 px-4 pt-[env(safe-area-inset-top)]">
+      <div className="yn-glass fixed top-0 left-0 right-0 z-50 border-b border-black/6 px-4 pt-[env(safe-area-inset-top)]">
         <div className="flex h-12 items-center justify-between gap-2">
           <button
             onClick={onProfileClick}
@@ -58,13 +58,13 @@ export function TopBar({
           >
             <NeonAvatar src={profilePicture} name={profileName} size={32} showPhoto />
             {isPremium && (
-              <span className="absolute -bottom-0.5 -right-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-[#0f0117] bg-gradient-to-br from-amber-400 to-pink-500">
+              <span className="absolute -bottom-0.5 -right-0.5 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-yn-nav bg-gradient-to-br from-amber-400 to-pink-500">
                 <Crown size={8} className="text-white" />
               </span>
             )}
           </button>
 
-          <span className="min-w-0 truncate bg-gradient-to-r from-purple-300 to-pink-400 bg-clip-text text-[15px] font-semibold tracking-tight text-transparent">
+          <span className="min-w-0 truncate bg-gradient-to-r from-fuchsia-600 to-pink-500 bg-clip-text text-[15px] font-semibold tracking-tight text-transparent">
             YouNeon
           </span>
 
@@ -72,7 +72,7 @@ export function TopBar({
             <button
               type="button"
               onClick={openPanel}
-              className="relative flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-white/6 text-white/80 transition-colors hover:text-white active:scale-95"
+              className="relative flex h-8 w-8 items-center justify-center rounded-full border border-black/8 bg-white text-yn-muted shadow-sm transition-colors hover:text-yn-text active:scale-95"
               aria-label="Notifications"
             >
               <Bell size={16} strokeWidth={2} />
@@ -86,8 +86,8 @@ export function TopBar({
             <span
               className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
                 bagActive
-                  ? "border-sky-400/40 bg-sky-500/15 text-sky-400"
-                  : "border-white/12 bg-white/6 text-white/40"
+                  ? "border-sky-400/40 bg-sky-500/15 text-sky-500"
+                  : "border-black/8 bg-white text-yn-muted/50 shadow-sm"
               }`}
               title={
                 bagActive
@@ -111,12 +111,12 @@ export function TopBar({
 
             <button
               onClick={onNeonClick}
-              className="flex h-8 items-center gap-1.5 rounded-full border border-white/12 bg-white/6 px-2.5 transition-colors active:scale-95"
+              className="flex h-8 items-center gap-1.5 rounded-full border border-amber-200/80 bg-white px-2.5 shadow-sm transition-colors active:scale-95"
               aria-label="Open Neon shop"
             >
-              <span className="text-[13px] text-yellow-400">◆</span>
-              <span className="text-[13px] font-semibold tabular-nums text-yellow-300">{neonBalance}</span>
-              <span className="text-[11px] font-medium text-yellow-300/70">Neon</span>
+              <span className="text-[13px] text-amber-500">◆</span>
+              <span className="text-[13px] font-semibold tabular-nums text-amber-600">{neonBalance}</span>
+              <span className="text-[11px] font-medium text-amber-600/80">Neon</span>
             </button>
           </div>
         </div>

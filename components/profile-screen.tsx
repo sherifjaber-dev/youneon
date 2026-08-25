@@ -99,7 +99,7 @@ export function ProfileScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-24 pb-24">
+    <div className="min-h-screen bg-yn-bg pt-24 pb-24">
       {/* Profile Header */}
       <div className="bg-gradient-to-b from-purple-100 to-transparent px-4 py-8 text-center border-b border-gray-200 relative">
         <button onClick={() => setShowSettings(true)} className="absolute top-6 right-4 p-2 hover:bg-white rounded-lg transition">

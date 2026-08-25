@@ -139,7 +139,7 @@ export function ChatUnlockModal({
         onMouseDown={stopOverlayTheft}
         onTouchStart={stopOverlayTheft}
         onClick={stopOverlayTheft}
-        className="z-[2147483646] max-h-[90vh] max-w-[360px] gap-0 overflow-y-auto rounded-2xl border border-white/10 bg-[#0f0117] p-0 shadow-xl"
+        className="z-[2147483646] max-h-[90vh] max-w-[360px] gap-0 overflow-y-auto rounded-2xl border border-black/8 bg-yn-card p-0 text-yn-text shadow-xl"
       >
         {hasFree ? (
           <>
@@ -148,12 +148,12 @@ export function ChatUnlockModal({
                 type="button"
                 onClick={onClose}
                 disabled={busy}
-                className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
+                className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-yn-muted transition hover:bg-black/5 hover:text-yn-text disabled:opacity-40"
                 aria-label="Close"
               >
                 <X size={16} strokeWidth={2.25} />
               </button>
-              <DialogTitle className="pr-8 text-center text-[18px] font-semibold tracking-tight text-white">
+              <DialogTitle className="pr-8 text-center text-[18px] font-semibold tracking-tight text-yn-text">
                 Chat via Messages
               </DialogTitle>
               <DialogDescription className="sr-only">
@@ -162,15 +162,15 @@ export function ChatUnlockModal({
             </div>
 
             <div className="px-4 pt-3">
-              <YouNeonChatConnectArt className="overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(192,132,252,0.18)]" />
+              <YouNeonChatConnectArt className="overflow-hidden rounded-2xl border border-black/8 shadow-[0_8px_28px_rgba(88,28,135,0.08)]" />
             </div>
 
             <div className="px-5 pb-5 pt-4 text-center">
-              <p className="text-[14px] leading-relaxed text-white/70">
-                You can use a <span className="font-semibold text-sky-300">Free Message</span> to start chatting with{" "}
-                <span className="font-semibold text-white">{name}</span>. After this, messages with them stay free forever.
+              <p className="text-[14px] leading-relaxed text-yn-muted">
+                You can use a <span className="font-semibold text-sky-600">Free Message</span> to start chatting with{" "}
+                <span className="font-semibold text-yn-text">{name}</span>. After this, messages with them stay free forever.
               </p>
-              <p className="mt-2 text-[12px] text-white/40">
+              <p className="mt-2 text-[12px] text-yn-muted">
                 {remaining} free {remaining === 1 ? "unlock" : "unlocks"} left today
               </p>
               <button
@@ -209,7 +209,7 @@ export function ChatUnlockModal({
             <SubscribeWithPi variant="shop" isPremium={isPremium} premiumUntil={premiumUntil} />
 
             <div className="px-4 pt-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">Neon packs</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-yn-muted">Neon packs</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 p-3">
@@ -220,8 +220,8 @@ export function ChatUnlockModal({
                     key={pkg.id}
                     className={`relative flex flex-col rounded-lg border px-3 py-2.5 ${
                       pkg.badge
-                        ? "border-pink-500/35 bg-gradient-to-b from-pink-500/10 to-white/[0.03]"
-                        : "border-white/[0.08] bg-white/[0.03]"
+                        ? "border-pink-300 bg-gradient-to-b from-pink-50 to-white"
+                        : "border-black/8 bg-yn-bg"
                     }`}
                   >
                     {pkg.badge && (
@@ -230,10 +230,10 @@ export function ChatUnlockModal({
                       </div>
                     )}
                     <div className="flex items-baseline justify-between gap-1">
-                      <div className="text-[22px] font-semibold leading-none tabular-nums text-yellow-300">
+                      <div className="text-[22px] font-semibold leading-none tabular-nums text-amber-600">
                         {pkg.neon.toLocaleString()}
                       </div>
-                      <div className="text-[10px] font-medium uppercase tracking-wide text-white/40">Neon</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide text-yn-muted">Neon</div>
                     </div>
                     <Button
                       type="button"
@@ -256,7 +256,7 @@ export function ChatUnlockModal({
                     ? "border border-green-500/30 bg-green-500/15 text-green-400"
                     : message.type === "error"
                       ? "border border-red-500/30 bg-red-500/15 text-red-400"
-                      : "border border-purple-400/25 bg-purple-500/15 text-purple-200"
+                      : "border border-fuchsia-200 bg-fuchsia-50 text-fuchsia-800"
                 }`}
               >
                 {message.text}

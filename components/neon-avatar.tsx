@@ -95,7 +95,7 @@ export function NeonAvatar({
           style={{
             width: Math.max(8, Math.round(size * 0.22)),
             height: Math.max(8, Math.round(size * 0.22)),
-            boxShadow: `0 0 0 ${ring}px #0f0117`,
+            boxShadow: `0 0 0 ${ring}px var(--yn-bg)`,
           }}
           aria-label="Online"
         />

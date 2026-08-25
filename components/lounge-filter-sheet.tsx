@@ -77,16 +77,16 @@ export function LoungeFilterSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end bg-black/65 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[60] flex items-end bg-black/40 backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[88dvh] w-full flex-col rounded-t-[28px] border-t border-white/10 bg-[#16061f] px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_40px_rgba(88,28,135,0.35)]"
+        className="flex max-h-[88dvh] w-full flex-col rounded-t-[28px] border-t border-black/6 bg-yn-card px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-2 text-yn-text shadow-[0_-12px_40px_rgba(31,31,35,0.12)]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Filter"
       >
-        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/20" />
+        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-black/15" />
 
         {picker ? (
           <>
@@ -94,7 +94,7 @@ export function LoungeFilterSheet({
               <button
                 type="button"
                 onClick={() => setPicker(null)}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 transition active:scale-95"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-yn-muted transition active:scale-95"
                 aria-label="Back to filters"
               >
                 <ChevronLeft size={22} />
@@ -106,13 +106,13 @@ export function LoungeFilterSheet({
             <div className="relative mt-2">
               <Search
                 size={16}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35"
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-yn-muted"
               />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search"
-                className="h-11 w-full rounded-full border border-white/10 bg-white/[0.06] pl-10 pr-4 text-[14px] text-white outline-none placeholder:text-white/35 focus:border-pink-400/40"
+                className="h-11 w-full rounded-full border border-black/8 bg-yn-bg pl-10 pr-4 text-[14px] text-yn-text outline-none placeholder:text-yn-muted focus:border-pink-400"
               />
             </div>
             <div className="mt-2 min-h-0 flex-1 overflow-y-auto pb-2">
@@ -131,9 +131,9 @@ export function LoungeFilterSheet({
                       );
                       setPicker(null);
                     }}
-                    className="flex h-12 w-full items-center justify-between border-b border-white/6 text-left"
+                    className="flex h-12 w-full items-center justify-between border-b border-black/6 text-left"
                   >
-                    <span className={`text-[15px] ${selected ? "font-semibold text-white" : "text-white/70"}`}>
+                    <span className={`text-[15px] ${selected ? "font-semibold text-yn-text" : "text-yn-muted"}`}>
                       {picker === "country" && value !== "All" ? (
                         <span className="mr-2">{countryToFlag(value)}</span>
                       ) : null}
@@ -151,7 +151,7 @@ export function LoungeFilterSheet({
           <>
             <h3 className="text-[26px] font-bold tracking-tight">Filter</h3>
 
-            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-white/40">
+            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-yn-muted">
               Preferred Gender
             </p>
             <div className="mt-2.5 grid grid-cols-3 gap-2.5">
@@ -170,14 +170,14 @@ export function LoungeFilterSheet({
                     onClick={() => onChange({ ...draft, gender: opt.id })}
                     className={`flex h-[118px] flex-col items-center justify-center rounded-2xl border transition ${
                       selected
-                        ? "border-pink-400/80 bg-pink-500/12 shadow-[0_0_18px_rgba(236,72,153,0.18)]"
-                        : "border-white/8 bg-white/[0.04]"
+                        ? "border-pink-400 bg-pink-50 shadow-[0_4px_14px_rgba(219,39,119,0.12)]"
+                        : "border-black/8 bg-yn-bg"
                     }`}
                   >
                     <GenderArt kind={opt.id} />
                     <span
                       className={`mt-1 text-[14px] font-semibold ${
-                        selected ? "text-white" : "text-white/45"
+                        selected ? "text-yn-text" : "text-yn-muted"
                       }`}
                     >
                       {opt.label}
@@ -190,32 +190,32 @@ export function LoungeFilterSheet({
             <button
               type="button"
               onClick={() => openPicker("country")}
-              className="mt-2 flex h-14 w-full items-center justify-between border-b border-white/8"
+              className="mt-2 flex h-14 w-full items-center justify-between border-b border-black/6"
             >
-              <span className="text-[15px] text-white/70">Preferred Country</span>
-              <span className="flex items-center gap-1 text-[15px] font-semibold text-white">
+              <span className="text-[15px] text-yn-muted">Preferred Country</span>
+              <span className="flex items-center gap-1 text-[15px] font-semibold text-yn-text">
                 {draft.country !== "All" ? countryToFlag(draft.country) : null}
                 {draft.country}
-                <ChevronRight size={18} className="text-white/35" />
+                <ChevronRight size={18} className="text-yn-muted" />
               </span>
             </button>
 
             <button
               type="button"
               onClick={() => openPicker("language")}
-              className="flex h-14 w-full items-center justify-between border-b border-white/8"
+              className="flex h-14 w-full items-center justify-between border-b border-black/6"
             >
-              <span className="text-[15px] text-white/70">Preferred Language</span>
-              <span className="flex items-center gap-1 text-[15px] font-semibold text-white">
+              <span className="text-[15px] text-yn-muted">Preferred Language</span>
+              <span className="flex items-center gap-1 text-[15px] font-semibold text-yn-text">
                 {draft.language}
-                <ChevronRight size={18} className="text-white/35" />
+                <ChevronRight size={18} className="text-yn-muted" />
               </span>
             </button>
 
             <div className="flex min-h-14 items-center justify-between gap-3 py-3">
               <div className="min-w-0">
-                <p className="text-[15px] font-semibold text-white">Around My Age</p>
-                <p className="mt-0.5 text-[12px] text-white/40">Show users around my age</p>
+                <p className="text-[15px] font-semibold text-yn-text">Around My Age</p>
+                <p className="mt-0.5 text-[12px] text-yn-muted">Show users around my age</p>
               </div>
               <button
                 type="button"
@@ -226,7 +226,7 @@ export function LoungeFilterSheet({
                 className={`relative h-7 w-12 shrink-0 rounded-full transition ${
                   draft.aroundMyAge
                     ? "bg-gradient-to-r from-purple-500 to-pink-500"
-                    : "bg-white/20"
+                    : "bg-black/15"
                 }`}
               >
                 <span
@@ -240,7 +240,7 @@ export function LoungeFilterSheet({
             <button
               type="button"
               onClick={onSave}
-              className="mt-2 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-pink-500 text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(168,85,247,0.4)]"
+              className="mt-2 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-500 text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(192,38,211,0.22)]"
             >
               Save
             </button>

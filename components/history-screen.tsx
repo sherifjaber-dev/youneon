@@ -157,7 +157,7 @@ function SquarePhoto({
   const photo = showPhoto && isPhotoSrc(src);
   return (
     <div
-      className="relative shrink-0 overflow-hidden rounded-[18px] bg-[#1a0828]"
+      className="relative shrink-0 overflow-hidden rounded-[18px] bg-yn-nav"
       style={{ width: size, height: size }}
     >
       {photo ? (
@@ -202,8 +202,8 @@ function FollowMessageActions({
           followWidth === "wide" ? "min-w-[92px]" : "min-w-[84px]"
         } ${
           following
-            ? "border border-white/16 bg-white/[0.06] text-white/80"
-            : "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(168,85,247,0.32)]"
+            ? "border border-black/10 bg-yn-bg text-yn-muted"
+            : "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(192,38,211,0.22)]"
         }`}
       >
         {following ? <Check size={14} strokeWidth={2.4} /> : null}
@@ -212,7 +212,7 @@ function FollowMessageActions({
       <button
         type="button"
         onClick={onMessage}
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-white/[0.07] text-white transition active:scale-[0.96]"
+        className="flex h-11 w-11 items-center justify-center rounded-full border border-black/8 bg-yn-card text-yn-text shadow-sm transition active:scale-[0.96]"
         aria-label="Message"
       >
         <MessageCircle size={16} />
@@ -384,12 +384,12 @@ export function HistoryScreen({
   };
 
   return (
-    <div className="min-h-full bg-[#0f0117] pb-8 text-white">
+    <div className="min-h-full bg-yn-bg pb-8 text-yn-text">
       <div className="px-4 pt-3">
         <h1 className="text-[22px] font-bold tracking-tight">History</h1>
       </div>
 
-      <div className="sticky top-0 z-10 mt-2 bg-[#0f0117]/92 backdrop-blur-md">
+      <div className="sticky top-0 z-10 mt-2 bg-yn-bg/92 backdrop-blur-md">
         <div className="flex px-2">
           {(
             [
@@ -404,27 +404,27 @@ export function HistoryScreen({
                 type="button"
                 onClick={() => setTab(item.id)}
                 className={`relative flex h-12 flex-1 items-center justify-center px-2 text-[15px] font-semibold transition ${
-                  active ? "text-white" : "text-white/40"
+                  active ? "text-yn-text" : "text-yn-muted"
                 }`}
                 data-testid={`history-tab-${item.id}`}
               >
                 {item.label}
                 {active ? (
-                  <span className="absolute inset-x-6 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-purple-500 to-pink-500" />
+                  <span className="absolute inset-x-6 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-fuchsia-500 to-pink-500" />
                 ) : null}
               </button>
             );
           })}
         </div>
-        <div className="h-px bg-white/8" />
+        <div className="h-px bg-black/8" />
       </div>
 
       {tab === "recent" ? (
         <div>
           {history.length === 0 ? (
             <div className="px-6 py-16 text-center">
-              <p className="text-[16px] font-semibold text-white">No video chats yet</p>
-              <p className="mt-1.5 text-sm text-white/40">Start a random chat from Discover</p>
+              <p className="text-[16px] font-semibold text-yn-text">No video chats yet</p>
+              <p className="mt-1.5 text-sm text-yn-muted">Start a random chat from Discover</p>
             </div>
           ) : (
             <>
@@ -439,7 +439,7 @@ export function HistoryScreen({
                       return (
                         <article
                           key={`perfect-${u.id}`}
-                          className="w-[210px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-[#1a0828] shadow-[0_12px_28px_rgba(76,29,149,0.22)]"
+                          className="w-[210px] shrink-0 overflow-hidden rounded-[22px] border border-black/6 bg-yn-card shadow-[0_8px_24px_rgba(88,28,135,0.08)]"
                         >
                           <button
                             type="button"
@@ -485,8 +485,8 @@ export function HistoryScreen({
                               }
                               className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full text-[12px] font-semibold transition active:scale-[0.98] disabled:opacity-55 ${
                                 following
-                                  ? "border border-white/16 bg-white/[0.06] text-white/80"
-                                  : "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                                  ? "border border-black/10 bg-yn-bg text-yn-muted"
+                                  : "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white"
                               }`}
                             >
                               {following ? <Check size={13} /> : <span className="text-[15px]">+</span>}
@@ -503,7 +503,7 @@ export function HistoryScreen({
                                   countryFlag: u.countryFlag,
                                 })
                               }
-                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-white"
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-yn-bg text-yn-text"
                               aria-label="Message"
                             >
                               <MessageCircle size={16} />
@@ -528,13 +528,13 @@ export function HistoryScreen({
                       <span
                         className={`flex h-[54px] w-[54px] items-center justify-center rounded-full text-[17px] font-bold ${
                           updatedFocus === "all"
-                            ? "bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-[0_0_16px_rgba(236,72,153,0.35)]"
-                            : "bg-white/10 text-white/80"
+                            ? "bg-gradient-to-br from-fuchsia-500 to-pink-500 text-white shadow-[0_4px_16px_rgba(192,38,211,0.22)]"
+                            : "bg-yn-card text-yn-muted shadow-sm"
                         }`}
                       >
                         {profileUpdated.length}
                       </span>
-                      <span className="text-[12px] font-semibold text-white/70">All</span>
+                      <span className="text-[12px] font-semibold text-yn-muted">All</span>
                     </button>
                     {profileUpdated.map((person) => (
                       <button
@@ -554,10 +554,10 @@ export function HistoryScreen({
                           {updatedFocus === person.id ? (
                             <span className="absolute -inset-0.5 rounded-full ring-2 ring-pink-400" />
                           ) : (
-                            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 shadow-[0_0_0_2px_#0f0117]" />
+                            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-pink-500 shadow-[0_0_0_2px_var(--yn-bg)]" />
                           )}
                         </span>
-                        <span className="w-full truncate text-center text-[12px] font-medium text-white/70">
+                        <span className="w-full truncate text-center text-[12px] font-medium text-yn-muted">
                           {person.name}
                         </span>
                       </button>
@@ -567,11 +567,11 @@ export function HistoryScreen({
               ) : null}
 
               <div className="mt-5 flex h-12 items-center justify-between px-4">
-                <p className="text-[15px] font-semibold text-white/55">{filterLabel(applied)}</p>
+                <p className="text-[15px] font-semibold text-yn-muted">{filterLabel(applied)}</p>
                 <button
                   type="button"
                   onClick={openFilter}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-white/70 transition active:scale-95"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-yn-muted transition active:scale-95"
                   aria-label="Filter recent activity"
                   data-testid="history-filter-btn"
                 >
@@ -581,7 +581,7 @@ export function HistoryScreen({
 
               <div className="space-y-1 px-3">
                 {filteredList.length === 0 ? (
-                  <p className="py-10 text-center text-sm text-white/40">No chats match this filter</p>
+                  <p className="py-10 text-center text-sm text-yn-muted">No chats match this filter</p>
                 ) : (
                   filteredList.map((u) => {
                     const flag = countryToFlag(u.countryFlag || u.country);
@@ -609,14 +609,14 @@ export function HistoryScreen({
                           className="min-w-0 flex-1 text-left"
                           onClick={() => setPreviewUserId(u.matchId)}
                         >
-                          <p className="truncate text-[16px] font-bold text-white">
+                          <p className="truncate text-[16px] font-bold text-yn-text">
                             {u.name}
                             {flag ? <span className="ml-1.5 font-normal">{flag}</span> : null}
                           </p>
-                          <p className="mt-0.5 text-[12px] text-white/45">
+                          <p className="mt-0.5 text-[12px] text-yn-muted">
                             {formatHistoryWhen(u.timestamp)}
                           </p>
-                          <p className="mt-1 flex items-center gap-1 text-[12px] text-white/50">
+                          <p className="mt-1 flex items-center gap-1 text-[12px] text-yn-muted">
                             <Video size={13} />
                             {displayDuration(u)}
                           </p>
@@ -651,13 +651,13 @@ export function HistoryScreen({
           <h2 className="text-[16px] font-bold tracking-tight">Last 30 days</h2>
           {views.length === 0 ? (
             <div className="py-16 text-center">
-              <p className="text-[16px] font-semibold text-white">No profile views yet</p>
-              <p className="mx-auto mt-1.5 max-w-xs text-sm text-white/40">
+              <p className="text-[16px] font-semibold text-yn-text">No profile views yet</p>
+              <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
                 When someone opens your profile in a call, they will show up here.
               </p>
             </div>
           ) : (
-            <div className="mt-2 divide-y divide-white/6">
+            <div className="mt-2 divide-y divide-black/6">
               {views.map((view) => {
                 const live = liveById[view.viewerId];
                 const name = live?.name || view.name || view.viewerId;
@@ -687,8 +687,8 @@ export function HistoryScreen({
                       className="min-w-0 flex-1 text-left"
                       onClick={() => setPreviewUserId(view.viewerId)}
                     >
-                      <p className="truncate text-[16px] font-bold text-white">{name}</p>
-                      <p className="mt-0.5 truncate text-[12px] text-white/45">
+                      <p className="truncate text-[16px] font-bold text-yn-text">{name}</p>
+                      <p className="mt-0.5 truncate text-[12px] text-yn-muted">
                         {flag ? <span>{flag}</span> : null}
                         {flag && language ? <span> · </span> : null}
                         {language || (!flag ? "Recent viewer" : "")}
@@ -718,19 +718,19 @@ export function HistoryScreen({
 
       {filterOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-end bg-black/65 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-end bg-black/40 backdrop-blur-[2px]"
           onClick={() => setFilterOpen(false)}
         >
           <div
-            className="w-full rounded-t-[28px] border-t border-white/10 bg-[#16061f] px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_40px_rgba(88,28,135,0.35)]"
+            className="w-full rounded-t-[28px] border-t border-black/6 bg-yn-card px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_40px_rgba(31,31,35,0.12)]"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label="Filter"
           >
-            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/20" />
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-black/15" />
             <h3 className="text-[26px] font-bold tracking-tight">Filter</h3>
 
-            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-white/40">
+            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-yn-muted">
               Preferred Gender
             </p>
             <div className="mt-2.5 grid grid-cols-3 gap-2.5">
@@ -749,14 +749,14 @@ export function HistoryScreen({
                     onClick={() => setDraft((d) => ({ ...d, gender: opt.id }))}
                     className={`flex h-[118px] flex-col items-center justify-center rounded-2xl border transition ${
                       selected
-                        ? "border-pink-400/80 bg-pink-500/12 shadow-[0_0_18px_rgba(236,72,153,0.18)]"
-                        : "border-white/8 bg-white/[0.04]"
+                        ? "border-pink-400 bg-pink-50 shadow-[0_4px_14px_rgba(219,39,119,0.12)]"
+                        : "border-black/8 bg-yn-bg"
                     }`}
                   >
                     <GenderArt kind={opt.id} />
                     <span
                       className={`mt-1 text-[14px] font-semibold ${
-                        selected ? "text-white" : "text-white/45"
+                        selected ? "text-yn-text" : "text-yn-muted"
                       }`}
                     >
                       {opt.label}
@@ -766,7 +766,7 @@ export function HistoryScreen({
               })}
             </div>
 
-            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-white/40">Status</p>
+            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-yn-muted">Status</p>
             <div className="mt-2.5 flex gap-2">
               {(
                 [
@@ -782,8 +782,8 @@ export function HistoryScreen({
                     onClick={() => setDraft((d) => ({ ...d, status: opt.id }))}
                     className={`h-11 min-w-[72px] rounded-full px-5 text-[14px] font-semibold ${
                       selected
-                        ? "border border-pink-400/70 bg-pink-500/15 text-white"
-                        : "border border-transparent bg-white/8 text-white/45"
+                        ? "border border-pink-400 bg-pink-50 text-yn-text"
+                        : "border border-transparent bg-yn-bg text-yn-muted"
                     }`}
                   >
                     {opt.label}
@@ -792,7 +792,7 @@ export function HistoryScreen({
               })}
             </div>
 
-            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-white/40">Sort</p>
+            <p className="mt-5 text-[13px] font-bold uppercase tracking-wide text-yn-muted">Sort</p>
             <div className="mt-1">
               {(
                 [
@@ -810,12 +810,12 @@ export function HistoryScreen({
                   >
                     <span
                       className={`flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 ${
-                        selected ? "border-pink-400" : "border-white/25"
+                        selected ? "border-pink-500" : "border-black/20"
                       }`}
                     >
-                      {selected ? <span className="h-2.5 w-2.5 rounded-full bg-pink-400" /> : null}
+                      {selected ? <span className="h-2.5 w-2.5 rounded-full bg-pink-500" /> : null}
                     </span>
-                    <span className={`text-[16px] ${selected ? "font-semibold text-white" : "text-white/45"}`}>
+                    <span className={`text-[16px] ${selected ? "font-semibold text-yn-text" : "text-yn-muted"}`}>
                       {opt.label}
                     </span>
                   </button>
@@ -826,7 +826,7 @@ export function HistoryScreen({
             <button
               type="button"
               onClick={applyFilter}
-              className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-pink-500 text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(168,85,247,0.4)]"
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-500 text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(192,38,211,0.22)]"
             >
               Apply
             </button>

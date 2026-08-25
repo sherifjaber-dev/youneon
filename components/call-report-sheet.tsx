@@ -23,14 +23,14 @@ export function CallReportSheet({
 
   return (
     <div className="absolute inset-0 z-[70] flex items-end justify-center bg-black/70 p-3 sm:items-center">
-      <div className="flex max-h-[min(92dvh,720px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#14061c]">
-        <div className="flex items-start gap-3 border-b border-white/8 px-4 py-3">
-          <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-red-500/15 text-red-300">
+      <div className="flex max-h-[min(92dvh,720px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-black/8 bg-yn-card text-yn-text">
+        <div className="flex items-start gap-3 border-b border-black/6 px-4 py-3">
+          <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600">
             <ShieldAlert size={18} />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-[17px] font-semibold text-white">Report {userName || "this person"}</h2>
-            <p className="mt-0.5 text-[12px] leading-snug text-white/50">
+            <h2 className="text-[17px] font-semibold text-yn-text">Report {userName || "this person"}</h2>
+            <p className="mt-0.5 text-[12px] leading-snug text-yn-muted">
               Choose a YouNeon Guidelines reason. We save chat snippets, gift events, and the room id — not a secret video recording.
             </p>
           </div>
@@ -45,12 +45,12 @@ export function CallReportSheet({
                 onClick={() => setReasonId(reason.id)}
                 className={`w-full rounded-xl px-3.5 py-3 text-left ${
                   on
-                    ? "border border-pink-400/45 bg-gradient-to-r from-purple-600/25 to-pink-600/25"
-                    : "border border-white/8 bg-white/[0.04]"
+                    ? "border border-pink-300 bg-gradient-to-r from-fuchsia-50 to-pink-50"
+                    : "border border-black/8 bg-yn-bg"
                 }`}
               >
-                <span className="block text-[14px] font-semibold text-white">{reason.label}</span>
-                <span className="mt-0.5 block text-[12px] leading-snug text-white/45">{reason.hint}</span>
+                <span className="block text-[14px] font-semibold text-yn-text">{reason.label}</span>
+                <span className="mt-0.5 block text-[12px] leading-snug text-yn-muted">{reason.hint}</span>
               </button>
             );
           })}
@@ -59,9 +59,9 @@ export function CallReportSheet({
             onChange={(e) => setNotes(e.target.value.slice(0, 500))}
             placeholder="Optional note (no need to repeat personal details)"
             rows={3}
-            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[13px] text-white outline-none placeholder:text-white/30"
+            className="mt-2 w-full rounded-xl border border-black/10 bg-yn-bg px-3 py-2 text-[13px] text-yn-text outline-none placeholder:text-yn-muted"
           />
-          <label className="flex min-h-11 items-center gap-2 px-1 text-[13px] text-white/80">
+          <label className="flex min-h-11 items-center gap-2 px-1 text-[13px] text-yn-text">
             <input
               type="checkbox"
               checked={alsoBlock}
@@ -71,11 +71,11 @@ export function CallReportSheet({
             Also block this person
           </label>
         </div>
-        <div className="flex gap-2 border-t border-white/8 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+        <div className="flex gap-2 border-t border-black/6 p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={onClose}
-            className="h-12 flex-1 rounded-xl bg-white/10 text-[14px] font-semibold text-white"
+            className="h-12 flex-1 rounded-xl bg-yn-bg text-[14px] font-semibold text-yn-text"
           >
             Cancel
           </button>

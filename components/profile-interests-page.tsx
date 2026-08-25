@@ -41,37 +41,37 @@ export function ProfileInterestsPage({
   };
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-[#0f0117]">
-      <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-white/8 px-2 pt-[env(safe-area-inset-top)]">
+    <div className="absolute inset-0 z-20 flex flex-col bg-yn-bg text-yn-text">
+      <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-black/6 px-2 pt-[env(safe-area-inset-top)]">
         <button
           type="button"
           onClick={onBack}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-white/85 hover:bg-white/10"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-yn-text hover:bg-black/5"
           aria-label="Back"
         >
           <ChevronLeft size={24} />
         </button>
-        <h2 className="flex-1 text-[17px] font-semibold text-white">Interests</h2>
-        <span className="mr-2 rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-pink-200">
+        <h2 className="flex-1 text-[17px] font-semibold text-yn-text">Interests</h2>
+        <span className="mr-2 rounded-full bg-yn-bg px-3 py-1.5 text-[12px] font-semibold text-yn-accent">
           {selected.length} Selected
         </span>
       </header>
 
       <div className="px-4 pb-2 pt-3">
-        <label className="flex h-11 items-center gap-2 rounded-full bg-white/[0.08] px-3.5">
-          <Search size={16} className="shrink-0 text-white/40" />
+        <label className="flex h-11 items-center gap-2 rounded-full bg-yn-bg px-3.5">
+          <Search size={16} className="shrink-0 text-yn-muted" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
-            className="h-full w-full bg-transparent text-[14px] text-white outline-none placeholder:text-white/35"
+            className="h-full w-full bg-transparent text-[14px] text-yn-text outline-none placeholder:text-yn-muted"
           />
         </label>
       </div>
 
       {!q && (
-        <div className="shrink-0 overflow-x-auto border-b border-white/8 px-2">
+        <div className="shrink-0 overflow-x-auto border-b border-black/6 px-2">
           <div className="flex min-w-max gap-1">
             {INTEREST_CATEGORIES.map((cat) => {
               const active = cat.id === categoryId;
@@ -81,7 +81,7 @@ export function ProfileInterestsPage({
                   type="button"
                   onClick={() => setCategoryId(cat.id)}
                   className={`relative flex h-12 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors ${
-                    active ? "text-white" : "text-white/50 hover:text-white/80"
+                    active ? "text-yn-text" : "text-yn-muted hover:text-yn-text"
                   }`}
                 >
                   <CategoryIcon id={cat.id} size={15} />
@@ -98,7 +98,7 @@ export function ProfileInterestsPage({
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {selected.length >= MAX_INTERESTS && (
-          <p className="mb-3 text-[12px] text-white/45">You can pick up to {MAX_INTERESTS} interests.</p>
+          <p className="mb-3 text-[12px] text-yn-muted">You can pick up to {MAX_INTERESTS} interests.</p>
         )}
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => {
@@ -112,8 +112,8 @@ export function ProfileInterestsPage({
                 disabled={blocked}
                 className={`yn-interest-chip inline-flex h-10 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-medium transition-all ${
                   on
-                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.35)]"
-                    : "bg-white/[0.07] text-white/80 hover:bg-white/[0.12]"
+                    ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(192,38,211,0.22)]"
+                    : "bg-yn-bg text-yn-muted hover:bg-black/5"
                 } disabled:opacity-40`}
               >
                 <InterestIcon tag={tag} size={15} />
@@ -122,7 +122,7 @@ export function ProfileInterestsPage({
             );
           })}
           {tags.length === 0 && (
-            <p className="py-8 text-center text-[13px] text-white/40">No interests match that search.</p>
+            <p className="py-8 text-center text-[13px] text-yn-muted">No interests match that search.</p>
           )}
         </div>
       </div>

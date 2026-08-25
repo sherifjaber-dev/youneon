@@ -54,7 +54,7 @@ export function MatchingLoadingScreen({ onCancel }: MatchingLoadingScreenProps) 
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
-      <Card className="w-full max-w-md bg-purple-950/40 backdrop-blur-2xl border-purple-500/30 p-8 text-center space-y-8 relative z-10 shadow-2xl shadow-purple-500/40">
+      <Card className="w-full max-w-md bg-yn-card backdrop-blur-2xl border-fuchsia-200 p-8 text-center space-y-8 relative z-10 shadow-xl">
         {/* Animated Matching Circles */}
         <div className="flex justify-center">
           <div className="relative w-40 h-40">
@@ -74,32 +74,32 @@ export function MatchingLoadingScreen({ onCancel }: MatchingLoadingScreenProps) 
 
         {/* Matching Message */}
         <div className="space-y-4">
-          <h2 className="text-3xl font-bold text-purple-100">
+          <h2 className="text-3xl font-bold text-yn-text">
             {randomMessage}
             <span className="inline-block w-6">{dots}</span>
           </h2>
-          <p className="text-purple-300 font-semibold">
+          <p className="text-yn-accent font-semibold">
             {elapsedTime > 0 && `${elapsedTime}s`}
           </p>
         </div>
 
         {/* Progress Bar */}
         <div className="space-y-2">
-          <div className="w-full bg-purple-900/50 rounded-full h-3 overflow-hidden border border-purple-500/30">
+          <div className="w-full bg-yn-bg rounded-full h-3 overflow-hidden border border-fuchsia-200">
             <div
               className="neon-gradient-bg transition-all duration-300 shadow-lg shadow-purple-600/60"
               style={{ width: `${Math.min(searchProgress, 95)}%` }}
             />
           </div>
-          <p className="text-xs text-purple-300/70">
+          <p className="text-xs text-yn-muted">
             {Math.min(Math.round(searchProgress), 95)}% matched
           </p>
         </div>
 
         {/* Fun Facts Carousel */}
-        <div className="bg-purple-500/10 backdrop-blur-md rounded-2xl p-4 space-y-2 border border-purple-500/30">
-          <p className="text-sm text-purple-300 font-bold">💡 FUN FACT</p>
-          <p className="text-sm text-purple-100 font-medium">
+        <div className="bg-fuchsia-50 rounded-2xl p-4 space-y-2 border border-fuchsia-200">
+          <p className="text-sm text-yn-accent font-bold">💡 FUN FACT</p>
+          <p className="text-sm text-yn-text font-medium">
             YouNeon connects 1000+ people every hour!
           </p>
         </div>
@@ -107,7 +107,7 @@ export function MatchingLoadingScreen({ onCancel }: MatchingLoadingScreenProps) 
         {/* Cancel Button */}
         <button
           onClick={onCancel}
-          className="w-full py-3 px-4 bg-pink-500/20 hover:bg-pink-500/40 text-pink-300 hover:text-pink-200 rounded-xl font-bold transition border border-pink-500/40 backdrop-blur-md shadow-lg shadow-pink-500/30"
+          className="w-full py-3 px-4 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded-xl font-bold transition border border-pink-200"
         >
           ✕ Cancel
         </button>

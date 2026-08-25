@@ -188,7 +188,7 @@ export function LoungeScreen({
   const adult = isAdultAge(me.age);
 
   return (
-    <div className="min-h-full bg-[#0f0117] pb-8 text-white">
+    <div className="min-h-full bg-yn-bg pb-8 text-yn-text">
       <div className="flex items-center justify-between px-4 pt-3">
         <h1 className="text-[22px] font-bold tracking-tight">Lounge</h1>
         <button
@@ -197,28 +197,28 @@ export function LoungeScreen({
             setDraft(applied);
             setFilterOpen(true);
           }}
-          className="relative flex h-11 w-11 items-center justify-center rounded-full text-white/80 transition active:scale-95"
+          className="relative flex h-11 w-11 items-center justify-center rounded-full text-yn-muted transition active:scale-95"
           aria-label="Filter lounge"
           data-testid="lounge-filter-btn"
         >
           <SlidersHorizontal size={20} />
           {filtersActive ? (
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-pink-400" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-pink-500" />
           ) : null}
         </button>
       </div>
 
-      <div className="mx-4 mt-2 flex items-start gap-2 rounded-xl border border-white/8 bg-white/[0.05] px-3 py-2.5">
-        <Info size={15} className="mt-0.5 shrink-0 text-pink-300/80" />
-        <p className="text-[12px] leading-snug text-white/60">
+      <div className="mx-4 mt-2 flex items-start gap-2 rounded-xl border border-black/6 bg-yn-card px-3 py-2.5 shadow-sm">
+        <Info size={15} className="mt-0.5 shrink-0 text-yn-accent" />
+        <p className="text-[12px] leading-snug text-yn-muted">
           Start chatting with users who were recently online!
         </p>
       </div>
 
       {!adult ? (
         <div className="px-6 py-16 text-center">
-          <p className="text-[16px] font-semibold text-white">YouNeon is 18+</p>
-          <p className="mx-auto mt-1.5 max-w-xs text-sm text-white/40">
+          <p className="text-[16px] font-semibold text-yn-text">YouNeon is 18+</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
             Add your age (18 or older) in your profile to use Lounge. Minors cannot match or browse people here.
           </p>
         </div>
@@ -226,18 +226,18 @@ export function LoungeScreen({
         <LoungeSkeleton />
       ) : people.length === 0 ? (
         <div className="px-6 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-600/30 to-pink-600/20 ring-1 ring-pink-400/25">
-            <MessageSquare size={26} className="text-pink-300" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-100 to-pink-100 ring-1 ring-pink-200">
+            <MessageSquare size={26} className="text-yn-accent" />
           </div>
-          <p className="text-[16px] font-semibold text-white">No one in the Lounge yet</p>
-          <p className="mx-auto mt-1.5 max-w-xs text-sm text-white/40">
+          <p className="text-[16px] font-semibold text-yn-text">No one in the Lounge yet</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
             People who were recently online will appear here. Jump into Discover to meet someone live.
           </p>
         </div>
       ) : all.length === 0 ? (
         <div className="px-6 py-16 text-center">
-          <p className="text-[16px] font-semibold text-white">No matches for these filters</p>
-          <p className="mx-auto mt-1.5 max-w-xs text-sm text-white/40">
+          <p className="text-[16px] font-semibold text-yn-text">No matches for these filters</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
             Try another country, language, or turn off Around My Age.
           </p>
           <button
@@ -339,7 +339,7 @@ function ForYouCard({
   const title = person.age ? `${person.name}, ${person.age}` : person.name;
 
   return (
-    <article className="w-[236px] shrink-0 overflow-hidden rounded-[22px] border border-white/10 bg-[#1a0828] shadow-[0_12px_28px_rgba(76,29,149,0.22)]">
+    <article className="w-[236px] shrink-0 overflow-hidden rounded-[22px] border border-black/6 bg-yn-card shadow-[0_8px_24px_rgba(88,28,135,0.08)]">
       <div className="relative aspect-[3/4] overflow-hidden">
         <button
           type="button"
@@ -419,7 +419,7 @@ function AllCard({
   const title = person.age ? `${person.name}, ${person.age}` : person.name;
 
   return (
-    <article className="overflow-hidden rounded-[20px] border border-white/10 bg-[#1a0828] shadow-[0_8px_20px_rgba(76,29,149,0.18)]">
+    <article className="overflow-hidden rounded-[20px] border border-black/6 bg-yn-card shadow-[0_8px_20px_rgba(88,28,135,0.07)]">
       <div className="relative aspect-[3/4] overflow-hidden">
         <button
           type="button"
@@ -479,22 +479,22 @@ function LoungeSkeleton() {
   return (
     <div className="pt-5">
       <div className="px-4">
-        <div className="h-4 w-20 rounded bg-white/8" />
+        <div className="h-4 w-20 rounded bg-black/8" />
       </div>
       <div className="mt-3 flex gap-3 overflow-hidden px-4">
         {[0, 1].map((i) => (
           <div
             key={i}
-            className="h-[300px] w-[236px] shrink-0 animate-pulse rounded-[22px] bg-white/[0.06]"
+            className="h-[300px] w-[236px] shrink-0 animate-pulse rounded-[22px] bg-black/[0.06]"
           />
         ))}
       </div>
       <div className="mt-6 px-4">
-        <div className="h-4 w-10 rounded bg-white/8" />
+        <div className="h-4 w-10 rounded bg-black/8" />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2.5 px-3">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="aspect-[3/4] animate-pulse rounded-[20px] bg-white/[0.06]" />
+          <div key={i} className="aspect-[3/4] animate-pulse rounded-[20px] bg-black/[0.06]" />
         ))}
       </div>
     </div>

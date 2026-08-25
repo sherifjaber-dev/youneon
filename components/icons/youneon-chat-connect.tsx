@@ -52,7 +52,7 @@ export function YouNeonChatConnectArt({ className }: { className?: string }) {
         <radialGradient id="ynChatGlow" cx="50%" cy="48%" r="58%">
           <stop offset="0%" stopColor="#e879f9" stopOpacity="0.28" />
           <stop offset="55%" stopColor="#7c3aed" stopOpacity="0.12" />
-          <stop offset="100%" stopColor="#0f0117" stopOpacity="0" />
+          <stop offset="100%" stopColor="#F6F4F8" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="ynChatStroke" x1="40" y1="40" x2="240" y2="140">
           <stop offset="0%" stopColor="#f0abfc" />
@@ -76,7 +76,7 @@ export function YouNeonChatConnectArt({ className }: { className?: string }) {
         </filter>
       </defs>
 
-      <rect width="280" height="168" rx="24" fill="#12041c" />
+      <rect width="280" height="168" rx="24" fill="#F6F4F8" />
       <circle cx="140" cy="86" r="92" fill="url(#ynChatGlow)" />
 
       <path
@@ -144,11 +144,11 @@ export function YouNeonChatConnectArt({ className }: { className?: string }) {
 
       {/* Message chips */}
       <g>
-        <rect x="108" y="70" width="38" height="22" rx="11" fill="#1a0828" stroke="#c084fc" strokeWidth="1.4" />
+        <rect x="108" y="70" width="38" height="22" rx="11" fill="#ffffff" stroke="#c026d3" strokeWidth="1.4" />
         <circle cx="119" cy="81" r="2" fill="#e879f9" />
         <circle cx="127" cy="81" r="2" fill="#f0abfc" />
         <circle cx="135" cy="81" r="2" fill="#ec4899" />
-        <rect x="134" y="96" width="42" height="22" rx="11" fill="#1a0828" stroke="#ec4899" strokeWidth="1.4" />
+        <rect x="134" y="96" width="42" height="22" rx="11" fill="#ffffff" stroke="#db2777" strokeWidth="1.4" />
         <path d="M146 107h18" stroke="#f9a8d4" strokeWidth="1.6" strokeLinecap="round" />
       </g>
 

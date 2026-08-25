@@ -100,7 +100,7 @@ interface ProfileEditModalProps {
 type SheetId = "name" | "about" | "languages" | "location" | "age" | "gender" | "badge" | null;
 
 const APPLY =
-  "flex h-12 w-full items-center justify-center rounded-[14px] bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(236,72,153,0.32)] transition-transform active:scale-[0.985] disabled:bg-white/10 disabled:text-white/35 disabled:shadow-none";
+  "flex h-12 w-full items-center justify-center rounded-[14px] bg-gradient-to-r from-fuchsia-600 to-pink-600 text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(192,38,211,0.22)] transition-transform active:scale-[0.985] disabled:bg-yn-bg disabled:text-yn-muted disabled:shadow-none";
 
 function isProfileGender(value: string): value is ProfileGender {
   return (GENDER_OPTIONS as readonly string[]).includes(value);
@@ -191,10 +191,10 @@ function BottomSheet({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-md rounded-t-3xl border border-white/10 bg-[#16061f] px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-2 shadow-2xl">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" />
-        <h3 className="text-[18px] font-semibold text-white">{title}</h3>
-        {subtitle && <p className="mt-1.5 text-[13px] leading-relaxed text-white/50">{subtitle}</p>}
+      <div className="relative w-full max-w-md rounded-t-3xl border border-black/8 bg-yn-card px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-2 shadow-2xl">
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-black/15" />
+        <h3 className="text-[18px] font-semibold text-yn-text">{title}</h3>
+        {subtitle && <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{subtitle}</p>}
         <div className="mt-4">{children}</div>
         {footer && <div className="mt-4">{footer}</div>}
       </div>
@@ -217,13 +217,13 @@ function Row({
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-white/[0.07] px-3.5 text-left"
+      className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-yn-bg px-3.5 text-left"
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center text-white/55">{icon}</span>
-      <span className={`min-w-0 flex-1 truncate text-[14px] ${value ? "text-white" : "text-white/40"}`}>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center text-yn-muted">{icon}</span>
+      <span className={`min-w-0 flex-1 truncate text-[14px] ${value ? "text-yn-text" : "text-yn-muted"}`}>
         {value || placeholder}
       </span>
-      <ChevronRight size={18} className="shrink-0 text-white/30" />
+      <ChevronRight size={18} className="shrink-0 text-yn-muted" />
     </button>
   );
 }
@@ -509,22 +509,22 @@ export function ProfileEditModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center bg-[#0f0117]">
+    <div className="fixed inset-0 z-[100] flex justify-center bg-yn-bg">
       <div className="relative flex h-full w-full max-w-md flex-col">
-        <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-white/8 px-2 pt-[env(safe-area-inset-top)]">
+        <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-black/6 px-2 pt-[env(safe-area-inset-top)]">
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-white/85 hover:bg-white/10"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-yn-text hover:bg-yn-bg"
             aria-label="Close"
           >
             <X size={22} />
           </button>
-          <h1 className="flex-1 text-center text-[17px] font-semibold text-white">Profile</h1>
+          <h1 className="flex-1 text-center text-[17px] font-semibold text-yn-text">Profile</h1>
           <button
             type="button"
             onClick={() => setShowPreview(true)}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-[13px] font-medium text-white"
+            className="flex h-9 items-center gap-1.5 rounded-full bg-yn-bg px-3 text-[13px] font-medium text-yn-text"
           >
             <Eye size={15} />
             Preview
@@ -532,7 +532,7 @@ export function ProfileEditModal({
           <button
             type="button"
             onClick={() => setShowSettings(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-white/85 hover:bg-white/10"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-yn-text hover:bg-yn-bg"
             aria-label="Settings"
           >
             <Settings size={20} />
@@ -549,20 +549,20 @@ export function ProfileEditModal({
           <section className="mb-6">
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <h2 className="text-[16px] font-semibold text-white">Complete your profile</h2>
-                <Info size={14} className="text-white/35" />
+                <h2 className="text-[16px] font-semibold text-yn-text">Complete your profile</h2>
+                <Info size={14} className="text-yn-muted" />
               </div>
-              <span className="text-[14px] font-semibold text-pink-300">{completeness.percent}%</span>
+              <span className="text-[14px] font-semibold text-yn-accent">{completeness.percent}%</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-1.5 overflow-hidden rounded-full bg-yn-bg">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
                 style={{ width: `${completeness.percent}%` }}
               />
             </div>
             {photoMissing && (
-              <div className="mt-3 rounded-2xl bg-white/[0.06] p-3.5">
-                <p className="text-[13px] leading-relaxed text-white/75">
+              <div className="mt-3 rounded-2xl bg-yn-bg p-3.5">
+                <p className="text-[13px] leading-relaxed text-yn-muted">
                   Show yourself with photos. Profiles with photos get more video chats.
                 </p>
                 <button
@@ -579,12 +579,12 @@ export function ProfileEditModal({
 
           <section className="mb-6">
             <div className="mb-1 flex items-center justify-between">
-              <h2 className="text-[16px] font-semibold text-white">Photos & Videos</h2>
+              <h2 className="text-[16px] font-semibold text-yn-text">Photos & Videos</h2>
               {photoBoost > 0 && (
-                <span className="text-[13px] font-semibold text-pink-300">+{photoBoost}%</span>
+                <span className="text-[13px] font-semibold text-yn-accent">+{photoBoost}%</span>
               )}
             </div>
-            <p className="mb-3 text-[12px] text-white/45">
+            <p className="mb-3 text-[12px] text-yn-muted">
               {photoCount >= MAX_PHOTOS
                 ? "Photos are stored on your profile. Videos are not available yet."
                 : photoCount === 0
@@ -603,7 +603,7 @@ export function ProfileEditModal({
             <div className="grid grid-cols-3 gap-2">
               {photoSlots.map((slot) =>
                 slot.src ? (
-                  <div key={`p-${slot.index}`} className="relative aspect-square overflow-hidden rounded-xl bg-white/10">
+                  <div key={`p-${slot.index}`} className="relative aspect-square overflow-hidden rounded-xl bg-yn-bg">
                     <button
                       type="button"
                       className="h-full w-full"
@@ -643,7 +643,7 @@ export function ProfileEditModal({
                     type="button"
                     onClick={() => pickPhoto(null)}
                     disabled={uploading}
-                    className="flex aspect-square items-center justify-center rounded-xl bg-white/[0.07] text-white/40"
+                    className="flex aspect-square items-center justify-center rounded-xl bg-yn-bg text-yn-muted"
                     aria-label="Add photo"
                   >
                     <Plus size={28} />
@@ -651,7 +651,7 @@ export function ProfileEditModal({
                 )
               )}
             </div>
-            <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-white/35">
+            <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-yn-muted">
               <span className="mt-0.5">!</span>
               Don’t share inappropriate content or personal information. Uploads may be reviewed.
             </p>
@@ -659,16 +659,16 @@ export function ProfileEditModal({
 
           <section className="mb-6">
             <div className="mb-2 flex items-center gap-1.5">
-              <h2 className="text-[16px] font-semibold text-white">Interests</h2>
-              <Info size={14} className="text-white/35" />
+              <h2 className="text-[16px] font-semibold text-yn-text">Interests</h2>
+              <Info size={14} className="text-yn-muted" />
             </div>
             <button
               type="button"
               onClick={() => setShowInterests(true)}
-              className="flex min-h-12 w-full items-center justify-between rounded-2xl bg-white/[0.07] px-3.5 text-left"
+              className="flex min-h-12 w-full items-center justify-between rounded-2xl bg-yn-bg px-3.5 text-left"
             >
-              <span className="text-[14px] text-white/45">Tell us, what&apos;s your current obsession?</span>
-              <ChevronRight size={18} className="text-white/30" />
+              <span className="text-[14px] text-yn-muted">Tell us, what&apos;s your current obsession?</span>
+              <ChevronRight size={18} className="text-yn-muted" />
             </button>
             {formData.interests.length > 0 && (
               <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -677,7 +677,7 @@ export function ProfileEditModal({
                     key={tag}
                     type="button"
                     onClick={() => setShowInterests(true)}
-                    className="yn-interest-chip inline-flex h-9 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-3 text-[12px] font-medium text-white/85"
+                    className="yn-interest-chip inline-flex h-9 items-center gap-1.5 rounded-full border border-black/10 bg-yn-card px-3 text-[12px] font-medium text-yn-text"
                   >
                     <InterestIcon tag={tag} size={14} />
                     {tag}
@@ -688,7 +688,7 @@ export function ProfileEditModal({
           </section>
 
           <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-white">Name</h2>
+            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Name</h2>
             <Row
               icon={<User size={18} />}
               value={formData.fullName}
@@ -698,7 +698,7 @@ export function ProfileEditModal({
           </section>
 
           <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-white">Age</h2>
+            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Age</h2>
             <Row
               icon={<span className="text-[15px]">🎂</span>}
               value={formData.age ? String(formData.age) : ""}
@@ -708,7 +708,7 @@ export function ProfileEditModal({
           </section>
 
           <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-white">Gender</h2>
+            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Gender</h2>
             <Row
               icon={<span className="text-[15px]">◎</span>}
               value={formData.gender}
@@ -718,7 +718,7 @@ export function ProfileEditModal({
           </section>
 
           <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-white">Languages</h2>
+            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Languages</h2>
             <Row
               icon={<LanguagesIcon size={18} />}
               value={formData.languages.map(languageLabel).join(", ")}
@@ -728,24 +728,24 @@ export function ProfileEditModal({
           </section>
 
           <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-white">About me</h2>
+            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">About me</h2>
             <button
               type="button"
               onClick={() => openSheet("about")}
-              className="flex min-h-12 w-full items-start gap-3 rounded-2xl bg-white/[0.07] px-3.5 py-3 text-left"
+              className="flex min-h-12 w-full items-start gap-3 rounded-2xl bg-yn-bg px-3.5 py-3 text-left"
             >
-              <span className="mt-0.5 text-white/50">
+              <span className="mt-0.5 text-yn-muted">
                 <Pencil size={16} />
               </span>
-              <span className={`min-w-0 flex-1 text-[14px] leading-relaxed ${formData.bio ? "text-white/90" : "text-white/40"}`}>
+              <span className={`min-w-0 flex-1 text-[14px] leading-relaxed ${formData.bio ? "text-yn-text" : "text-yn-muted"}`}>
                 {formData.bio || "How would you describe your vibe?"}
               </span>
-              <ChevronRight size={18} className="mt-0.5 shrink-0 text-white/30" />
+              <ChevronRight size={18} className="mt-0.5 shrink-0 text-yn-muted" />
             </button>
           </section>
 
           <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-white">Location</h2>
+            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Location</h2>
             <Row
               icon={<MapPin size={18} />}
               value={formData.country}
@@ -756,13 +756,13 @@ export function ProfileEditModal({
 
           <section className="mb-5">
             <div className="mb-1 flex items-center gap-1.5">
-              <h2 className="text-[16px] font-semibold text-white">YouNeon Badge</h2>
+              <h2 className="text-[16px] font-semibold text-yn-text">YouNeon Badge</h2>
               <button type="button" onClick={() => openSheet("badge")} aria-label="Badge info">
-                <Info size={14} className="text-white/35" />
+                <Info size={14} className="text-yn-muted" />
               </button>
             </div>
-            <p className="mb-3 text-[12px] text-white/45">Track your progress towards YouNeon Badge</p>
-            <div className="rounded-2xl bg-white/[0.06] px-4 py-5">
+            <p className="mb-3 text-[12px] text-yn-muted">Track your progress towards YouNeon Badge</p>
+            <div className="rounded-2xl bg-yn-bg px-4 py-5">
               <div className="relative mb-2 h-8">
                 {badgeEarned && (
                   <span className="absolute right-0 top-0 rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-semibold text-white">
@@ -770,45 +770,45 @@ export function ProfileEditModal({
                   </span>
                 )}
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="h-1.5 overflow-hidden rounded-full bg-yn-bg">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
                   style={{ width: `${badgeProgress}%` }}
                 />
               </div>
-              <div className="mt-1.5 flex justify-end text-[11px] text-white/40">Goal</div>
+              <div className="mt-1.5 flex justify-end text-[11px] text-yn-muted">Goal</div>
             </div>
           </section>
 
           <section className="mb-4">
-            <h2 className="mb-3 text-[16px] font-semibold text-white">Reactions Received</h2>
-            <div className="rounded-2xl bg-white/[0.06] p-4">
-              <p className="mb-3 text-[14px] font-semibold text-white">
+            <h2 className="mb-3 text-[16px] font-semibold text-yn-text">Reactions Received</h2>
+            <div className="rounded-2xl bg-yn-bg p-4">
+              <p className="mb-3 text-[14px] font-semibold text-yn-text">
                 {reactionTotal > 0
                   ? `${reactionTotal} video chat reactions earned!`
                   : "No reactions yet"}
               </p>
               {reactionTotal === 0 && (
-                <p className="mb-3 text-[12px] leading-relaxed text-white/45">
+                <p className="mb-3 text-[12px] leading-relaxed text-yn-muted">
                   Gifts you receive in video chat (rose, heart, and others) count here. Counts stay at 0 until someone actually sends one.
                 </p>
               )}
               <ul className="space-y-2.5">
                 {REACTION_TYPES.map((r) => (
-                  <li key={r.id} className="flex h-10 items-center gap-3 text-[14px] text-white/85">
+                  <li key={r.id} className="flex h-10 items-center gap-3 text-[14px] text-yn-text">
                     <span className="flex w-7 items-center justify-center">
                       <ReactionIcon id={r.id} size={18} />
                     </span>
                     <span className="flex-1">{r.id}</span>
-                    <span className="tabular-nums text-white/55">{reactionCount(reactionsMap, r.id)}</span>
+                    <span className="tabular-nums text-yn-muted">{reactionCount(reactionsMap, r.id)}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </section>
 
-          {error && <p className="mb-2 text-center text-[13px] text-pink-300">{error}</p>}
-          {saving && <p className="text-center text-[12px] text-white/35">Saving…</p>}
+          {error && <p className="mb-2 text-center text-[13px] text-yn-accent">{error}</p>}
+          {saving && <p className="text-center text-[12px] text-yn-muted">Saving…</p>}
         </div>
 
         {sheet === "name" && (
@@ -828,9 +828,9 @@ export function ProfileEditModal({
               maxLength={NAME_MAX}
               onChange={(e) => setDraftName(e.target.value)}
               placeholder="Please enter your name"
-              className="h-12 w-full border-0 border-b border-white/20 bg-transparent text-[16px] text-white outline-none placeholder:text-white/35 focus:border-pink-400"
+              className="h-12 w-full border-0 border-b border-white/20 bg-transparent text-[16px] text-yn-text outline-none placeholder:text-yn-muted focus:border-pink-400"
             />
-            <div className="mt-1.5 flex justify-between text-[12px] text-white/40">
+            <div className="mt-1.5 flex justify-between text-[12px] text-yn-muted">
               <span>{changesLeft} changes left this month</span>
               <span>
                 {draftName.length}/{NAME_MAX}
@@ -856,10 +856,10 @@ export function ProfileEditModal({
                 maxLength={BIO_MAX}
                 onChange={(e) => setDraftBio(e.target.value)}
                 rows={5}
-                className="w-full resize-none rounded-2xl bg-white/[0.07] p-3.5 pr-16 text-[15px] leading-relaxed text-white outline-none placeholder:text-white/35"
+                className="w-full resize-none rounded-2xl bg-yn-bg p-3.5 pr-16 text-[15px] leading-relaxed text-yn-text outline-none placeholder:text-yn-muted"
                 placeholder="A short intro about you"
               />
-              <span className="absolute bottom-3 right-3 text-[12px] text-white/40">
+              <span className="absolute bottom-3 right-3 text-[12px] text-yn-muted">
                 {draftBio.length}/{BIO_MAX}
               </span>
             </div>
@@ -880,14 +880,14 @@ export function ProfileEditModal({
             <div className="max-h-[46vh] overflow-y-auto">
               {draftLangs.length > 0 && (
                 <div className="mb-3">
-                  <p className="mb-2 text-[12px] font-medium uppercase tracking-wide text-white/40">Selected</p>
+                  <p className="mb-2 text-[12px] font-medium uppercase tracking-wide text-yn-muted">Selected</p>
                   <div className="flex flex-wrap gap-1.5">
                     {draftLangs.map((id) => (
                       <button
                         key={id}
                         type="button"
                         onClick={() => setDraftLangs((prev) => prev.filter((x) => x !== id))}
-                        className="flex h-9 items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-3 text-[12px] font-medium text-white"
+                        className="flex h-9 items-center gap-1.5 rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-600 px-3 text-[12px] font-medium text-white"
                       >
                         {languageLabel(id)}
                         <X size={12} />
@@ -901,7 +901,7 @@ export function ProfileEditModal({
                 value={langQuery}
                 onChange={(e) => setLangQuery(e.target.value)}
                 placeholder="Add"
-                className="mb-2 h-11 w-full rounded-xl bg-white/[0.07] px-3.5 text-[14px] text-white outline-none placeholder:text-white/35"
+                className="mb-2 h-11 w-full rounded-xl bg-yn-bg px-3.5 text-[14px] text-yn-text outline-none placeholder:text-yn-muted"
               />
               <div className="space-y-0.5">
                 {addableLangs.map((l) => (
@@ -912,13 +912,13 @@ export function ProfileEditModal({
                     onClick={() =>
                       setDraftLangs((prev) => (prev.includes(l.id) || prev.length >= MAX_LANGUAGES ? prev : [...prev, l.id]))
                     }
-                    className="flex h-11 w-full items-center justify-between rounded-xl px-2 text-left text-[14px] text-white/85 hover:bg-white/5 disabled:opacity-40"
+                    className="flex h-11 w-full items-center justify-between rounded-xl px-2 text-left text-[14px] text-yn-text hover:bg-black/5 disabled:opacity-40"
                   >
                     <span>
                       {l.native}
-                      {l.native !== l.id ? <span className="ml-2 text-white/35">{l.id}</span> : null}
+                      {l.native !== l.id ? <span className="ml-2 text-yn-muted">{l.id}</span> : null}
                     </span>
-                    <Plus size={16} className="text-white/35" />
+                    <Plus size={16} className="text-yn-muted" />
                   </button>
                 ))}
               </div>
@@ -942,7 +942,7 @@ export function ProfileEditModal({
               value={countryQuery}
               onChange={(e) => setCountryQuery(e.target.value)}
               placeholder="Search country"
-              className="mb-2 h-11 w-full rounded-xl bg-white/[0.07] px-3.5 text-[14px] text-white outline-none placeholder:text-white/35"
+              className="mb-2 h-11 w-full rounded-xl bg-yn-bg px-3.5 text-[14px] text-yn-text outline-none placeholder:text-yn-muted"
             />
             <div className="max-h-[40vh] overflow-y-auto">
               {filteredCountries.map((c) => (
@@ -951,7 +951,7 @@ export function ProfileEditModal({
                   type="button"
                   onClick={() => setDraftCountry(c)}
                   className={`flex h-11 w-full items-center rounded-xl px-3 text-left text-[14px] ${
-                    draftCountry === c ? "bg-purple-600/30 font-semibold text-white" : "text-white/80"
+                    draftCountry === c ? "bg-purple-600/30 font-semibold text-yn-text" : "text-yn-muted"
                   }`}
                 >
                   {c}
@@ -983,7 +983,7 @@ export function ProfileEditModal({
               max={AGE_MAX}
               value={draftAge}
               onChange={(e) => setDraftAge(e.target.value)}
-              className="h-12 w-full rounded-xl bg-white/[0.07] px-3.5 text-[16px] text-white outline-none"
+              className="h-12 w-full rounded-xl bg-yn-bg px-3.5 text-[16px] text-yn-text outline-none"
             />
           </BottomSheet>
         )}
@@ -998,8 +998,8 @@ export function ProfileEditModal({
                   onClick={() => applyGender(option)}
                   className={`flex h-12 w-full items-center justify-center rounded-xl text-[14px] font-semibold ${
                     formData.gender === option
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                      : "bg-white/[0.07] text-white/80"
+                      ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white"
+                      : "bg-yn-bg text-yn-muted"
                   }`}
                 >
                   {option}
@@ -1011,7 +1011,7 @@ export function ProfileEditModal({
 
         {sheet === "badge" && (
           <BottomSheet title="YouNeon Badge" onClose={() => setSheet(null)}>
-            <p className="pb-4 text-[13px] leading-relaxed text-white/60">
+            <p className="pb-4 text-[13px] leading-relaxed text-yn-muted">
               The bar fills as you complete your profile: photo, name, age (18+), bio, country, languages, and
               interests. Premium counts as complete. You earn the YouNeon Badge only if that is done, you have no
               reports against you in the last 14 days, and your account is at least a day old or you have finished at

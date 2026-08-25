@@ -130,8 +130,8 @@ export function DiscoverScreen({
       {/* ===== FILTERS ===== */}
       <div className="flex-shrink-0 space-y-3">
         <div>
-          <p className="mb-1.5 px-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">Looking for</p>
-          <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.04] p-0.5">
+          <p className="mb-1.5 px-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-yn-muted">Looking for</p>
+          <div className="flex gap-1 rounded-xl border border-black/8 bg-yn-card p-0.5 shadow-sm">
             {genderOptions.map((option) => {
               const selected = selectedGender === option.value;
               return (
@@ -140,15 +140,15 @@ export function DiscoverScreen({
                   onClick={() => setSelectedGender(option.value as "women" | "men" | "both")}
                   className={`flex h-11 flex-1 flex-col items-center justify-center rounded-[10px] transition-all ${
                     selected
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_2px_10px_rgba(168,85,247,0.28)]"
-                      : "bg-transparent text-white/70"
+                      ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_2px_10px_rgba(192,38,211,0.22)]"
+                      : "bg-transparent text-yn-muted"
                   }`}
                   data-testid={`gender-${option.value}-btn`}
                 >
                   <span className="text-[15px] font-semibold leading-none">{option.label}</span>
-                  <span className={`mt-1 text-[10px] font-medium leading-none ${selected ? "text-white/80" : "text-white/40"}`}>
+                  <span className={`mt-1 text-[10px] font-medium leading-none ${selected ? "text-white/80" : "text-yn-muted/70"}`}>
                     {isPremium || option.cost === 0 ? (
-                      <span className={selected ? "text-emerald-200" : "text-emerald-400/80"}>Free</span>
+                      <span className={selected ? "text-emerald-100" : "text-emerald-600"}>Free</span>
                     ) : (
                       <>◆ {option.cost} Neon</>
                     )}
@@ -160,38 +160,38 @@ export function DiscoverScreen({
         </div>
 
         <div className="relative">
-          <p className="mb-1.5 px-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">Country</p>
+          <p className="mb-1.5 px-0.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-yn-muted">Country</p>
           <button
             onClick={() => setShowCountryDropdown((v) => !v)}
-            className="flex h-11 w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 transition-colors hover:border-white/20"
+            className="flex h-11 w-full items-center justify-between rounded-xl border border-black/8 bg-yn-card px-3 shadow-sm transition-colors hover:border-fuchsia-200"
             data-testid="country-dropdown-btn"
           >
-            <span className="text-[15px] font-medium text-white">{selectedCountry}</span>
+            <span className="text-[15px] font-medium text-yn-text">{selectedCountry}</span>
             <div className="flex items-center gap-2">
               {selectedCountry !== "Worldwide" && !isPremium && (
-                <span className="rounded-full bg-yellow-400/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-300">◆ 5</span>
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">◆ 5</span>
               )}
               {selectedCountry !== "Worldwide" && isPremium && (
-                <span className="rounded-full bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">Free</span>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Free</span>
               )}
-              <ChevronDown className={`h-4 w-4 text-white/50 transition-transform ${showCountryDropdown ? "rotate-180" : ""}`} />
+              <ChevronDown className={`h-4 w-4 text-yn-muted transition-transform ${showCountryDropdown ? "rotate-180" : ""}`} />
             </div>
           </button>
           {showCountryDropdown && (
-            <div className="absolute bottom-full z-30 mb-2 max-h-56 overflow-y-auto rounded-xl border border-white/10 bg-[#16101f] shadow-xl shadow-black/40">
+            <div className="absolute bottom-full z-30 mb-2 max-h-56 overflow-y-auto rounded-xl border border-black/8 bg-yn-card shadow-xl shadow-fuchsia-950/10">
               {countries.map((country) => (
                 <div
                   key={country}
                   onClick={() => { setSelectedCountry(country); setShowCountryDropdown(false); }}
                   className={`flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm transition ${
                     selectedCountry === country
-                      ? "bg-gradient-to-r from-purple-600/35 to-pink-600/35 font-medium text-white"
-                      : "text-white/80 hover:bg-white/6"
+                      ? "bg-gradient-to-r from-fuchsia-50 to-pink-50 font-medium text-yn-text"
+                      : "text-yn-muted hover:bg-black/[0.03]"
                   }`}
                 >
                   <span>{country}</span>
                   {country !== "Worldwide" && !isPremium && (
-                    <span className="text-[10px] font-semibold text-yellow-300">◆ 5</span>
+                    <span className="text-[10px] font-semibold text-amber-600">◆ 5</span>
                   )}
                 </div>
               ))}
@@ -212,15 +212,15 @@ export function DiscoverScreen({
           {isPremium && <PremiumBadge />}
         </button>
         {isPremium ? (
-          <p className="mt-1.5 text-center text-[11px] font-medium text-amber-200/80">
+          <p className="mt-1.5 text-center text-[11px] font-medium text-amber-700/80">
             Priority matching · filters included
           </p>
         ) : totalCost > 0 ? (
-          <p className="mt-1.5 text-center text-[11px] font-medium text-white/45">
+          <p className="mt-1.5 text-center text-[11px] font-medium text-yn-muted">
             ◆ {totalCost} Neon · first chat is free
           </p>
         ) : (
-          <p className="mt-1.5 text-center text-[11px] font-medium text-white/45">
+          <p className="mt-1.5 text-center text-[11px] font-medium text-yn-muted">
             Matching worldwide · Free
           </p>
         )}
@@ -235,38 +235,38 @@ export function DiscoverScreen({
 
       {/* ===== INSUFFICIENT NEON MODAL ===== */}
       {showInsufficientModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setShowInsufficientModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={() => setShowInsufficientModal(false)}>
           <div
-            className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#16101f] p-5 text-white shadow-2xl"
+            className="w-full max-w-sm rounded-2xl border border-black/8 bg-yn-card p-5 text-yn-text shadow-xl"
             onClick={(e) => e.stopPropagation()}
             data-testid="insufficient-neon-modal"
           >
             <div className="mb-4 text-center">
-              <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full border border-yellow-400/40 bg-yellow-500/15">
+              <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full border border-amber-200 bg-amber-50">
                 <span className="text-xl">◆</span>
               </div>
               <h3 className="mb-3 text-lg font-semibold">Not enough Neon</h3>
-              <div className="mb-3 rounded-xl border border-white/8 bg-black/30 p-3">
+              <div className="mb-3 rounded-xl border border-black/6 bg-yn-bg p-3">
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-white/50">You need</span>
-                  <span className="font-semibold text-yellow-300">◆ {totalCost} Neon</span>
+                  <span className="text-yn-muted">You need</span>
+                  <span className="font-semibold text-amber-600">◆ {totalCost} Neon</span>
                 </div>
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-white/50">You have</span>
-                  <span className="font-semibold text-white">◆ {neonBalance} Neon</span>
+                  <span className="text-yn-muted">You have</span>
+                  <span className="font-semibold text-yn-text">◆ {neonBalance} Neon</span>
                 </div>
-                <div className="my-2 border-t border-white/8" />
+                <div className="my-2 border-t border-black/6" />
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-white/70">Missing</span>
-                  <span className="font-semibold text-pink-400">◆ {missingNeon} Neon</span>
+                  <span className="font-medium text-yn-muted">Missing</span>
+                  <span className="font-semibold text-yn-accent-2">◆ {missingNeon} Neon</span>
                 </div>
               </div>
-              <p className="text-sm text-white/55">Add Neon to start this chat.</p>
+              <p className="text-sm text-yn-muted">Add Neon to start this chat.</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowInsufficientModal(false)}
-                className="h-11 flex-1 rounded-xl border border-white/12 text-[15px] font-semibold text-white/80 transition hover:bg-white/6"
+                className="h-11 flex-1 rounded-xl border border-black/10 text-[15px] font-semibold text-yn-muted transition hover:bg-black/[0.03]"
                 data-testid="cancel-insufficient-btn"
               >
                 Cancel

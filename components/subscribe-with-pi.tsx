@@ -79,15 +79,15 @@ export function SubscribeWithPi({
   };
 
   const isShop = variant === "shop";
-  const titleClass = isShop ? "text-[15px] font-semibold text-white" : "text-[15px] font-semibold text-gray-900";
-  const bodyClass = isShop ? "text-[12px] leading-relaxed text-white/55" : "text-[12px] leading-relaxed text-gray-600";
-  const benefitText = isShop ? "text-[13px] text-white/80" : "text-[13px] text-gray-800";
+  const titleClass = "text-[15px] font-semibold text-yn-text";
+  const bodyClass = "text-[12px] leading-relaxed text-yn-muted";
+  const benefitText = "text-[13px] text-yn-text";
 
   return (
     <div
       className={
         isShop
-          ? "mx-4 mt-4 mb-1 rounded-2xl border border-pink-500/30 bg-gradient-to-b from-purple-900/50 to-transparent p-4"
+          ? "mx-4 mt-4 mb-1 rounded-2xl border border-pink-200 bg-gradient-to-b from-fuchsia-50 to-pink-50 p-4"
           : "w-full rounded-2xl border border-purple-400/40 bg-gradient-to-r from-purple-50 to-pink-50 p-4"
       }
     >
@@ -103,11 +103,11 @@ export function SubscribeWithPi({
         </div>
         <div className="min-w-0 flex-1">
           <div className={titleClass}>{SUBSCRIPTION_PLAN.name}</div>
-          <p className={isShop ? "mt-0.5 text-[13px] font-medium text-pink-200/90" : "mt-0.5 text-[13px] font-medium text-purple-700"}>
+          <p className={isShop ? "mt-0.5 text-[13px] font-medium text-yn-accent" : "mt-0.5 text-[13px] font-medium text-purple-700"}>
             {SUBSCRIPTION_PLAN.amount} π / {SUBSCRIPTION_PLAN.days} days
           </p>
           {active && premiumUntil && (
-            <p className={isShop ? "mt-1 text-[11px] text-emerald-300" : "mt-1 text-[11px] text-emerald-700"}>
+            <p className={isShop ? "mt-1 text-[11px] text-emerald-700" : "mt-1 text-[11px] text-emerald-700"}>
               Active until {formatUntil(premiumUntil)}
             </p>
           )}
@@ -120,8 +120,8 @@ export function SubscribeWithPi({
             <span
               className={
                 isShop
-                  ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300"
-                  : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"
+                ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"
+                : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"
               }
             >
               <Check size={12} strokeWidth={2.5} />
@@ -150,16 +150,10 @@ export function SubscribeWithPi({
         <p
           className={`mt-2 text-xs font-medium ${
             status === "success"
-              ? isShop
-                ? "text-green-400"
-                : "text-green-700"
+              ? "text-green-700"
               : status === "error"
-                ? isShop
-                  ? "text-red-400"
-                  : "text-red-600"
-                : isShop
-                  ? "text-purple-200"
-                  : "text-purple-700"
+                ? "text-red-600"
+                : "text-purple-700"
           }`}
         >
           {message}

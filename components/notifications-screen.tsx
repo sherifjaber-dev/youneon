@@ -201,7 +201,7 @@ export function NotificationsScreen({
   return (
     <div className="fixed inset-0 z-[70]" aria-hidden={!open}>
       <div
-        className={`flex h-full flex-col bg-[#0f0117] text-white transition-opacity duration-200 ${
+        className={`flex h-full flex-col bg-yn-bg text-yn-text transition-opacity duration-200 ${
           open ? "opacity-100" : "opacity-0"
         }`}
         role="dialog"
@@ -258,7 +258,7 @@ export function NotificationsScreen({
           </div>
         </section>
 
-        <div className="yn-glass sticky top-0 z-10 border-b border-white/8">
+        <div className="yn-glass sticky top-0 z-10 border-b border-black/6">
           <div className="flex gap-2 overflow-x-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {FILTERS.map((tab) => {
               const active = filter === tab.id;
@@ -269,8 +269,8 @@ export function NotificationsScreen({
                   onClick={() => setFilter(tab.id)}
                   className={`h-11 shrink-0 rounded-full px-4 text-[13px] font-semibold transition-colors active:scale-[0.98] ${
                     active
-                      ? "bg-white text-[#1a0b24] shadow-[0_4px_16px_rgba(255,255,255,0.18)]"
-                      : "bg-white/[0.08] text-white/45"
+                      ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_14px_rgba(192,38,211,0.22)]"
+                      : "bg-yn-card text-yn-muted shadow-sm"
                   }`}
                 >
                   {tab.label}
@@ -285,7 +285,7 @@ export function NotificationsScreen({
             <button
               type="button"
               onClick={openShop}
-              className="mb-2 mt-3 flex w-full items-center gap-3 rounded-2xl border border-pink-400/25 bg-gradient-to-br from-purple-900/45 to-pink-900/20 p-4 text-left active:scale-[0.99]"
+              className="mb-2 mt-3 flex w-full items-center gap-3 rounded-2xl border border-pink-200 bg-gradient-to-br from-fuchsia-50 to-pink-50 p-4 text-left active:scale-[0.99]"
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
                 <Crown size={20} />
@@ -294,7 +294,7 @@ export function NotificationsScreen({
                 <span className="block text-[15px] font-semibold">
                   {isPremium ? "YouNeon Premium" : "Subscribe to YouNeon Premium"}
                 </span>
-                <span className="mt-0.5 block text-[13px] leading-snug text-white/55">
+                <span className="mt-0.5 block text-[13px] leading-snug text-yn-muted">
                   {isPremium
                     ? "Unlimited chats, free filters, and ad-free browsing are on."
                     : `${SUBSCRIPTION_PLAN.amount} π / ${SUBSCRIPTION_PLAN.days} days · 1,000 Neon on subscribe.`}
@@ -308,11 +308,11 @@ export function NotificationsScreen({
 
           {filtered.length === 0 && filter !== "all" && filter !== "events" ? (
             <div className="mt-10 px-4 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/5 text-pink-300">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-black/8 bg-yn-card text-yn-accent shadow-sm">
                 <Bell size={22} />
               </div>
               <p className="mt-4 text-[16px] font-semibold">{emptyCopy.title}</p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/45">{emptyCopy.body}</p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{emptyCopy.body}</p>
               {!isPremium && (
                 <button
                   type="button"
@@ -335,14 +335,14 @@ export function NotificationsScreen({
                     <ItemIcon item={item} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start gap-2">
-                        <p className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-white">
+                        <p className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-yn-text">
                           {item.title}
                         </p>
-                        <span className="shrink-0 pt-0.5 text-[12px] font-medium text-white/35">
+                        <span className="shrink-0 pt-0.5 text-[12px] font-medium text-yn-muted">
                           {relativeShort(item.createdAtMs)}
                         </span>
                       </div>
-                      <p className="mt-1 text-[13px] leading-relaxed text-white/55">{item.body}</p>
+                      <p className="mt-1 text-[13px] leading-relaxed text-yn-muted">{item.body}</p>
                       <FeedAvatar item={item} />
                       {item.imageUrl ? (
                         <img
