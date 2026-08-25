@@ -68,6 +68,109 @@ const NSFW_HENTAI_THRESHOLD = 0.7;
 const NSFW_SEXY_THRESHOLD = 0.85;
 const NSFW_CHECK_INTERVAL_MS = 2000;
 
+type CallIconName = "mic" | "micOff" | "cam" | "camOff" | "chat" | "gift" | "skip" | "end";
+
+function CallIcon({ name, uid }: { name: CallIconName; uid?: string }) {
+  const gid = `yn-stroke-${uid || name}`;
+  const off = name === "micOff" || name === "camOff" || name === "end";
+  const stroke = off ? "currentColor" : `url(#${gid})`;
+  return (
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id={gid} x1="3" y1="2" x2="21" y2="22">
+          <stop stopColor="#c084fc" />
+          <stop offset="0.5" stopColor="#a855f7" />
+          <stop offset="1" stopColor="#ec4899" />
+        </linearGradient>
+        <filter id={`${gid}-glow`} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="0.55" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <g
+        stroke={stroke}
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter={`url(#${gid}-glow)`}
+      >
+        {(name === "mic" || name === "micOff") && (
+          <>
+            <path d="M12 3.6c-1.55 0-2.75 1.2-2.75 2.75v5.1c0 1.55 1.2 2.75 2.75 2.75s2.75-1.2 2.75-2.75v-5.1c0-1.55-1.2-2.75-2.75-2.75z" />
+            <path d="M7.35 11.6a4.65 4.65 0 0 0 9.3 0" />
+            <path d="M12 16.25v3.4M9.2 19.65h5.6" />
+            {name === "micOff" && <path d="M5 18.8 19 5.2" />}
+          </>
+        )}
+        {(name === "cam" || name === "camOff") && (
+          <>
+            <rect x="3.4" y="6.4" width="11.6" height="11.2" rx="2.4" />
+            <path d="M15 10.2 20.4 7.4v9.2L15 13.8z" />
+            <circle cx="9.1" cy="12" r="1.85" />
+            {name === "camOff" && <path d="M4.2 19.2 19.8 4.8" />}
+          </>
+        )}
+        {name === "chat" && (
+          <>
+            <path d="M5.2 7.1c0-1.5 1.2-2.7 2.7-2.7h8.2c1.5 0 2.7 1.2 2.7 2.7v5.4c0 1.5-1.2 2.7-2.7 2.7h-5.1L7.2 18.8v-3.6H7.9c-1.5 0-2.7-1.2-2.7-2.7z" />
+            <circle cx="9.2" cy="9.8" r="0.85" fill={stroke} stroke="none" />
+            <circle cx="12" cy="9.8" r="0.85" fill={stroke} stroke="none" />
+            <circle cx="14.8" cy="9.8" r="0.85" fill={stroke} stroke="none" />
+          </>
+        )}
+        {name === "gift" && (
+          <>
+            <rect x="4.2" y="10.6" width="15.6" height="8.8" rx="1.6" />
+            <path d="M4.2 10.6h15.6V8.3H4.2z" />
+            <path d="M12 8.3v11.1" />
+            <path d="M12 8.3c-.1-2.2-1.7-3.6-3.15-3.6-1.2 0-1.85 1.05-.7 2.45C9.6 8.7 12 8.3 12 8.3z" />
+            <path d="M12 8.3c.1-2.2 1.7-3.6 3.15-3.6 1.2 0 1.85 1.05.7 2.45C14.4 8.7 12 8.3 12 8.3z" />
+          </>
+        )}
+        {name === "skip" && (
+          <>
+            <path d="M5.2 7.1 12.1 12 5.2 16.9z" />
+            <path d="M12.4 7.1 19.3 12l-6.9 4.9z" />
+          </>
+        )}
+        {name === "end" && (
+          <>
+            <path d="M7.1 14.6c3.3 2.4 6.5 2.4 9.8 0" strokeWidth="2.05" />
+            <path d="M5.4 12.4 7.2 14.8M18.6 12.4 16.8 14.8" strokeWidth="2.05" />
+          </>
+        )}
+      </g>
+    </svg>
+  );
+}
+
+function WaitingMatchPanel({
+  title,
+  subtitle,
+  premium,
+}: {
+  title: string;
+  subtitle: string;
+  premium?: boolean;
+}) {
+  return (
+    <div className="yn-wait-overlay">
+      <div className="yn-wait-orb" aria-hidden="true">
+        <span className="yn-wait-ring" />
+        <span className="yn-wait-ring yn-wait-ring-delay" />
+        <span className="yn-wait-core" />
+      </div>
+      <span className="yn-call-wordmark text-[1.65rem]">YouNeon</span>
+      {premium && <p className="yn-wait-priority">Priority matching</p>}
+      <p className="yn-wait-title">{title}</p>
+      <p className="yn-wait-sub">{subtitle}</p>
+    </div>
+  );
+}
+
 function VideoCallScreen({
   onEnd,
   partnerName,
@@ -117,6 +220,7 @@ function VideoCallScreen({
   const [browser, setBrowser] = useState<"chrome" | "edge" | "firefox" | "other">("other");
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [camOn, setCamOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
   const [remoteName, setRemoteName] = useState<string>("");
   const [partner, setPartner] = useState<PartnerProfile | null>(
     partnerProfile || (partnerName ? { name: partnerName } : null)
@@ -375,6 +479,8 @@ function VideoCallScreen({
         setNsfwBlur(false);
         setBypassNsfw(false);
         setRemoteName("");
+        setCamOn(true);
+        setMicOn(true);
         if (opts.matchMode === "direct" && opts.partnerProfile) setPartner(opts.partnerProfile);
         else if (opts.matchMode === "random") setPartner(opts.partnerProfile || null);
 
@@ -503,6 +609,13 @@ function VideoCallScreen({
     setCamOn(next);
   };
 
+  const toggleMic = () => {
+    if (!callRef.current) return;
+    const next = !micOn;
+    callRef.current.setLocalAudio(next);
+    setMicOn(next);
+  };
+
   const skipToNext = () => {
     if (skipRemaining > 0) return;
     if (callStatus !== "joined" && callStatus !== "waiting") return;
@@ -549,19 +662,28 @@ function VideoCallScreen({
 
   if (permission !== "granted") {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-        <div className="w-full max-w-md rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-6 text-white shadow-2xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f0117] p-6">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 left-1/4 h-64 w-64 rounded-full bg-[#a855f7]/20 blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-[#ec4899]/15 blur-3xl" />
+        </div>
+        <div className="yn-call-glass relative w-full max-w-md rounded-2xl p-6 text-white">
           {permission === "checking" && (
-            <div className="text-center py-8">
-              <div className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white mb-4" />
-              <p className="text-lg">Checking camera and microphone…</p>
+            <div className="flex flex-col items-center py-8">
+              <div className="yn-wait-orb mb-5" aria-hidden="true">
+                <span className="yn-wait-ring" />
+                <span className="yn-wait-ring yn-wait-ring-delay" />
+                <span className="yn-wait-core" />
+              </div>
+              <span className="yn-call-wordmark mb-3 text-2xl">YouNeon</span>
+              <p className="text-[15px] text-white/70">Checking camera and microphone…</p>
             </div>
           )}
           {permission === "denied" && (
             <>
-              <div className="text-center mb-5">
-                <div className="text-5xl mb-3">🎥🚫</div>
-                <h2 className="text-2xl font-bold mb-2">Camera blocked</h2>
+              <div className="mb-5 text-center">
+                <span className="yn-call-wordmark mb-4 inline-block text-2xl">YouNeon</span>
+                <h2 className="mb-2 text-xl font-semibold tracking-tight">Camera blocked</h2>
                 <p className="text-white/80 text-sm">Your browser is blocking camera and microphone access. In Pi Browser, allow camera and microphone for this site.</p>
               </div>
               <div className="bg-black/30 rounded-xl p-4 mb-5 text-sm">
@@ -590,16 +712,16 @@ function VideoCallScreen({
                 )}
               </div>
               <div className="flex gap-2">
-                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Try again</button>
-                <button onClick={() => onEnd()} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Cancel</button>
+                <button onClick={checkPermissions} className="yn-cta flex-1 text-white">Try again</button>
+                <button onClick={() => onEnd()} className="flex-1 rounded-[14px] border border-white/15 bg-white/5 py-3 font-semibold">Cancel</button>
               </div>
             </>
           )}
           {(permission === "not-found" || permission === "in-use" || permission === "error") && (
             <>
-              <div className="text-center mb-5">
-                <div className="text-5xl mb-3">⚠️</div>
-                <h2 className="text-2xl font-bold mb-2">
+              <div className="mb-5 text-center">
+                <span className="yn-call-wordmark mb-4 inline-block text-2xl">YouNeon</span>
+                <h2 className="mb-2 text-xl font-semibold tracking-tight">
                   {permission === "not-found" && "No camera found"}
                   {permission === "in-use" && "Camera is in use"}
                   {permission === "error" && "Something went wrong"}
@@ -611,8 +733,8 @@ function VideoCallScreen({
                 </p>
               </div>
               <div className="flex gap-2">
-                <button onClick={checkPermissions} className="flex-1 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 py-3 font-semibold">Try again</button>
-                <button onClick={() => onEnd()} className="flex-1 rounded-xl bg-white/10 border border-white/20 py-3 font-semibold">Close</button>
+                <button onClick={checkPermissions} className="yn-cta flex-1 text-white">Try again</button>
+                <button onClick={() => onEnd()} className="flex-1 rounded-[14px] border border-white/15 bg-white/5 py-3 font-semibold">Close</button>
               </div>
             </>
           )}
@@ -623,55 +745,48 @@ function VideoCallScreen({
 
   if (callStatus === "preview") {
     return (
-      <div className="fixed inset-0 z-50 bg-gradient-to-br from-purple-900 via-slate-900 to-pink-900 flex flex-col items-center justify-center p-6 overflow-hidden">
-        <video ref={localVideoRef} autoPlay playsInline muted className="absolute top-4 left-4 w-24 h-32 sm:w-32 sm:h-44 rounded-2xl object-cover border-2 border-white/40 shadow-2xl scale-x-[-1] bg-black" />
-        <div className="relative mb-6">
-          <div className="absolute inset-0 rounded-full bg-pink-500/30 animate-ping" />
-          <div className="absolute inset-0 rounded-full bg-purple-500/30 animate-pulse" />
-          <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden border-4 border-white/80 shadow-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-            <span className="text-5xl">🎥</span>
-          </div>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-[#0f0117] p-6">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/4 top-16 h-72 w-72 rounded-full bg-[#a855f7]/18 blur-3xl" />
+          <div className="absolute bottom-20 right-1/5 h-72 w-72 rounded-full bg-[#ec4899]/14 blur-3xl" />
         </div>
-        <div className="text-center text-white max-w-sm">
-          <p className="text-sm text-white/60 uppercase tracking-widest mb-1">Random video chat</p>
-          <h2 className="text-3xl font-bold mb-4">Finding a match…</h2>
-          <div className="inline-flex items-center gap-2 text-white/80">
-            <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-sm">Looking for someone in the same room…</span>
-          </div>
-        </div>
-        <button onClick={() => onEnd()} className="absolute top-4 right-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 text-sm font-medium border border-white/20">Cancel</button>
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className="yn-call-pip object-cover scale-x-[-1]"
+        />
+        <WaitingMatchPanel
+          title="Finding a match…"
+          subtitle="Looking for someone in the same room…"
+        />
+        <button
+          onClick={() => onEnd()}
+          className="absolute right-4 top-[max(12px,env(safe-area-inset-top))] rounded-full border border-white/15 bg-black/40 px-4 py-2 text-sm font-medium text-white/85 backdrop-blur-md hover:bg-black/55"
+          aria-label="Cancel matching"
+        >
+          Cancel
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black overflow-hidden">
-      <style>{`
-        @keyframes fallDown {
-          0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(110vh) rotate(360deg); opacity: 0.7; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .dock-btn { position: relative; transition: all 0.2s ease; }
-        .dock-btn:hover { transform: translateY(-3px); }
-        .dock-btn:active { transform: translateY(0); }
-      `}</style>
-
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#0f0117]">
       <video
         ref={remoteVideoRef}
-        autoPlay playsInline
-        className={`absolute inset-0 w-full h-full object-cover bg-gradient-to-br from-slate-800 to-slate-900 transition-all duration-300 ${nsfwBlur ? "blur-3xl scale-110" : ""}`}
+        autoPlay
+        playsInline
+        className={`absolute inset-0 h-full w-full bg-[#0f0117] object-cover transition-all duration-300 ${nsfwBlur ? "scale-110 blur-3xl" : ""}`}
         data-testid="remote-video"
       />
       <audio ref={remoteAudioRef} autoPlay />
+      <div className="yn-call-vignette" />
 
       <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
         {floatingGifts.map((g) => (
-          <div key={g.id} className="absolute text-5xl" style={{ left: `${g.left}%`, top: 0, animation: `fallDown ${g.duration}s linear ${g.delay}s forwards` }}>
+          <div key={g.id} className="absolute text-5xl" style={{ left: `${g.left}%`, top: 0, animation: `yn-gift-fall ${g.duration}s linear ${g.delay}s forwards` }}>
             {g.emoji}
           </div>
         ))}
@@ -700,18 +815,27 @@ function VideoCallScreen({
         </div>
       )}
 
-      <div className="absolute top-4 left-4 w-32 h-44 sm:w-40 sm:h-56 rounded-2xl overflow-hidden border-2 border-white/40 shadow-2xl bg-gray-900 z-20">
-        <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" data-testid="local-video" />
+      <div className="yn-call-pip">
+        <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" data-testid="local-video" />
         {!camOn && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-white text-xs flex-col gap-1">
-            <span className="text-2xl">📷</span><span>Camera off</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[#0c0416]/90 text-xs text-white/80">
+            <CallIcon name="camOff" uid="pip-cam" />
+            <span>Camera off</span>
           </div>
         )}
-        <div className="absolute bottom-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">You</div>
+        {!micOn && (
+          <div className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full border border-pink-400/40 bg-black/70 text-pink-200">
+            <CallIcon name="micOff" uid="pip-mic" />
+          </div>
+        )}
+        <div className="absolute bottom-1.5 left-1.5 rounded-full border border-white/10 bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white/90">You</div>
       </div>
 
       {displayedMessage && (
-        <div className="absolute top-4 right-4 max-w-xs z-20" style={{ animation: "slideUp 0.3s ease forwards" }}>
+        <div
+          className="absolute right-4 z-20 max-w-xs"
+          style={{ top: "max(12px, env(safe-area-inset-top))", animation: "yn-slide-up 0.3s ease forwards" }}
+        >
           <div className={`rounded-2xl backdrop-blur-md px-4 py-3 shadow-2xl border ${
             displayedMessage.from === "me"
               ? "bg-gradient-to-br from-pink-500/90 to-purple-600/90 border-white/30 text-white"
@@ -726,7 +850,10 @@ function VideoCallScreen({
       )}
 
       {showHistory && (
-        <div className="absolute top-4 right-4 w-80 max-h-96 z-40 bg-black/85 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl flex flex-col">
+        <div
+          className="yn-call-glass absolute right-4 z-40 flex max-h-96 w-80 flex-col rounded-2xl"
+          style={{ top: "max(12px, env(safe-area-inset-top))" }}
+        >
           <div className="flex items-center justify-between p-3 border-b border-white/10">
             <span className="text-white font-semibold text-sm">Chat history</span>
             <button onClick={() => setShowHistory(false)} className="text-white/70 hover:text-white text-xl">×</button>
@@ -746,8 +873,8 @@ function VideoCallScreen({
       )}
 
       {showChatInput && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-40" style={{ animation: "slideUp 0.25s ease forwards" }}>
-          <div className="bg-black/85 backdrop-blur-xl rounded-2xl p-3 border border-white/20 shadow-2xl flex gap-2">
+        <div className="absolute left-1/2 z-40 w-[90%] max-w-md -translate-x-1/2" style={{ bottom: "calc(76px + env(safe-area-inset-bottom, 0px))", animation: "yn-slide-up 0.25s ease forwards" }}>
+          <div className="yn-call-glass flex gap-2 rounded-2xl p-3">
             <input
               type="text" value={chatInputValue} onChange={(e) => setChatInputValue(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") sendChatMessage(); }}
@@ -762,8 +889,8 @@ function VideoCallScreen({
       )}
 
       {showGiftPicker && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40" style={{ animation: "slideUp 0.25s ease forwards" }}>
-          <div className="bg-black/85 backdrop-blur-xl rounded-2xl p-4 border border-white/20 shadow-2xl">
+        <div className="absolute left-1/2 z-40 -translate-x-1/2" style={{ bottom: "calc(76px + env(safe-area-inset-bottom, 0px))", animation: "yn-slide-up 0.25s ease forwards" }}>
+          <div className="yn-call-glass rounded-2xl p-4">
             <p className="text-white text-sm font-semibold mb-3 text-center">Send a gift</p>
             <div className="grid grid-cols-3 gap-2">
               {GIFTS.map((g) => (
@@ -813,130 +940,120 @@ function VideoCallScreen({
       )}
 
       {callStatus === "waiting" && (
-        <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none z-10">
-          <div className="text-center bg-black/60 backdrop-blur-md rounded-2xl px-8 py-6 max-w-sm mx-4">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-pink-500 mb-4" />
-            {isPremium && (
-              <p className="mb-2 inline-flex items-center rounded-full border border-amber-300/40 bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-semibold text-amber-200">
-                Priority matching
-              </p>
-            )}
-            <p className="text-xl font-semibold mb-2">Waiting for match…</p>
-            <p className="text-sm text-white/70">{isPremium ? "You are in the priority queue." : "Stay on this screen — the next person joins the same room."}</p>
-          </div>
+        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-white pointer-events-none">
+          <WaitingMatchPanel
+            title="Waiting for match…"
+            subtitle={isPremium ? "You are in the priority queue." : "Stay on this screen — the next person joins the same room."}
+            premium={isPremium}
+          />
         </div>
       )}
       {callStatus === "joining" && (
-        <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none z-10">
-          <div className="text-center">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white mb-4" />
-            <p className="text-lg">Starting video…</p>
-          </div>
+        <div className="absolute inset-0 z-10 flex items-center justify-center px-4 text-white pointer-events-none">
+          <WaitingMatchPanel title="Starting video…" subtitle="Connecting your camera and microphone." />
         </div>
       )}
 
       {callStatus === "joined" && nsfwModelRef.current && !nsfwBlur && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-black/40 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-1.5 border border-white/10">
-          <span className="text-sm">🛡️</span>
-          <span className="text-[11px] text-white/80 font-medium">AI protection on</span>
-          <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+        <div
+          className="absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/10 bg-black/45 px-3 py-1.5 backdrop-blur-md"
+          style={{ top: "max(12px, env(safe-area-inset-top))" }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+          <span className="text-[11px] font-medium text-white/80">AI protection on</span>
         </div>
       )}
 
       {callStatus === "joined" && (remoteName || partner?.name) && !showProfile && !displayedMessage && (
-        <div className="absolute top-16 right-4 bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium z-10">
+        <button
+          type="button"
+          onClick={() => partner && setShowProfile(true)}
+          className="yn-call-glass absolute right-4 z-10 rounded-full px-4 py-1.5 text-sm font-medium text-white"
+          style={{ top: "max(48px, calc(env(safe-area-inset-top) + 36px))" }}
+          data-testid="profile-btn"
+          aria-label={partner ? `View ${currentPartner.name}'s profile` : "Waiting for match"}
+        >
           {remoteName || partner?.name}
-        </div>
+        </button>
       )}
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 px-4 w-full max-w-[680px]">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-pink-500/30 via-purple-500/30 to-pink-500/30 blur-2xl rounded-full" />
-          <div className="relative flex items-center justify-center gap-2 sm:gap-3 bg-black/55 backdrop-blur-2xl rounded-full p-2 sm:p-2.5 border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-            <button
-              onClick={toggleCam}
-              className={`dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl ${camOn ? "bg-white/15 hover:bg-white/25 text-white" : "bg-red-500/90 text-white"}`}
-              data-testid="toggle-cam-btn"
-              title={camOn ? "Turn camera off" : "Turn camera on"}
-            >
-              {camOn ? "📹" : "🚫"}
-            </button>
+      <div className="yn-call-dock">
+        <div className="yn-call-bar" role="toolbar" aria-label="Call controls">
+          <button
+            type="button"
+            onClick={toggleMic}
+            className={`yn-call-btn ${micOn ? "" : "is-off"}`}
+            data-testid="toggle-mic-btn"
+            aria-label={micOn ? "Mute microphone" : "Unmute microphone"}
+            aria-pressed={!micOn}
+          >
+            <CallIcon name={micOn ? "mic" : "micOff"} />
+          </button>
 
-            <div className="h-8 w-px bg-white/15" />
+          <button
+            type="button"
+            onClick={toggleCam}
+            className={`yn-call-btn ${camOn ? "" : "is-off"}`}
+            data-testid="toggle-cam-btn"
+            aria-label={camOn ? "Turn camera off" : "Turn camera on"}
+            aria-pressed={!camOn}
+          >
+            <CallIcon name={camOn ? "cam" : "camOff"} />
+          </button>
 
-            <button
-              onClick={() => {
-                if (showChatInput) setShowChatInput(false);
-                else if (chatHistory.length > 0 && !displayedMessage) setShowHistory((v) => !v);
-                else { setShowChatInput(true); setShowHistory(false); setShowGiftPicker(false); }
-              }}
-              className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-xl sm:text-2xl text-white relative"
-              data-testid="chat-btn"
-              title="Send a message"
-            >
-              💬
-              {chatHistory.length > 0 && !displayedMessage && (
-                <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-lg">
-                  {chatHistory.length > 9 ? "9+" : chatHistory.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => { setShowGiftPicker((v) => !v); setShowChatInput(false); setShowHistory(false); }}
-              className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 hover:shadow-pink-500/50 hover:shadow-lg flex items-center justify-center text-xl sm:text-2xl text-white"
-              data-testid="gift-btn"
-              title="Send gift"
-            >
-              🎁
-            </button>
-
-            <button
-              onClick={() => partner && setShowProfile(true)}
-              className="dock-btn w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-white/30 hover:border-pink-400 bg-white/10"
-              data-testid="profile-btn"
-              title={partner ? `View ${currentPartner.name}'s profile` : "Waiting for match"}
-            >
-              {partner?.avatar ? (
-                <img src={partner.avatar} alt={currentPartner.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg">
-                  {partner ? currentPartner.name.charAt(0).toUpperCase() : "?"}
-                </div>
-              )}
-            </button>
-
-            <div className="h-8 w-px bg-white/15" />
-
-            {matchMode !== "direct" && (
-              <button
-                onClick={skipToNext}
-                disabled={skipRemaining > 0}
-                className={`dock-btn h-12 sm:h-14 rounded-full flex items-center justify-center gap-1.5 font-bold px-4 sm:px-5 ${
-                  skipRemaining > 0
-                    ? "bg-white/10 text-white/40 cursor-not-allowed"
-                    : "bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-orange-500/50 hover:shadow-lg"
-                }`}
-                data-testid="skip-btn"
-                title={skipRemaining > 0 ? `Skip in ${skipRemaining}s` : "Skip to next"}
-              >
-                <span className="text-lg sm:text-xl">⏭️</span>
-                {skipRemaining > 0 ? (
-                  <span className="text-sm font-bold tabular-nums">{skipRemaining}s</span>
-                ) : (
-                  <span className="text-sm hidden sm:inline">Skip</span>
-                )}
-              </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (showChatInput) setShowChatInput(false);
+              else if (chatHistory.length > 0 && !displayedMessage) setShowHistory((v) => !v);
+              else { setShowChatInput(true); setShowHistory(false); setShowGiftPicker(false); }
+            }}
+            className="yn-call-btn"
+            data-testid="chat-btn"
+            aria-label="Open chat"
+          >
+            <CallIcon name="chat" />
+            {chatHistory.length > 0 && !displayedMessage && (
+              <span className="yn-call-btn-badge">{chatHistory.length > 9 ? "9+" : chatHistory.length}</span>
             )}
+          </button>
 
+          <button
+            type="button"
+            onClick={() => { setShowGiftPicker((v) => !v); setShowChatInput(false); setShowHistory(false); }}
+            className="yn-call-btn is-gift"
+            data-testid="gift-btn"
+            aria-label="Send gift"
+          >
+            <CallIcon name="gift" />
+          </button>
+
+          {matchMode !== "direct" && (
             <button
-              onClick={handleEnd}
-              className="dock-btn h-12 sm:h-14 rounded-full bg-gradient-to-br from-red-500 to-rose-600 hover:shadow-red-500/50 hover:shadow-lg flex items-center justify-center text-white font-bold px-4 sm:px-5"
-              data-testid="end-call-btn"
+              type="button"
+              onClick={skipToNext}
+              disabled={skipRemaining > 0}
+              className={`yn-call-btn ${skipRemaining > 0 ? "is-disabled" : ""}`}
+              data-testid="skip-btn"
+              aria-label={skipRemaining > 0 ? `Skip to next person in ${skipRemaining} seconds` : "Skip to next person"}
             >
-              <span className="text-sm sm:text-base">End</span>
+              {skipRemaining > 0 ? (
+                <span className="yn-call-btn-count">{skipRemaining}</span>
+              ) : (
+                <CallIcon name="skip" />
+              )}
             </button>
-          </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleEnd}
+            className="yn-call-btn is-end"
+            data-testid="end-call-btn"
+            aria-label="End call"
+          >
+            <CallIcon name="end" />
+          </button>
         </div>
       </div>
     </div>
