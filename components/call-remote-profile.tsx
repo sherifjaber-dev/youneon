@@ -6,7 +6,8 @@ import { CallReportSheet } from "@/components/call-report-sheet";
 import { InterestIcon } from "@/components/icons/interest-icons";
 import { ReactionIcon, ReactionsEarnedIcon } from "@/components/icons/reaction-icons";
 import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
-import { countryLabel, countryToFlag } from "@/lib/countries";
+import { CountryLabel } from "@/components/country-flag";
+import { countryLabel, countryToIso } from "@/lib/countries";
 import { subscribeToUserProfile, type UserProfile } from "@/lib/firestore-service";
 import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
@@ -143,8 +144,8 @@ export function mergeRemoteProfile(
     name: name || "—",
     age,
     location,
-    countryFlag: countryToFlag(location) || countryToFlag(hint?.countryFlag) || "",
-    countryName: countryLabel(location) || location,
+    countryFlag: countryToIso(location) || countryToIso(hint?.countryFlag) || "",
+    countryName: countryLabel(location) || countryLabel(hint?.countryFlag) || location,
     bio,
     photos,
     heroPhoto: photos[0] || "",
@@ -463,11 +464,12 @@ export function ProfilePreviewSheet({
   if (!open) return null;
 
   const following = !!(resolvedId && followingIds.has(resolvedId));
-  const countryLine = profile.countryFlag || profile.countryName ? (
-    <>
-      {profile.countryFlag ? <span>{profile.countryFlag}</span> : null}
-      <span>{displayOrDash(profile.countryName || profile.location)}</span>
-    </>
+  const countryLine = profile.countryFlag || profile.countryName || profile.location ? (
+    <CountryLabel
+      country={profile.countryFlag || profile.countryName || profile.location}
+      name={profile.countryName || profile.location}
+      size={18}
+    />
   ) : (
     <span>—</span>
   );

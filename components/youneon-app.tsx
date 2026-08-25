@@ -24,7 +24,7 @@ import {
   type UserProfile as CloudUserProfile,
 } from "@/lib/firestore-service";
 import { formatCallDuration } from "@/lib/history-utils";
-import { countryToFlag } from "@/lib/countries";
+import { countryToIso } from "@/lib/countries";
 import { piAuthService } from "@/lib/pi-auth-service";
 import { VideoCallScreen } from "@/components/video-call-screen";
 import { usePiAuth } from "@/contexts/pi-auth-context";
@@ -574,14 +574,14 @@ export function YouNeonApp() {
           name: currentUser.fullName || "Me",
           avatar: currentUser.avatar || "🙂",
           photo: currentUser.profilePicture || "",
-          flag: countryToFlag(currentUser.country || currentUser.location),
+          flag: countryToIso(currentUser.country || currentUser.location),
         },
         {
           id: other.id,
           name: other.name,
           avatar: other.avatar || other.name || "🙂",
           photo: other.photo || "",
-          flag: other.countryFlag || countryToFlag(other.country),
+          flag: countryToIso(other.countryFlag || other.country),
         }
       );
       await unlockConversation(cid, meId).catch(() => {});

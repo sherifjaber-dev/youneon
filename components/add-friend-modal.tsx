@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { UserPlus, X } from "lucide-react";
+import { CountryLabel } from "@/components/country-flag";
 import { useFriendsMessaging } from "@/hooks/use-friends-messaging";
 import type { Friend } from "@/hooks/use-friends-messaging";
 
@@ -48,8 +49,14 @@ export function AddFriendModal({ matchedUser, onClose, onContinue }: AddFriendMo
           <h2 className="text-2xl font-bold neon-gradient-text mb-2">
             {matchedUser.nickname}
           </h2>
-          <p className="text-yn-muted mb-6">
-            {matchedUser.age} years old • {matchedUser.country}
+          <p className="mb-6 flex flex-wrap items-center justify-center gap-x-2 text-yn-muted">
+            <span>{matchedUser.age} years old</span>
+            {matchedUser.country ? (
+              <>
+                <span>•</span>
+                <CountryLabel country={matchedUser.country} size={18} />
+              </>
+            ) : null}
           </p>
 
           <div className="bg-fuchsia-50 border border-fuchsia-200 rounded-xl p-4 mb-6">

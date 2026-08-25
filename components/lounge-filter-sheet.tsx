@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { COUNTRY_OPTIONS, countryToFlag } from "@/lib/countries";
+import { CountryLabel } from "@/components/country-flag";
+import { COUNTRY_OPTIONS } from "@/lib/countries";
 import {
   LOUNGE_LANGUAGES,
   type LoungeFilters,
@@ -133,11 +134,12 @@ export function LoungeFilterSheet({
                     }}
                     className="flex h-12 w-full items-center justify-between border-b border-black/6 text-left"
                   >
-                    <span className={`text-[15px] ${selected ? "font-semibold text-yn-text" : "text-yn-muted"}`}>
+                    <span className={`flex min-w-0 items-center text-[15px] ${selected ? "font-semibold text-yn-text" : "text-yn-muted"}`}>
                       {picker === "country" && value !== "All" ? (
-                        <span className="mr-2">{countryToFlag(value)}</span>
-                      ) : null}
-                      {value}
+                        <CountryLabel country={value} size={18} />
+                      ) : (
+                        value
+                      )}
                     </span>
                     {selected ? (
                       <span className="h-2.5 w-2.5 rounded-full bg-pink-400 shadow-[0_0_10px_rgba(236,72,153,0.7)]" />
@@ -193,9 +195,12 @@ export function LoungeFilterSheet({
               className="mt-2 flex h-14 w-full items-center justify-between border-b border-black/6"
             >
               <span className="text-[15px] text-yn-muted">Preferred Country</span>
-              <span className="flex items-center gap-1 text-[15px] font-semibold text-yn-text">
-                {draft.country !== "All" ? countryToFlag(draft.country) : null}
-                {draft.country}
+              <span className="flex min-w-0 items-center gap-1 text-[15px] font-semibold text-yn-text">
+                {draft.country !== "All" ? (
+                  <CountryLabel country={draft.country} size={18} />
+                ) : (
+                  draft.country
+                )}
                 <ChevronRight size={18} className="text-yn-muted" />
               </span>
             </button>

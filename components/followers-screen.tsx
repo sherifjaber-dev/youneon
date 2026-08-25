@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, MessageCircle, UserPlus, Users } from "lucide-react";
 import { isPhotoSrc, neonInitial } from "@/components/neon-avatar";
-import { countryToFlag } from "@/lib/countries";
+import { CountryLabel } from "@/components/country-flag";
 import type { FollowPerson } from "@/lib/follow-service";
 
 export type ChatTarget = {
@@ -38,7 +38,7 @@ function toChatTarget(person: FollowPerson, online?: boolean): ChatTarget {
     avatar: person.name,
     photo: person.photo,
     country: person.country,
-    countryFlag: countryToFlag(person.country),
+    countryFlag: person.country,
     isOnline: !!online,
   };
 }
@@ -129,7 +129,6 @@ export function FollowersScreen({
           {people.map((person) => {
             if (person.id === currentUserId) return null;
             const isFollowing = followingIds.has(person.id);
-            const flag = countryToFlag(person.country);
             return (
               <article
                 key={person.id}
@@ -164,14 +163,22 @@ export function FollowersScreen({
                 <div className="px-3 pb-3 pt-2.5">
                   <button
                     type="button"
-                    className="w-full truncate text-left text-[15px] font-bold text-yn-text"
+                    className="w-full text-left"
                     onClick={() => onOpenProfile?.(person.id)}
                   >
-                    {person.name}
-                    {person.age ? (
-                      <span className="font-semibold text-yn-muted">, {person.age}</span>
+                    <span className="block truncate text-[15px] font-bold text-yn-text">
+                      {person.name}
+                      {person.age ? (
+                        <span className="font-semibold text-yn-muted">, {person.age}</span>
+                      ) : null}
+                    </span>
+                    {person.country ? (
+                      <CountryLabel
+                        country={person.country}
+                        size={16}
+                        className="mt-0.5 text-[12px] font-medium text-yn-muted"
+                      />
                     ) : null}
-                    {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
                   </button>
                   <div className="mt-2.5 flex gap-1.5">
                     <button

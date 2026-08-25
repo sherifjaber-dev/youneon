@@ -49,10 +49,26 @@ const COUNTRY_ISO: Record<string, string> = {
   "hong kong": "HK", hk: "HK", taiwan: "TW", tw: "TW",
 };
 
-export function isoToFlagEmoji(iso: string): string {
-  const cc = iso.trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(cc)) return "";
-  return String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0)));
+function titleCaseCountry(value: string): string {
+  return value.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Canonical English names for ISO codes we know. */
+const ISO_TO_NAME: Record<string, string> = {};
+for (const [key, iso] of Object.entries(COUNTRY_ISO)) {
+  if (/^[a-z]{2,3}$/.test(key)) continue;
+  const pretty = titleCaseCountry(key);
+  if (!ISO_TO_NAME[iso] || pretty.length > ISO_TO_NAME[iso].length) {
+    ISO_TO_NAME[iso] = pretty;
+  }
+}
+for (const name of COUNTRY_OPTIONS) {
+  const iso = COUNTRY_ISO[name.toLowerCase()];
+  if (iso) ISO_TO_NAME[iso] = name;
+}
+
+export function listedFlagIsos(): string[] {
+  return [...new Set(Object.values(COUNTRY_ISO))].sort();
 }
 
 function extractFlagEmoji(value: string): string {
@@ -67,15 +83,50 @@ function extractFlagEmoji(value: string): string {
   return "";
 }
 
-/** Map a country name, ISO code, or existing flag emoji to a flag emoji. */
-export function countryToFlag(input?: string | null): string {
+function flagEmojiToIso(emoji: string): string {
+  const chars = [...emoji];
+  if (chars.length < 2) return "";
+  const a = chars[0].codePointAt(0) || 0;
+  const b = chars[1].codePointAt(0) || 0;
+  if (a < 0x1f1e6 || a > 0x1f1ff || b < 0x1f1e6 || b > 0x1f1ff) return "";
+  return String.fromCharCode(a - 127397, b - 127397);
+}
+
+/** Resolve a name, ISO code, or regional-indicator emoji to ISO 3166-1 alpha-2. */
+export function countryToIso(input?: string | null): string {
   if (!input || typeof input !== "string") return "";
   const raw = input.trim();
   if (!raw) return "";
-  const existing = extractFlagEmoji(raw);
-  if (existing) return existing;
-  if (/^[a-zA-Z]{2}$/.test(raw)) return isoToFlagEmoji(raw);
-  const iso = COUNTRY_ISO[raw.toLowerCase()];
+  const lower = raw.toLowerCase();
+  if (lower === "all" || lower === "worldwide" || lower === "global") return "";
+  const emoji = extractFlagEmoji(raw);
+  if (emoji) return flagEmojiToIso(emoji);
+  if (/^[a-zA-Z]{2}$/.test(raw)) return raw.toUpperCase();
+  return COUNTRY_ISO[lower] || "";
+}
+
+/**
+ * SVG URL for an ISO alpha-2 code.
+ * Images are MIT-licensed flag-icons (lipis) 4×3, vendored under /public/flags.
+ */
+export function flagSvgUrl(iso: string): string {
+  return `/flags/${iso.trim().toLowerCase()}.svg`;
+}
+
+/** jsDelivr CDN of the same flag-icons set, used if a local SVG is missing. */
+export function flagSvgCdnUrl(iso: string): string {
+  return `https://cdn.jsdelivr.net/npm/flag-icons@7.3.2/flags/4x3/${iso.trim().toLowerCase()}.svg`;
+}
+
+export function isoToFlagEmoji(iso: string): string {
+  const cc = iso.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(cc)) return "";
+  return String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0)));
+}
+
+/** @deprecated UI should use CountryFlag / CountryLabel. Kept for stored emoji data. */
+export function countryToFlag(input?: string | null): string {
+  const iso = countryToIso(input);
   return iso ? isoToFlagEmoji(iso) : "";
 }
 
@@ -84,13 +135,18 @@ export function countryLabel(input?: string | null): string {
   if (!input || typeof input !== "string") return "";
   const raw = input.trim();
   if (!raw) return "";
-  if (extractFlagEmoji(raw) && raw.length <= 4) return "";
-  if (/^[a-zA-Z]{2}$/.test(raw)) {
-    const match = Object.entries(COUNTRY_ISO).find(([, iso]) => iso === raw.toUpperCase());
-    if (match && match[0].length > 2) {
-      return match[0].replace(/\b\w/g, (c) => c.toUpperCase());
-    }
-    return "";
+  const lower = raw.toLowerCase();
+  if (lower === "all" || lower === "worldwide" || lower === "global") return raw;
+  const iso = countryToIso(raw);
+  if (iso && ISO_TO_NAME[iso]) return ISO_TO_NAME[iso];
+  const stripped = raw
+    .replace(/[\u{1F1E6}-\u{1F1FF}]{2}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!stripped) return iso ? iso : "";
+  if (/^[a-zA-Z]{2}$/.test(stripped)) {
+    const code = stripped.toUpperCase();
+    return ISO_TO_NAME[code] || "";
   }
-  return raw;
+  return stripped;
 }

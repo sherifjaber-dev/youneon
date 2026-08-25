@@ -7,7 +7,7 @@ import { NeonAvatar } from "@/components/neon-avatar";
 import { FollowersScreen, type ChatTarget } from "@/components/followers-screen";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
-import { countryToFlag } from "@/lib/countries";
+import { CountryLabel } from "@/components/country-flag";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 
 interface MessagesScreenProps {
@@ -76,7 +76,7 @@ export function MessagesScreen({
   const openChat = (user: ChatTarget) => {
     onOpenChat?.({
       ...user,
-      countryFlag: user.countryFlag || countryToFlag(user.country),
+      countryFlag: user.countryFlag || user.country,
     });
   };
 
@@ -217,7 +217,7 @@ export function MessagesScreen({
                       avatar: person.name,
                       photo: person.photo,
                       country: person.country,
-                      countryFlag: countryToFlag(person.country),
+                      countryFlag: person.country,
                       isOnline: !!online[person.id],
                     })
                   }
@@ -292,9 +292,7 @@ export function MessagesScreen({
               const known = peopleById[otherId];
               const name = conv.participantNames?.[otherId] || known?.name || "User";
               const photo = conv.participantPhotos?.[otherId] || known?.photo || "";
-              const flag = countryToFlag(
-                conv.participantFlags?.[otherId] || known?.country || ""
-              );
+              const country = conv.participantFlags?.[otherId] || known?.country || "";
               const unread = conv.unreadCount?.[currentUserId || ""] || 0;
               return (
                 <div
@@ -320,13 +318,19 @@ export function MessagesScreen({
                     <div className="flex items-start justify-between gap-2">
                       <button
                         type="button"
-                        className="flex min-w-0 items-center gap-1.5 truncate text-left text-[16px] font-bold text-yn-text"
+                        className="flex min-w-0 flex-col items-start truncate text-left"
                         onClick={() => setPreviewUserId(otherId)}
                       >
-                        <span className="truncate" data-testid={`conversation-name-${otherId}`}>
+                        <span className="truncate text-[16px] font-bold text-yn-text" data-testid={`conversation-name-${otherId}`}>
                           {name}
                         </span>
-                        {flag ? <span className="shrink-0 text-[15px]">{flag}</span> : null}
+                        {country ? (
+                          <CountryLabel
+                            country={country}
+                            size={16}
+                            className="mt-0.5 text-[12px] font-medium text-yn-muted"
+                          />
+                        ) : null}
                       </button>
                       <button
                         type="button"
@@ -337,7 +341,8 @@ export function MessagesScreen({
                             name,
                             avatar: name,
                             photo,
-                            countryFlag: flag,
+                            country,
+                            countryFlag: country,
                             isOnline: !!online[otherId],
                           })
                         }
@@ -353,7 +358,8 @@ export function MessagesScreen({
                           name,
                           avatar: name,
                           photo,
-                          countryFlag: flag,
+                          country,
+                          countryFlag: country,
                           isOnline: !!online[otherId],
                         })
                       }

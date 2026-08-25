@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { X, MessageCircle, UserPlus } from "lucide-react";
+import { CountryLabel } from "@/components/country-flag";
 
 interface UserProfile {
   id: string;
@@ -62,7 +62,9 @@ export function ViewProfileModal({ isOpen, user, onClose, onMessage, onAddFriend
       <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
         <div>
           <h1 className="text-4xl font-bold text-white">{user.name}</h1>
-          <p className="text-xl text-purple-300">{user.countryFlag} {user.country}</p>
+          <p className="text-xl text-purple-300">
+            <CountryLabel country={user.countryFlag || user.country} name={user.country} size={20} />
+          </p>
         </div>
 
         {user.bio && (

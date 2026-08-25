@@ -17,7 +17,7 @@ import {
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { PremiumBadge } from "@/components/premium-badge";
 import { NeonAvatar } from "@/components/neon-avatar";
-import { countryToFlag } from "@/lib/countries";
+import { CountryLabel } from "@/components/country-flag";
 import {
   ChatSmileyText,
   YouNeonSmileyPicker,
@@ -37,6 +37,7 @@ interface ChatScreenProps {
     avatar: string;
     photo?: string;
     countryFlag?: string;
+    country?: string;
     isOnline?: boolean;
   };
   onBack: () => void;
@@ -238,11 +239,13 @@ export function ChatScreen({
         >
           <div className="flex items-center gap-1.5">
             <p className="font-semibold text-[17px] text-zinc-900 truncate">{otherUser.name}</p>
-            {otherUser.countryFlag ? (
-              <span>{countryToFlag(otherUser.countryFlag) || otherUser.countryFlag}</span>
-            ) : null}
             {isPremium && <PremiumBadge />}
           </div>
+          <CountryLabel
+            country={otherUser.country || otherUser.countryFlag}
+            size={16}
+            className="text-[12px] text-zinc-500"
+          />
           <p className={`text-xs ${otherUser.isOnline ? "text-pink-500" : "text-zinc-400"}`}>
             {otherUser.isOnline ? "Online" : "Offline"}
           </p>
@@ -506,6 +509,7 @@ export function ChatScreen({
           userId: otherUser.id,
           name: otherUser.name,
           avatar: otherUser.photo,
+          country: otherUser.country,
           countryFlag: otherUser.countryFlag,
         }}
         standalone

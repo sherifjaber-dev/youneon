@@ -8,7 +8,7 @@ import { getUserProfile, subscribeToHistory, type UserProfile } from "@/lib/fire
 import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
-import { countryToFlag } from "@/lib/countries";
+import { CountryLabel } from "@/components/country-flag";
 import { subscribeToProfileViews, type ProfileView } from "@/lib/profile-views";
 import {
   displayDuration,
@@ -358,7 +358,7 @@ export function HistoryScreen({
         avatar: user.name,
         photo: user.photo || "",
         country: user.country,
-        countryFlag: countryToFlag(user.countryFlag || user.country),
+        countryFlag: user.countryFlag || user.country,
         isOnline: online[user.id] || false,
       });
     },
@@ -433,7 +433,6 @@ export function HistoryScreen({
                   <h2 className="px-4 text-[16px] font-bold tracking-tight">A perfect match for you!</h2>
                   <div className="mt-3 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {perfectMatches.map((u) => {
-                      const flag = countryToFlag(u.countryFlag || u.country);
                       const following = followingIds.has(u.matchId);
                       const photo = hasOwnPhoto && isPhotoSrc(u.photo);
                       return (
@@ -464,9 +463,15 @@ export function HistoryScreen({
                             )}
                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-3 pb-3 pt-10">
                               <p className="truncate text-[15px] font-bold text-white">
-                                {flag ? <span className="mr-1">{flag}</span> : null}
                                 {u.name}
                               </p>
+                              {u.country || u.countryFlag ? (
+                                <CountryLabel
+                                  country={u.country || u.countryFlag}
+                                  size={16}
+                                  className="mt-0.5 text-[11px] font-medium text-white/90"
+                                />
+                              ) : null}
                               <p className="mt-0.5 text-[11px] text-white/75">
                                 {formatHistoryWhen(u.timestamp)}
                               </p>
@@ -584,7 +589,6 @@ export function HistoryScreen({
                   <p className="py-10 text-center text-sm text-yn-muted">No chats match this filter</p>
                 ) : (
                   filteredList.map((u) => {
-                    const flag = countryToFlag(u.countryFlag || u.country);
                     const following = followingIds.has(u.matchId);
                     return (
                       <div
@@ -611,8 +615,14 @@ export function HistoryScreen({
                         >
                           <p className="truncate text-[16px] font-bold text-yn-text">
                             {u.name}
-                            {flag ? <span className="ml-1.5 font-normal">{flag}</span> : null}
                           </p>
+                          {u.country || u.countryFlag ? (
+                            <CountryLabel
+                              country={u.country || u.countryFlag}
+                              size={16}
+                              className="mt-0.5 text-[12px] text-yn-muted"
+                            />
+                          ) : null}
                           <p className="mt-0.5 text-[12px] text-yn-muted">
                             {formatHistoryWhen(u.timestamp)}
                           </p>
@@ -663,7 +673,6 @@ export function HistoryScreen({
                 const name = live?.name || view.name || view.viewerId;
                 const photo = live?.photo || view.photo;
                 const country = live?.country || view.country;
-                const flag = countryToFlag(country);
                 const language = (live?.languages?.[0] || view.languages?.[0] || "").trim();
                 const following = followingIds.has(view.viewerId);
                 return (
@@ -689,9 +698,11 @@ export function HistoryScreen({
                     >
                       <p className="truncate text-[16px] font-bold text-yn-text">{name}</p>
                       <p className="mt-0.5 truncate text-[12px] text-yn-muted">
-                        {flag ? <span>{flag}</span> : null}
-                        {flag && language ? <span> · </span> : null}
-                        {language || (!flag ? "Recent viewer" : "")}
+                        {country ? (
+                          <CountryLabel country={country} size={16} className="text-[12px] text-yn-muted" />
+                        ) : null}
+                        {country && language ? <span> · </span> : null}
+                        {language || (!country ? "Recent viewer" : "")}
                       </p>
                     </button>
                     <FollowMessageActions

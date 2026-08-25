@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileOnboarding } from "@/components/profile-onboarding";
 import { SettingsScreen } from "@/components/settings-screen";
 import { NeonShopModal } from "@/components/neon-shop-modal";   // ← NY IMPORT
+import { CountryLabel } from "@/components/country-flag";
 import { useLanguage, type Language } from "@/contexts/language-context";
 import { piAuthService } from "@/lib/pi-auth-service";
 
@@ -116,7 +117,15 @@ export function ProfileScreen() {
           )}
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-1">{profile.fullName}</h1>
-        <p className="text-gray-600">{profile.age} years old • {profile.country}</p>
+        <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-gray-600">
+          <span>{profile.age} years old</span>
+          {profile.country ? (
+            <>
+              <span>•</span>
+              <CountryLabel country={profile.country} size={18} />
+            </>
+          ) : null}
+        </p>
       </div>
 
       {/* Profile Details + Stats + Menu */}

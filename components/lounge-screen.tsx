@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, Info, MapPin, MessageCircle, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { NeonAvatar, isPhotoSrc } from "@/components/neon-avatar";
 import { LoungeFilterSheet } from "@/components/lounge-filter-sheet";
-import { countryToFlag } from "@/lib/countries";
+import { CountryLabel } from "@/components/country-flag";
 import {
   applyLoungeFilters,
   DEFAULT_LOUNGE_FILTERS,
@@ -164,7 +164,7 @@ export function LoungeScreen({
       avatar: person.name,
       photo: person.photo,
       country: person.country,
-      countryFlag: countryToFlag(person.country),
+      countryFlag: person.country,
       isOnline: Date.now() - person.lastSeenMs < 90_000,
     });
   };
@@ -333,7 +333,6 @@ function ForYouCard({
   onMessage: () => void;
   onOpenProfile: () => void;
 }) {
-  const flag = countryToFlag(person.country);
   const language = person.languages[0]?.trim() || "";
   const km = haversineKm(me, person);
   const title = person.age ? `${person.name}, ${person.age}` : person.name;
@@ -352,13 +351,19 @@ function ForYouCard({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-16">
           <p className="truncate text-[16px] font-bold text-white">
             {title}
-            {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
             {person.youneonBadge ? (
               <span className="ml-1 align-middle text-[10px] font-bold uppercase tracking-wide text-pink-300">
                 Badge
               </span>
             ) : null}
           </p>
+          {person.country ? (
+            <CountryLabel
+              country={person.country}
+              size={16}
+              className="mt-1 text-[11px] font-medium text-white/90"
+            />
+          ) : null}
           <div className="mt-1.5 flex flex-wrap gap-1">
             {language ? (
               <Tag icon={<MessageCircle size={10} />}>{language}</Tag>
@@ -414,7 +419,6 @@ function AllCard({
   onMessage: () => void;
   onOpenProfile: () => void;
 }) {
-  const flag = countryToFlag(person.country);
   const language = person.languages[0]?.trim() || "";
   const title = person.age ? `${person.name}, ${person.age}` : person.name;
 
@@ -435,11 +439,17 @@ function AllCard({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/40 to-transparent px-2.5 pb-2.5 pt-10">
           <p className="truncate text-[14px] font-bold text-white">
             {title}
-            {flag ? <span className="ml-1 font-normal">{flag}</span> : null}
             {person.youneonBadge ? (
               <span className="ml-1 text-[10px] font-bold uppercase tracking-wide text-pink-300">Badge</span>
             ) : null}
           </p>
+          {person.country ? (
+            <CountryLabel
+              country={person.country}
+              size={16}
+              className="mt-0.5 text-[11px] font-medium text-white/90"
+            />
+          ) : null}
           {language ? (
             <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-white/70">
               <MessageCircle size={11} />

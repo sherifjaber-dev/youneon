@@ -5,6 +5,7 @@ import { ChevronDown, Flame } from "lucide-react";
 import { db } from "../lib/firebase";
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { AdBanner, AdInterstitial } from "@/components/ad-placements";
+import { CountryLabel } from "@/components/country-flag";
 import { PremiumBadge } from "@/components/premium-badge";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
@@ -166,7 +167,13 @@ export function DiscoverScreen({
             className="flex h-11 w-full items-center justify-between rounded-xl border border-black/8 bg-yn-card px-3 shadow-sm transition-colors hover:border-fuchsia-200"
             data-testid="country-dropdown-btn"
           >
-            <span className="text-[15px] font-medium text-yn-text">{selectedCountry}</span>
+            <span className="text-[15px] font-medium text-yn-text">
+              {selectedCountry === "Worldwide" ? (
+                selectedCountry
+              ) : (
+                <CountryLabel country={selectedCountry} size={18} />
+              )}
+            </span>
             <div className="flex items-center gap-2">
               {selectedCountry !== "Worldwide" && !isPremium && (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">◆ 5</span>
@@ -189,7 +196,9 @@ export function DiscoverScreen({
                       : "text-yn-muted hover:bg-black/[0.03]"
                   }`}
                 >
-                  <span>{country}</span>
+                  <span>
+                    {country === "Worldwide" ? country : <CountryLabel country={country} size={18} />}
+                  </span>
                   {country !== "Worldwide" && !isPremium && (
                     <span className="text-[10px] font-semibold text-amber-600">◆ 5</span>
                   )}

@@ -20,6 +20,7 @@ import { ProfileInterestsPage } from "@/components/profile-interests-page";
 import { ProfileSettingsSheet } from "@/components/profile-settings-sheet";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { compressImageFile } from "@/lib/compress-image";
+import { CountryLabel } from "@/components/country-flag";
 import { COUNTRY_OPTIONS, isCountryOption } from "@/lib/countries";
 import type { Announcement } from "@/lib/announcements";
 import type { UserProfile } from "@/lib/firestore-service";
@@ -746,12 +747,19 @@ export function ProfileEditModal({
 
           <section className="mb-5">
             <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Location</h2>
-            <Row
-              icon={<MapPin size={18} />}
-              value={formData.country}
-              placeholder="Select country"
+            <button
+              type="button"
               onClick={() => openSheet("location")}
-            />
+              className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-yn-bg px-3.5 text-left"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center text-yn-muted">
+                <MapPin size={18} />
+              </span>
+              <span className={`min-w-0 flex-1 truncate text-[14px] ${formData.country ? "text-yn-text" : "text-yn-muted"}`}>
+                {formData.country ? <CountryLabel country={formData.country} size={18} /> : "Select country"}
+              </span>
+              <ChevronRight size={18} className="shrink-0 text-yn-muted" />
+            </button>
           </section>
 
           <section className="mb-5">
@@ -954,7 +962,7 @@ export function ProfileEditModal({
                     draftCountry === c ? "bg-purple-600/30 font-semibold text-yn-text" : "text-yn-muted"
                   }`}
                 >
-                  {c}
+                  <CountryLabel country={c} size={18} />
                 </button>
               ))}
             </div>
