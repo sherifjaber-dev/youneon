@@ -95,7 +95,7 @@ export function ChatScreen({
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const isUnlocked = !!conv?.unlocked || isPremium;
+  const isUnlocked = conv == null || !!conv.unlocked;
   // Other user has replied if there exists at least one message from otherUser.id
   const otherHasReplied = useMemo(
     () => messages.some((m) => m.senderId === otherUser.id),
@@ -105,11 +105,6 @@ export function ChatScreen({
   const callCost = useMemo(() => getCallCost(conv, currentUserId), [conv, currentUserId]);
   // Can other's profile picture be shown? Only if I uploaded my own photo.
   const canSeeOtherPhoto = hasOwnPhoto && !!otherUser.photo;
-
-  useEffect(() => {
-    if (!isPremium || !conv || conv.unlocked) return;
-    unlockConversation(conversationId, currentUserId).catch(() => {});
-  }, [isPremium, conv, conversationId, currentUserId]);
 
   const handleUnlock = async () => {
     if (unlocking) return;

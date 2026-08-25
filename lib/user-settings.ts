@@ -395,6 +395,37 @@ function persistItems(items: TimedItem[]) {
   writeJson(LS.items, items);
 }
 
+export function countActiveFreeMessages(items?: TimedItem[]): number {
+  const list = items || readLocalItems();
+  const now = Date.now();
+  return list.filter((item) => item.type === "free_message" && Date.parse(item.expiresAt) > now).length;
+}
+
+/** Consume the soonest-expiring FREEMSG timed item. Returns remaining items. */
+export async function consumeFreeMessageItem(
+  username: string,
+  currentItems?: TimedItem[]
+): Promise<TimedItem[] | null> {
+  const now = Date.now();
+  const items = (currentItems || readLocalItems()).filter((item) => Date.parse(item.expiresAt) > now);
+  const promo = items
+    .map((item, index) => ({ item, index, exp: Date.parse(item.expiresAt) }))
+    .filter((row) => row.item.type === "free_message")
+    .sort((a, b) => a.exp - b.exp);
+  if (promo.length === 0) return null;
+  const next = items.filter((_, index) => index !== promo[0].index);
+  persistItems(next);
+  emitSettingsChanged();
+  if (username && username !== "anon") {
+    try {
+      await patchUserSettings(username, { items: next });
+    } catch {
+      /* local consume still stands */
+    }
+  }
+  return next;
+}
+
 export async function claimPromoCode(
   username: string,
   rawCode: string,

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bell, Crown } from "lucide-react";
 import { NotificationsScreen } from "@/components/notifications-screen";
 import { NeonAvatar } from "@/components/neon-avatar";
+import { YouNeonBagIcon } from "@/components/icons/youneon-chat-connect";
 import { useNotificationInbox } from "@/hooks/use-notification-inbox";
 import type { Announcement } from "@/lib/announcements";
 
@@ -19,6 +20,7 @@ interface TopBarProps {
   currentUserId?: string;
   onOpenChat?: (user: { id: string; name: string; avatar: string; photo?: string }) => void;
   onOpenMessages?: () => void;
+  freeUnlocksRemaining?: number;
 }
 
 export function TopBar({
@@ -33,9 +35,12 @@ export function TopBar({
   currentUserId,
   onOpenChat,
   onOpenMessages,
+  freeUnlocksRemaining = 0,
 }: TopBarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const { items, unread, markAllRead } = useNotificationInbox(currentUserId, announcements);
+  const bagActive = freeUnlocksRemaining > 0;
+  const bagCount = Math.min(99, Math.max(0, Math.floor(freeUnlocksRemaining)));
 
   const openPanel = () => {
     setPanelOpen(true);
@@ -77,6 +82,32 @@ export function TopBar({
                 </span>
               )}
             </button>
+
+            <span
+              className={`relative flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+                bagActive
+                  ? "border-sky-400/40 bg-sky-500/15 text-sky-400"
+                  : "border-white/12 bg-white/6 text-white/40"
+              }`}
+              title={
+                bagActive
+                  ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} today`
+                  : "No free chat unlocks left today"
+              }
+              aria-label={
+                bagActive
+                  ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} remaining today`
+                  : "No free chat unlocks remaining today"
+              }
+              data-testid="free-message-bag"
+            >
+              <YouNeonBagIcon size={16} />
+              {bagActive && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-500 px-1 text-[9px] font-bold leading-none text-white">
+                  {bagCount > 9 ? "9+" : bagCount}
+                </span>
+              )}
+            </span>
 
             <button
               onClick={onNeonClick}

@@ -11,8 +11,8 @@ export const PREMIUM_SUBSCRIBE_NEON = 1000;
 
 export const PREMIUM_BENEFITS = [
   {
-    title: "Unlimited chats",
-    detail: "Skip Neon unlock costs on every conversation.",
+    title: "2 free chat unlocks a day",
+    detail: "Message two new people each day — then chat with them forever.",
   },
   {
     title: "Free gender & country filters",

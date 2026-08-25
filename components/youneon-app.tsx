@@ -10,7 +10,7 @@ import { BottomNav, type AppTab } from "@/components/bottom-nav";
 import { TopBar } from "@/components/top-bar";
 import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
-import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory, subscribeToUserProfile } from "@/lib/firestore-service";
+import { saveUserProfile, getUserProfile, getOrCreateConversation, addToHistory, subscribeToUserProfile, conversationExists, unlockConversation } from "@/lib/firestore-service";
 import { formatCallDuration } from "@/lib/history-utils";
 import { countryToFlag } from "@/lib/countries";
 import { piAuthService } from "@/lib/pi-auth-service";
@@ -36,9 +36,19 @@ import {
   subscribeToAnnouncements,
   type Announcement,
 } from "@/lib/announcements";
-import { cacheSettingsFromProfile, ensureNeonId } from "@/lib/user-settings";
+import { cacheSettingsFromProfile, ensureNeonId, readLocalItems, SETTINGS_CHANGED_EVENT, type TimedItem } from "@/lib/user-settings";
 import { isLanguage } from "@/lib/i18n";
 import { ensureCreatedAt, isAdultAge } from "@/lib/safety";
+import {
+  consumeChatUnlock,
+  isPeerUnlocked,
+  normalizeChatUnlocks,
+  normalizeUnlockedChats,
+  remainingFreeUnlocks,
+  rememberUnlockedPeer,
+  type ChatUnlocks,
+} from "@/lib/chat-unlock";
+import { ChatUnlockModal, type ChatUnlockTarget } from "@/components/chat-unlock-modal";
 
 type VideoSession = {
   mode: "random" | "direct";
@@ -126,7 +136,13 @@ export function YouNeonApp() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNeonShop, setShowNeonShop] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
+  const [chatUnlocks, setChatUnlocks] = useState<ChatUnlocks | null>(null);
+  const [unlockedChats, setUnlockedChats] = useState<string[]>([]);
+  const [timedItems, setTimedItems] = useState<TimedItem[]>([]);
+  const [pendingChat, setPendingChat] = useState<any | null>(null);
+  const [unlockBusy, setUnlockBusy] = useState(false);
   const profileSavedAtRef = useRef(0);
+  const unlockInFlightRef = useRef(false);
 
   const signedIn = isAuthenticated || bootAuthOk;
   const showApp = signedIn || (isGuestDemo && !!currentUser);
@@ -302,9 +318,16 @@ export function YouNeonApp() {
             backgroundPlay: remote.backgroundPlay,
             notificationPrefs: remote.notificationPrefs,
             privacyConsent: remote.privacyConsent,
-            items: remote.items,
+            items: remote.items as TimedItem[] | undefined,
             claimedPromoCodes: remote.claimedPromoCodes,
           });
+          setChatUnlocks(normalizeChatUnlocks(remote.chatUnlocks));
+          setUnlockedChats(normalizeUnlockedChats(remote.unlockedChats));
+          setTimedItems(
+            Array.isArray(remote.items)
+              ? (remote.items.filter((item) => Date.parse(item.expiresAt) > Date.now()) as TimedItem[])
+              : []
+          );
           if (remote.locale && isLanguage(remote.locale)) {
             setLanguage(remote.locale);
           }
@@ -365,6 +388,13 @@ export function YouNeonApp() {
     if (!id) return;
     return subscribeToUserProfile(id, (remote) => {
       if (!remote) return;
+      setChatUnlocks(normalizeChatUnlocks(remote.chatUnlocks));
+      setUnlockedChats(normalizeUnlockedChats(remote.unlockedChats));
+      if (Array.isArray(remote.items)) {
+        setTimedItems(
+          remote.items.filter((item) => Date.parse(item.expiresAt) > Date.now()) as TimedItem[]
+        );
+      }
       setCurrentUser((prev) => {
         if (!prev) return prev;
         return {
@@ -378,6 +408,12 @@ export function YouNeonApp() {
       });
     });
   }, [signedIn, isGuestDemo, user?.username]);
+
+  useEffect(() => {
+    const syncItems = () => setTimedItems(readLocalItems());
+    window.addEventListener(SETTINGS_CHANGED_EVENT, syncItems);
+    return () => window.removeEventListener(SETTINGS_CHANGED_EVENT, syncItems);
+  }, []);
 
   const updateNeonBalance = (n: number) => {
     setNeonBalance(n);
@@ -463,12 +499,13 @@ export function YouNeonApp() {
     }
   };
 
-  const handleOpenChat = async (other: any) => {
+  const openChatWithUser = async (other: any) => {
     if (!currentUser) return;
+    const meId = currentUser.id || currentUser.piUsername;
     try {
       const cid = await getOrCreateConversation(
         {
-          id: currentUser.id || currentUser.piUsername,
+          id: meId,
           name: currentUser.fullName || "Me",
           avatar: currentUser.avatar || "🙂",
           photo: currentUser.profilePicture || "",
@@ -482,10 +519,87 @@ export function YouNeonApp() {
           flag: other.countryFlag || countryToFlag(other.country),
         }
       );
+      await unlockConversation(cid, meId).catch(() => {});
+      setPendingChat(null);
       setActiveChat({ conversationId: cid, otherUser: other });
     } catch (e) {
       console.error(e);
       alert("Could not open chat.");
+    }
+  };
+
+  const handleOpenChat = async (other: any) => {
+    if (!currentUser) return;
+    const meId = currentUser.id || currentUser.piUsername;
+    const peerId = typeof other?.id === "string" ? other.id : "";
+    if (!meId || !peerId || peerId === meId) return;
+    if (unlockInFlightRef.current) return;
+
+    if (isPeerUnlocked(unlockedChats, peerId)) {
+      await openChatWithUser(other);
+      return;
+    }
+
+    unlockInFlightRef.current = true;
+    try {
+      const exists = await conversationExists(meId, peerId);
+      if (exists) {
+        await rememberUnlockedPeer(meId, peerId).catch(() => {});
+        setUnlockedChats((prev) => (prev.includes(peerId) ? prev : [...prev, peerId]));
+        await openChatWithUser(other);
+        return;
+      }
+    } catch (e) {
+      console.warn("Could not check existing conversation", e);
+    } finally {
+      unlockInFlightRef.current = false;
+    }
+
+    setPendingChat(other);
+  };
+
+  const handleConfirmFreeMessage = async () => {
+    if (!pendingChat || !currentUser || unlockBusy) return;
+    const meId = currentUser.id || currentUser.piUsername;
+    const peerId = String(pendingChat.id || "");
+    if (!peerId) return;
+    setUnlockBusy(true);
+    try {
+      const result = await consumeChatUnlock({
+        username: meId,
+        peerId,
+        isPremium: isPremiumActive(premiumUntil || currentUser.premiumUntil),
+        unlocks: chatUnlocks,
+        items: timedItems,
+      });
+      if (!result.ok) {
+        alert("No free messages left today.");
+        return;
+      }
+      setChatUnlocks(result.unlocks);
+      setTimedItems(result.items);
+      setUnlockedChats((prev) => (prev.includes(peerId) ? prev : [...prev, peerId]));
+      await openChatWithUser(pendingChat);
+    } catch (e) {
+      console.error(e);
+      alert("Could not start chat. Please try again.");
+    } finally {
+      setUnlockBusy(false);
+    }
+  };
+
+  const handleUnlockByPurchase = async () => {
+    if (!pendingChat || !currentUser) return;
+    const meId = currentUser.id || currentUser.piUsername;
+    const peerId = String(pendingChat.id || "");
+    if (!peerId) return;
+    try {
+      await rememberUnlockedPeer(meId, peerId);
+      setUnlockedChats((prev) => (prev.includes(peerId) ? prev : [...prev, peerId]));
+      await openChatWithUser(pendingChat);
+    } catch (e) {
+      console.error(e);
+      alert("Purchase succeeded, but chat could not open. Try Messages again.");
     }
   };
 
@@ -538,6 +652,19 @@ export function YouNeonApp() {
     displayUser.photos?.[0]
   );
   const isPremium = isPremiumActive(premiumUntil || displayUser.premiumUntil);
+  const freeUnlocksLeft = remainingFreeUnlocks({
+    isPremium,
+    unlocks: chatUnlocks,
+    items: timedItems,
+  });
+  const unlockModalTarget: ChatUnlockTarget | null = pendingChat
+    ? {
+        id: String(pendingChat.id || ""),
+        name: pendingChat.name || String(pendingChat.id || ""),
+        avatar: pendingChat.avatar,
+        photo: pendingChat.photo,
+      }
+    : null;
 
   if (activeChat && displayUser) {
     return (
@@ -625,6 +752,7 @@ export function YouNeonApp() {
         currentUserId={currentUserId}
         onOpenChat={handleOpenChat}
         onOpenMessages={() => setActiveTab("messages")}
+        freeUnlocksRemaining={freeUnlocksLeft}
       />
       <div className={`fixed inset-x-0 top-[calc(48px+env(safe-area-inset-top))] bottom-[calc(56px+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (
@@ -712,6 +840,19 @@ export function YouNeonApp() {
         onClose={() => setShowNeonShop(false)}
         isPremium={isPremium}
         premiumUntil={premiumUntil}
+      />
+      <ChatUnlockModal
+        open={!!pendingChat}
+        remaining={freeUnlocksLeft}
+        target={unlockModalTarget}
+        isPremium={isPremium}
+        premiumUntil={premiumUntil}
+        confirming={unlockBusy}
+        onClose={() => {
+          if (!unlockBusy) setPendingChat(null);
+        }}
+        onUseFreeMessage={() => void handleConfirmFreeMessage()}
+        onUnlockedByPurchase={() => void handleUnlockByPurchase()}
       />
     </div>
   );

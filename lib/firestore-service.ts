@@ -45,6 +45,8 @@ export interface UserProfile {
   blockedUsers?: string[];
   blockedUserMeta?: Record<string, { name?: string; photo?: string }>;
   claimedPromoCodes?: string[];
+  chatUnlocks?: { date: string; used: number };
+  unlockedChats?: string[];
   items?: Array<{
     id: string;
     type: string;
@@ -150,7 +152,13 @@ export const incrementGiftsReceived = async (
   }
 };
 
-const getConversationId = (a: string, b: string) => [a, b].sort().join("__");
+export const getConversationId = (a: string, b: string) => [a, b].sort().join("__");
+
+export const conversationExists = async (a: string, b: string) => {
+  if (!a || !b) return false;
+  const snap = await getDoc(doc(db, "conversations", getConversationId(a, b)));
+  return snap.exists();
+};
 
 export const getOrCreateConversation = async (
   me: { id: string; name: string; avatar: string; flag?: string; photo?: string },
