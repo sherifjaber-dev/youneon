@@ -13,6 +13,8 @@ import {
   Languages as LanguagesIcon,
   X,
 } from "lucide-react";
+import { InterestIcon } from "@/components/icons/interest-icons";
+import { ReactionIcon } from "@/components/icons/reaction-icons";
 import { PremiumBadge } from "@/components/premium-badge";
 import { ProfileInterestsPage } from "@/components/profile-interests-page";
 import { ProfileSettingsSheet } from "@/components/profile-settings-sheet";
@@ -32,7 +34,6 @@ import {
   canonicalLanguage,
   currentYearMonth,
   hasProfilePhoto,
-  interestEmoji,
   languageLabel,
   nameChangesLeft,
   profileCompleteness,
@@ -676,9 +677,10 @@ export function ProfileEditModal({
                     key={tag}
                     type="button"
                     onClick={() => setShowInterests(true)}
-                    className="h-9 rounded-full border border-white/12 bg-white/[0.04] px-3 text-[12px] font-medium text-white/85"
+                    className="yn-interest-chip inline-flex h-9 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-3 text-[12px] font-medium text-white/85"
                   >
-                    {interestEmoji(tag)} {tag}
+                    <InterestIcon tag={tag} size={14} />
+                    {tag}
                   </button>
                 ))}
               </div>
@@ -794,7 +796,9 @@ export function ProfileEditModal({
               <ul className="space-y-2.5">
                 {REACTION_TYPES.map((r) => (
                   <li key={r.id} className="flex h-10 items-center gap-3 text-[14px] text-white/85">
-                    <span className="w-7 text-center text-lg">{r.emoji}</span>
+                    <span className="flex w-7 items-center justify-center">
+                      <ReactionIcon id={r.id} size={18} />
+                    </span>
                     <span className="flex-1">{r.id}</span>
                     <span className="tabular-nums text-white/55">{reactionCount(reactionsMap, r.id)}</span>
                   </li>

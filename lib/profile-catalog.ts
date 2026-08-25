@@ -160,7 +160,7 @@ export function interestEmoji(tag: string): string {
   return INTEREST_EMOJI[tag] || "✦";
 }
 
-/** Catalog emoji for a tag: named icon, else category emoji, else raised hands. */
+/** Legacy emoji lookup. Profile chips render SVG via InterestIcon / ReactionIcon. */
 export function interestIcon(tag: string): string {
   if (INTEREST_EMOJI[tag]) return INTEREST_EMOJI[tag];
   const cat = INTEREST_CATEGORIES.find((c) => c.tags.includes(tag));

@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Ban, Check, Copy, Languages, MessageCircle, ShieldAlert, UserPlus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { Ban, Check, Copy, Languages, MessageCircle, ShieldAlert, UserPlus, X } from "lucide-react";
 import { CallReportSheet } from "@/components/call-report-sheet";
+import { InterestIcon } from "@/components/icons/interest-icons";
+import { ReactionIcon, ReactionsEarnedIcon } from "@/components/icons/reaction-icons";
 import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
 import { countryLabel, countryToFlag } from "@/lib/countries";
 import { subscribeToUserProfile, type UserProfile } from "@/lib/firestore-service";
@@ -10,7 +12,6 @@ import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service"
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { recordProfileView } from "@/lib/profile-views";
 import {
-  interestIcon,
   languageLabel,
   reactionCount,
   REACTION_TYPES,
@@ -230,7 +231,11 @@ export function ProfilePreviewSheet({
   const [reporting, setReporting] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [blocking, setBlocking] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const touchX = useRef<number | null>(null);
+  const touchY = useRef<number | null>(null);
+  const dragRef = useRef<{ startY: number; dy: number } | null>(null);
 
   const resolvedId = (userId || hint?.userId || seed?.id || seed?.uid || seed?.piUsername || "").trim();
   const self = isSelf ?? (!!viewerId && !!resolvedId && viewerId === resolvedId);
@@ -311,6 +316,53 @@ export function ProfilePreviewSheet({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) {
+      setDragY(0);
+      setDragging(false);
+      dragRef.current = null;
+    }
+  }, [open]);
+
+  const beginSheetDrag = (clientY: number) => {
+    dragRef.current = { startY: clientY, dy: 0 };
+    setDragging(true);
+  };
+
+  const moveSheetDrag = (clientY: number) => {
+    if (!dragRef.current) return;
+    const dy = Math.max(0, clientY - dragRef.current.startY);
+    dragRef.current.dy = dy;
+    setDragY(dy);
+  };
+
+  const endSheetDrag = () => {
+    const dy = dragRef.current?.dy ?? 0;
+    dragRef.current = null;
+    setDragging(false);
+    if (dy > 88) {
+      setDragY(0);
+      onClose();
+      return;
+    }
+    setDragY(0);
+  };
+
+  const onHandlePointerDown = (e: ReactPointerEvent) => {
+    if (e.button !== 0) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    beginSheetDrag(e.clientY);
+  };
+
+  const onHandlePointerMove = (e: ReactPointerEvent) => {
+    if (!dragRef.current) return;
+    moveSheetDrag(e.clientY);
+  };
+
+  const onHandlePointerUp = () => {
+    endSheetDrag();
+  };
 
   const cyclePhoto = useCallback(
     (dir: number) => {
@@ -426,24 +478,65 @@ export function ProfilePreviewSheet({
       role="dialog"
       aria-modal="true"
       aria-labelledby="yn-preview-name"
-      onClick={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       data-testid="profile-preview-sheet"
     >
+      <div
+        className="yn-preview-drag"
+        style={{
+          transform: `translateY(${dragY}px)`,
+          transition: dragging ? "none" : "transform 0.22s ease",
+        }}
+      >
       <div className="yn-preview-sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="yn-preview-handle" aria-hidden="true" />
+        <div
+          className="yn-preview-handle-hit"
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+        >
+          <div className="yn-preview-handle" aria-hidden="true" />
+        </div>
+        <button
+          type="button"
+          className="yn-preview-close"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          aria-label="Close profile"
+          data-testid="profile-preview-close"
+        >
+          <X size={18} strokeWidth={2.4} />
+        </button>
         <div className="yn-preview-scroll">
           <div
             className="yn-preview-photo"
             onTouchStart={(e) => {
-              touchX.current = e.changedTouches[0]?.clientX ?? null;
+              const t = e.changedTouches[0];
+              touchX.current = t?.clientX ?? null;
+              touchY.current = t?.clientY ?? null;
             }}
             onTouchEnd={(e) => {
-              const start = touchX.current;
+              const startX = touchX.current;
+              const startY = touchY.current;
               touchX.current = null;
-              if (start == null) return;
-              const dx = (e.changedTouches[0]?.clientX ?? start) - start;
-              if (dx < -40) cyclePhoto(1);
-              else if (dx > 40) cyclePhoto(-1);
+              touchY.current = null;
+              if (startX == null || startY == null) return;
+              const t = e.changedTouches[0];
+              const dx = (t?.clientX ?? startX) - startX;
+              const dy = (t?.clientY ?? startY) - startY;
+              if (dy > 72 && dy > Math.abs(dx) * 1.15) {
+                onClose();
+                return;
+              }
+              if (Math.abs(dx) <= 40 || Math.abs(dx) < Math.abs(dy)) return;
+              if (dx < 0) cyclePhoto(1);
+              else cyclePhoto(-1);
             }}
             onClick={() => {
               if (gallery.length > 1) cyclePhoto(1);
@@ -526,7 +619,7 @@ export function ProfilePreviewSheet({
                 <div className="yn-preview-tags">
                   {profile.interests.map((tag) => (
                     <span key={tag} className="yn-preview-tag">
-                      <span>{interestIcon(tag)}</span>
+                      <InterestIcon tag={tag} size={15} />
                       {tag}
                     </span>
                   ))}
@@ -558,7 +651,7 @@ export function ProfilePreviewSheet({
               <div className="yn-preview-reactions">
                 <p className="yn-preview-reactions-sum">
                   <span className="yn-preview-smile" aria-hidden="true">
-                    😊
+                    <ReactionsEarnedIcon size={16} />
                   </span>
                   {reactionTotal} video chat reactions earned!
                 </p>
@@ -566,7 +659,8 @@ export function ProfilePreviewSheet({
                   {REACTION_TYPES.map((r) => (
                     <li key={r.id}>
                       <span>
-                        {r.emoji} {r.id}
+                        <ReactionIcon id={r.id} size={16} />
+                        {r.id}
                       </span>
                       <span className="tabular-nums">{reactionCount(profile.reactions, r.id)}</span>
                     </li>
@@ -620,6 +714,7 @@ export function ProfilePreviewSheet({
             </div>
           </div>
         ) : null}
+      </div>
       </div>
 
       {showReport ? (

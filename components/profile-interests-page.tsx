@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, Search } from "lucide-react";
+import { CategoryIcon, InterestIcon } from "@/components/icons/interest-icons";
 import {
   ALL_INTEREST_TAGS,
   INTEREST_CATEGORIES,
@@ -83,7 +84,7 @@ export function ProfileInterestsPage({
                     active ? "text-white" : "text-white/50 hover:text-white/80"
                   }`}
                 >
-                  <span>{cat.emoji}</span>
+                  <CategoryIcon id={cat.id} size={15} />
                   {cat.label}
                   {active && (
                     <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" />
@@ -109,12 +110,13 @@ export function ProfileInterestsPage({
                 type="button"
                 onClick={() => toggle(tag)}
                 disabled={blocked}
-                className={`h-10 rounded-xl px-3.5 text-[13px] font-medium transition-all ${
+                className={`yn-interest-chip inline-flex h-10 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-medium transition-all ${
                   on
                     ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-[0_0_12px_rgba(236,72,153,0.35)]"
                     : "bg-white/[0.07] text-white/80 hover:bg-white/[0.12]"
                 } disabled:opacity-40`}
               >
+                <InterestIcon tag={tag} size={15} />
                 {tag}
               </button>
             );

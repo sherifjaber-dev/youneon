@@ -622,6 +622,7 @@
   background: rgba(6, 1, 12, 0.72);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  pointer-events: auto;
 }
 
 .yn-preview-overlay.yn-preview-overlay--standalone,
@@ -630,11 +631,20 @@
   z-index: 140;
 }
 
+.yn-preview-drag {
+  width: min(100%, 430px);
+  max-height: min(94dvh, 820px);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  will-change: transform;
+}
+
 .yn-preview-sheet {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: min(100%, 430px);
+  width: 100%;
   max-height: min(94dvh, 820px);
   overflow: hidden;
   border-radius: 28px 28px 0 0;
@@ -645,15 +655,59 @@
     0 -18px 50px rgba(0, 0, 0, 0.55),
     0 0 40px rgba(168, 85, 247, 0.16);
   animation: yn-remote-profile-in 0.28s ease forwards;
+  pointer-events: auto;
+}
+
+.yn-preview-handle-hit {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+  z-index: 20;
+}
+
+.yn-preview-handle-hit:active {
+  cursor: grabbing;
 }
 
 .yn-preview-handle {
   flex-shrink: 0;
   width: 44px;
   height: 5px;
-  margin: 8px auto 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
+.yn-preview-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 80;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(240, 171, 252, 0.38);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(8, 2, 16, 0.78);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(168, 85, 247, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.yn-preview-close:active {
+  transform: scale(0.94);
 }
 
 .yn-preview-scroll {
@@ -886,7 +940,6 @@
   justify-content: center;
   border-radius: 50%;
   background: linear-gradient(135deg, #c084fc, #ec4899);
-  font-size: 15px;
 }
 
 .yn-preview-reactions ul {
@@ -964,6 +1017,76 @@
   position: absolute;
   inset: 0;
   z-index: 5;
+}
+
+.yn-smiley-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.yn-smiley-picker {
+  position: fixed;
+  left: 50%;
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  width: min(calc(100% - 16px), 340px);
+  transform: translateX(-50%);
+  padding: 10px 10px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  background: linear-gradient(180deg, rgba(36, 10, 54, 0.98) 0%, rgba(16, 4, 28, 0.98) 100%);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.5),
+    0 0 28px rgba(168, 85, 247, 0.22);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.yn-smiley-picker-title {
+  margin: 0 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(240, 171, 252, 0.7);
+}
+
+.yn-smiley-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.yn-smiley-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.yn-smiley-cell:hover,
+.yn-smiley-cell:focus-visible {
+  background: rgba(236, 72, 153, 0.16);
+  border-color: rgba(240, 171, 252, 0.35);
+  outline: none;
+}
+
+.yn-smiley-cell:active {
+  transform: scale(0.94);
+}
+
+.yn-smiley {
+  display: inline-block;
+  filter: drop-shadow(0 0 6px rgba(236, 72, 153, 0.35));
+  flex-shrink: 0;
+  vertical-align: -6px;
 }
 
 .yn-badge-pill {
@@ -1229,4 +1352,28 @@
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.48);
   text-align: center;
+}
+
+.yn-neon-glyph {
+  flex-shrink: 0;
+  display: block;
+  filter:
+    drop-shadow(0 0 2px rgba(236, 72, 153, 0.45))
+    drop-shadow(0 0 5px rgba(168, 85, 247, 0.22));
+}
+
+.yn-preview-tag .yn-neon-glyph,
+.yn-interest-chip .yn-neon-glyph {
+  width: 15px;
+  height: 15px;
+}
+
+.yn-preview-reactions li {
+  gap: 10px;
+}
+
+.yn-preview-reactions li > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
