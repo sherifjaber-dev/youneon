@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Check, Info, MapPin, MessageCircle, MessageSquare, SlidersHorizontal } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, MessageCircle, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { NeonAvatar, isPhotoSrc } from "@/components/neon-avatar";
 import { LoungeFilterSheet } from "@/components/lounge-filter-sheet";
 import { CountryLabel } from "@/components/country-flag";
 import {
   applyLoungeFilters,
   DEFAULT_LOUNGE_FILTERS,
-  haversineKm,
   readStoredLoungeFilters,
   startLoungePresenceHeartbeat,
   storeLoungeFilters,
@@ -60,27 +59,12 @@ function CardPhoto({ src, name }: { src?: string; name: string }) {
 function OnlineBadge({ compact = false }: { compact?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full bg-black/55 text-white backdrop-blur-md ${
-        compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"
+      className={`inline-flex items-center gap-1 rounded-full bg-[#16a34a] font-semibold text-white shadow-[0_0_10px_rgba(34,197,94,0.55)] ${
+        compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-0.5 text-[10px]"
       }`}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-white" />
       Online recently
-    </span>
-  );
-}
-
-function Tag({
-  icon,
-  children,
-}: {
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <span className="inline-flex max-w-[110px] items-center gap-1 truncate rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm">
-      {icon}
-      <span className="truncate">{children}</span>
     </span>
   );
 }
@@ -186,39 +170,43 @@ export function LoungeScreen({
   };
 
   const adult = isAdultAge(me.age);
+  const featured = forYou[0];
+  const mosaicSide = forYou.slice(1, 5);
+  const mosaicRest = forYou.slice(5);
 
   return (
-    <div className="min-h-full bg-yn-bg pb-8 text-yn-text">
+    <div
+      className="min-h-full pb-8 text-[#f5f0ff]"
+      style={{
+        background:
+          "radial-gradient(120% 80% at 50% -12%, rgba(124, 58, 237, 0.28), transparent 55%), #07040f",
+      }}
+    >
       <div className="flex items-center justify-between px-4 pt-3">
-        <h1 className="text-[22px] font-bold tracking-tight">Lounge</h1>
+        <h1 className="font-serif text-[32px] font-semibold leading-none tracking-tight text-white">
+          Lounge
+        </h1>
         <button
           type="button"
           onClick={() => {
             setDraft(applied);
             setFilterOpen(true);
           }}
-          className="relative flex h-11 w-11 items-center justify-center rounded-full text-yn-muted transition active:scale-95"
+          className="relative flex h-11 w-11 items-center justify-center rounded-[12px] border border-[#c084fc] text-white shadow-[0_0_14px_rgba(168,85,247,0.55)] transition active:scale-95"
           aria-label="Filter lounge"
           data-testid="lounge-filter-btn"
         >
-          <SlidersHorizontal size={20} />
+          <SlidersHorizontal size={18} strokeWidth={2} />
           {filtersActive ? (
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-pink-500" />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#ff4ec8] shadow-[0_0_8px_#ff4ec8]" />
           ) : null}
         </button>
       </div>
 
-      <div className="mx-4 mt-2 flex items-start gap-2 rounded-xl border border-black/6 bg-yn-card px-3 py-2.5 shadow-sm">
-        <Info size={15} className="mt-0.5 shrink-0 text-yn-accent" />
-        <p className="text-[12px] leading-snug text-yn-muted">
-          Start chatting with users who were recently online!
-        </p>
-      </div>
-
       {!adult ? (
         <div className="px-6 py-16 text-center">
-          <p className="text-[16px] font-semibold text-yn-text">YouNeon is 18+</p>
-          <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
+          <p className="text-[16px] font-semibold text-white">YouNeon is 18+</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-sm text-[#b9a8c9]">
             Add your age (18 or older) in your profile to use Lounge. Minors cannot match or browse people here.
           </p>
         </div>
@@ -226,18 +214,18 @@ export function LoungeScreen({
         <LoungeSkeleton />
       ) : people.length === 0 ? (
         <div className="px-6 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-100 to-pink-100 ring-1 ring-pink-200">
-            <MessageSquare size={26} className="text-yn-accent" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ff4ec8]/12 ring-1 ring-[#c084fc]/40 shadow-[0_0_18px_rgba(255,78,200,0.25)]">
+            <MessageSquare size={26} className="text-[#ff4ec8]" />
           </div>
-          <p className="text-[16px] font-semibold text-yn-text">No one in the Lounge yet</p>
-          <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
+          <p className="text-[16px] font-semibold text-white">No one in the Lounge yet</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-sm text-[#b9a8c9]">
             People who were recently online will appear here. Jump into Video Chat to meet someone live.
           </p>
         </div>
       ) : all.length === 0 ? (
         <div className="px-6 py-16 text-center">
-          <p className="text-[16px] font-semibold text-yn-text">No matches for these filters</p>
-          <p className="mx-auto mt-1.5 max-w-xs text-sm text-yn-muted">
+          <p className="text-[16px] font-semibold text-white">No matches for these filters</p>
+          <p className="mx-auto mt-1.5 max-w-xs text-sm text-[#b9a8c9]">
             Try another country, language, or turn off Around My Age.
           </p>
           <button
@@ -246,7 +234,7 @@ export function LoungeScreen({
               setDraft(applied);
               setFilterOpen(true);
             }}
-            className="mx-auto mt-5 flex h-11 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-6 text-[14px] font-semibold"
+            className="mx-auto mt-5 flex h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#7c3aed] to-[#ff2bd6] px-6 text-[14px] font-semibold text-white shadow-[0_8px_24px_rgba(255,43,214,0.32)]"
           >
             Adjust filters
           </button>
@@ -255,31 +243,74 @@ export function LoungeScreen({
         <>
           {forYou.length > 0 ? (
             <section className="pt-5">
-              <h2 className="px-4 text-[16px] font-bold tracking-tight">For you</h2>
-              <div className="mt-3 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {forYou.map((person) => (
-                  <ForYouCard
-                    key={`fy-${person.id}`}
-                    person={person}
-                    me={me}
-                    following={followingIds.has(person.id)}
-                    busy={busyId === person.id || !meId}
-                    onFollow={() => followPerson(person)}
-                    onMessage={() => openChat(person)}
-                    onOpenProfile={() => setPreviewUserId(person.id)}
-                  />
-                ))}
+              <h2 className="px-4 text-[16px] font-semibold tracking-tight text-white">For you</h2>
+              <div className="mt-3 px-3">
+                {mosaicSide.length === 0 && featured ? (
+                  <div className="w-[52%]">
+                    <LoungeCard
+                      person={featured}
+                      variant="featured"
+                      following={followingIds.has(featured.id)}
+                      busy={busyId === featured.id || !meId}
+                      onFollow={() => followPerson(featured)}
+                      onMessage={() => openChat(featured)}
+                      onOpenProfile={() => setPreviewUserId(featured.id)}
+                    />
+                  </div>
+                ) : featured ? (
+                  <div className="grid aspect-[4/3.05] grid-cols-4 grid-rows-2 gap-2">
+                    <LoungeCard
+                      person={featured}
+                      variant="featured"
+                      className="col-span-2 row-span-2"
+                      following={followingIds.has(featured.id)}
+                      busy={busyId === featured.id || !meId}
+                      onFollow={() => followPerson(featured)}
+                      onMessage={() => openChat(featured)}
+                      onOpenProfile={() => setPreviewUserId(featured.id)}
+                    />
+                    {mosaicSide.map((person) => (
+                      <LoungeCard
+                        key={`fy-${person.id}`}
+                        person={person}
+                        variant="tile"
+                        following={followingIds.has(person.id)}
+                        busy={busyId === person.id || !meId}
+                        onFollow={() => followPerson(person)}
+                        onMessage={() => openChat(person)}
+                        onOpenProfile={() => setPreviewUserId(person.id)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {mosaicRest.length > 0 ? (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {mosaicRest.map((person) => (
+                      <LoungeCard
+                        key={`fy-${person.id}`}
+                        person={person}
+                        variant="all"
+                        following={followingIds.has(person.id)}
+                        busy={busyId === person.id || !meId}
+                        onFollow={() => followPerson(person)}
+                        onMessage={() => openChat(person)}
+                        onOpenProfile={() => setPreviewUserId(person.id)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </section>
           ) : null}
 
           <section className={forYou.length > 0 ? "mt-6" : "mt-5"}>
-            <h2 className="px-4 text-[16px] font-bold tracking-tight">All</h2>
+            <h2 className="px-4 text-[16px] font-semibold tracking-tight text-white">All</h2>
             <div className="mt-3 grid grid-cols-2 gap-2.5 px-3">
               {all.map((person) => (
-                <AllCard
+                <LoungeCard
                   key={`all-${person.id}`}
                   person={person}
+                  variant="all"
                   following={followingIds.has(person.id)}
                   busy={busyId === person.id || !meId}
                   onFollow={() => followPerson(person)}
@@ -316,169 +347,98 @@ export function LoungeScreen({
   );
 }
 
-function ForYouCard({
+function LoungeCard({
   person,
-  me,
+  variant,
   following,
   busy,
   onFollow,
   onMessage,
   onOpenProfile,
+  className = "",
 }: {
   person: LoungePerson;
-  me: LoungeMe;
+  variant: "featured" | "tile" | "all";
   following: boolean;
   busy: boolean;
   onFollow: () => void;
   onMessage: () => void;
   onOpenProfile: () => void;
+  className?: string;
 }) {
-  const language = person.languages[0]?.trim() || "";
-  const km = haversineKm(me, person);
+  const featured = variant === "featured";
+  const compact = variant === "tile";
   const title = person.age ? `${person.name}, ${person.age}` : person.name;
 
   return (
-    <article className="w-[236px] shrink-0 overflow-hidden rounded-[22px] border border-black/6 bg-yn-card shadow-[0_8px_24px_rgba(88,28,135,0.08)]">
-      <div className="relative aspect-[3/4] overflow-hidden">
-        <button
-          type="button"
-          className="absolute inset-0 z-0"
-          onClick={onOpenProfile}
-          aria-label={`View ${person.name}'s profile`}
-        >
-          <CardPhoto src={person.photo} name={person.name} />
-        </button>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-3 pb-3 pt-16">
-          <p className="truncate text-[16px] font-bold text-white">
-            {title}
-            {person.youneonBadge ? (
-              <span className="ml-1 align-middle text-[10px] font-bold uppercase tracking-wide text-pink-300">
-                Badge
-              </span>
-            ) : null}
-          </p>
-          {person.country ? (
-            <CountryLabel
-              country={person.country}
-              size={16}
-              className="mt-1 text-[11px] font-medium text-white/90"
-            />
-          ) : null}
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {language ? (
-              <Tag icon={<MessageCircle size={10} />}>{language}</Tag>
-            ) : null}
-            {km != null ? (
-              <Tag icon={<MapPin size={10} />}>{km}km</Tag>
-            ) : null}
-            <Tag icon={<span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}>
-              Online recently
-            </Tag>
-          </div>
-          <div className="pointer-events-auto mt-2.5 flex gap-1.5">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onFollow}
-              className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full text-[12px] font-semibold transition active:scale-[0.98] disabled:opacity-55 ${
-                following
-                  ? "border border-white/16 bg-white/[0.1] text-white/85"
-                  : "bg-white/14 text-white"
-              }`}
-            >
-              {following ? <Check size={13} /> : <span className="text-[15px]">+</span>}
-              {following ? "Following" : "Follow"}
-            </button>
-            <button
-              type="button"
-              onClick={onMessage}
-              className="flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-black/45 text-[12px] font-semibold text-white backdrop-blur-sm transition active:scale-[0.98]"
-            >
-              <MessageCircle size={13} />
-              Message
-            </button>
-          </div>
-        </div>
+    <article
+      className={`relative min-h-0 overflow-hidden rounded-[18px] border border-[#c084fc]/70 bg-[#0b0614] shadow-[0_0_16px_rgba(168,85,247,0.42),0_0_28px_rgba(255,78,200,0.12)] ${
+        variant === "all" || (featured && !className) ? "aspect-[2/3]" : "h-full"
+      } ${className}`}
+    >
+      <button
+        type="button"
+        className="absolute inset-0 z-0"
+        onClick={onOpenProfile}
+        aria-label={`View ${person.name}'s profile`}
+      >
+        <CardPhoto src={person.photo} name={person.name} />
+      </button>
+      <div className={`pointer-events-none absolute z-10 ${compact ? "left-1.5 top-1.5" : "left-2 top-2"}`}>
+        <OnlineBadge compact={compact} />
       </div>
-    </article>
-  );
-}
-
-function AllCard({
-  person,
-  following,
-  busy,
-  onFollow,
-  onMessage,
-  onOpenProfile,
-}: {
-  person: LoungePerson;
-  following: boolean;
-  busy: boolean;
-  onFollow: () => void;
-  onMessage: () => void;
-  onOpenProfile: () => void;
-}) {
-  const language = person.languages[0]?.trim() || "";
-  const title = person.age ? `${person.name}, ${person.age}` : person.name;
-
-  return (
-    <article className="overflow-hidden rounded-[20px] border border-black/6 bg-yn-card shadow-[0_8px_20px_rgba(88,28,135,0.07)]">
-      <div className="relative aspect-[3/4] overflow-hidden">
-        <button
-          type="button"
-          className="absolute inset-0 z-0"
-          onClick={onOpenProfile}
-          aria-label={`View ${person.name}'s profile`}
+      <div
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/45 to-transparent ${
+          compact ? "px-1.5 pb-1.5 pt-8" : featured ? "px-3 pb-3 pt-16" : "px-2.5 pb-2.5 pt-10"
+        }`}
+      >
+        <p
+          className={`truncate font-bold text-white ${
+            featured ? "text-[16px]" : compact ? "text-[11px] leading-tight" : "text-[14px]"
+          }`}
         >
-          <CardPhoto src={person.photo} name={person.name} />
-        </button>
-        <div className="pointer-events-none absolute left-2 top-2 z-10">
-          <OnlineBadge compact />
-        </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/88 via-black/40 to-transparent px-2.5 pb-2.5 pt-10">
-          <p className="truncate text-[14px] font-bold text-white">
-            {title}
-            {person.youneonBadge ? (
-              <span className="ml-1 text-[10px] font-bold uppercase tracking-wide text-pink-300">Badge</span>
-            ) : null}
-          </p>
-          {person.country ? (
-            <CountryLabel
-              country={person.country}
-              size={16}
-              className="mt-0.5 text-[11px] font-medium text-white/90"
-            />
+          {title}
+          {person.youneonBadge ? (
+            <span className="ml-1 align-middle text-[10px] font-bold uppercase tracking-wide text-pink-300">
+              Badge
+            </span>
           ) : null}
-          {language ? (
-            <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-white/70">
-              <MessageCircle size={11} />
-              {language}
-            </p>
-          ) : null}
-          <div className="pointer-events-auto mt-2 flex gap-1.5">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onFollow}
-              className={`flex h-10 min-w-0 flex-1 items-center justify-center rounded-full text-[16px] font-semibold transition active:scale-[0.98] disabled:opacity-55 ${
-                following
-                  ? "border border-white/16 bg-white/[0.1] text-white"
-                  : "bg-white/16 text-white"
-              }`}
-              aria-label={following ? "Following" : "Follow"}
-            >
-              {following ? <Check size={15} /> : "+"}
-            </button>
-            <button
-              type="button"
-              onClick={onMessage}
-              className="flex h-10 min-w-0 flex-1 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition active:scale-[0.98]"
-              aria-label="Message"
-            >
-              <MessageCircle size={15} />
-            </button>
-          </div>
+        </p>
+        {person.country ? (
+          <CountryLabel
+            country={person.country}
+            size={compact ? 11 : 14}
+            className={`text-white/90 ${compact ? "mt-0.5 text-[9px]" : "mt-0.5 text-[11px]"} font-medium`}
+          />
+        ) : null}
+        <div className={`pointer-events-auto flex gap-1.5 ${compact ? "mt-1.5" : "mt-2"}`}>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onFollow}
+            className={`flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full font-semibold transition active:scale-[0.98] disabled:opacity-55 ${
+              compact ? "h-7 text-[10px]" : featured ? "h-10 text-[12px]" : "h-9 text-[12px]"
+            } ${
+              following
+                ? "border border-white/20 bg-black/35 text-white/80"
+                : "bg-gradient-to-r from-[#7c3aed] to-[#ff2bd6] text-white shadow-[0_0_12px_rgba(255,43,214,0.35)]"
+            }`}
+            aria-label={following ? "Following" : "Follow"}
+          >
+            {following ? <Check size={compact ? 11 : 13} /> : <span className={compact ? "text-[12px]" : "text-[15px]"}>+</span>}
+            {compact ? null : following ? "Following" : "Follow"}
+          </button>
+          <button
+            type="button"
+            onClick={onMessage}
+            className={`flex items-center justify-center rounded-full border border-[#c084fc]/80 bg-black/40 text-white backdrop-blur-sm shadow-[0_0_10px_rgba(192,132,252,0.35)] transition active:scale-[0.98] ${
+              compact ? "h-7 w-7" : featured ? "h-10 min-w-0 flex-1 gap-1 text-[12px] font-semibold" : "h-9 w-9"
+            }`}
+            aria-label="Message"
+          >
+            <MessageCircle size={compact ? 12 : 14} />
+            {featured ? "Message" : null}
+          </button>
         </div>
       </div>
     </article>
@@ -489,22 +449,17 @@ function LoungeSkeleton() {
   return (
     <div className="pt-5">
       <div className="px-4">
-        <div className="h-4 w-20 rounded bg-black/8" />
+        <div className="h-4 w-20 rounded bg-white/8" />
       </div>
-      <div className="mt-3 flex gap-3 overflow-hidden px-4">
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="h-[300px] w-[236px] shrink-0 animate-pulse rounded-[22px] bg-black/[0.06]"
-          />
-        ))}
+      <div className="mt-3 px-3">
+        <div className="aspect-[4/3.05] animate-pulse rounded-[18px] bg-white/[0.06]" />
       </div>
       <div className="mt-6 px-4">
-        <div className="h-4 w-10 rounded bg-black/8" />
+        <div className="h-4 w-10 rounded bg-white/8" />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2.5 px-3">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="aspect-[3/4] animate-pulse rounded-[20px] bg-black/[0.06]" />
+          <div key={i} className="aspect-[2/3] animate-pulse rounded-[18px] bg-white/[0.06]" />
         ))}
       </div>
     </div>
