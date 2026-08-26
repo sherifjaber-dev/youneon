@@ -62,9 +62,9 @@ export function TopBar({
               onClick={onProfileClick}
               className="relative shrink-0 rounded-full p-[2px] active:scale-95"
               style={{
-                background: "linear-gradient(135deg, #ff4ec8 0%, #c084fc 48%, #7c3aed 100%)",
+                background: "linear-gradient(135deg, var(--pink) 0%, #c084fc 48%, #7c3aed 100%)",
                 boxShadow:
-                  "0 0 8px rgba(255, 78, 200, 0.75), 0 0 16px rgba(168, 85, 247, 0.5)",
+                  "0 0 8px var(--pink-soft), 0 0 16px rgba(168, 85, 247, 0.5)",
               }}
               aria-label="Open profile"
               data-testid="topbar-profile-photo"

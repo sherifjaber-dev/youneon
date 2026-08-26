@@ -153,8 +153,8 @@ export function ProfileScreen() {
 
         {/* Log Out */}
         <button onClick={() => { piAuthService.logout(); window.location.reload(); }} className="w-full flex items-center gap-3 p-4 rounded-xl bg-white border-2 border-pink-400 hover:border-pink-500 hover:shadow-lg hover:shadow-pink-400/30 transition">
-          <LogOut size={20} className="text-pink-600" />
-          <span className="flex-1 text-left font-medium text-pink-600">Log Out</span>
+          <LogOut size={20} className="text-[var(--pink-text)]" />
+          <span className="flex-1 text-left font-medium text-[var(--pink-text)]">Log Out</span>
         </button>
       </div>
 

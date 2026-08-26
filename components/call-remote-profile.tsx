@@ -129,7 +129,7 @@ function YouNeonBadgeMark() {
         <defs>
           <linearGradient id="yn-badge-fill" x1="4" y1="3" x2="20" y2="21">
             <stop stopColor="#c084fc" />
-            <stop offset="1" stopColor="#ec4899" />
+            <stop offset="1" stopColor="var(--pink)" />
           </linearGradient>
         </defs>
       </svg>

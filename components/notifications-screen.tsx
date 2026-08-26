@@ -204,7 +204,7 @@ export function NotificationsScreen({
           if (!open) setVisible(false);
         }}
       >
-        <section className="relative overflow-hidden bg-gradient-to-br from-[#5b21b6] via-[#7c3aed] to-[#db2777] px-3 pb-5 pt-[calc(env(safe-area-inset-top)+6px)]">
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#5b21b6] via-[#7c3aed] to-[var(--pink)] px-3 pb-5 pt-[calc(env(safe-area-inset-top)+6px)]">
           <div className="pointer-events-none absolute -right-8 top-6 h-40 w-40 rounded-full bg-pink-400/30 blur-3xl" />
           <div className="pointer-events-none absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-violet-300/20 blur-2xl" />
           <div className="relative flex items-start gap-2">
@@ -262,7 +262,7 @@ export function NotificationsScreen({
                   onClick={() => setFilter(tab.id)}
                   className={`h-11 shrink-0 rounded-full px-4 text-[13px] font-semibold transition-colors active:scale-[0.98] ${
                     active
-                      ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_14px_rgba(192,38,211,0.22)]"
+                      ? "bg-[var(--pink)] text-white shadow-[0_4px_14px_var(--pink-soft)]"
                       : "bg-yn-card text-yn-muted shadow-sm"
                   }`}
                 >

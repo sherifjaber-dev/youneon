@@ -538,7 +538,7 @@ export function ChatScreen({
                 <div className="border-t border-white/10 my-2"></div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[#d6c7e8] font-medium">Missing</span>
-                  <span className="font-semibold text-[#ff4ec8]">◆ {missingNeon} Neon</span>
+                  <span className="font-semibold text-[var(--pink-text)]">◆ {missingNeon} Neon</span>
                 </div>
               </div>
               <p className="yn-chat-modal-muted text-sm">

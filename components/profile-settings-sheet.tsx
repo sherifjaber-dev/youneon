@@ -96,7 +96,7 @@ function NeonToggle({
         disabled
           ? "bg-black/15 opacity-70"
           : on
-            ? "bg-gradient-to-r from-fuchsia-500 to-pink-500"
+            ? "bg-[var(--pink)]"
             : "bg-black/15"
       }`}
     >
@@ -445,7 +445,7 @@ export function ProfileSettingsSheet({
               <div className="mt-5 space-y-3">
                 <a
                   href="/admin"
-                  className="flex h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 text-[14px] font-semibold text-white"
+                  className="flex h-12 items-center justify-center rounded-2xl bg-[var(--pink)] text-[14px] font-semibold text-white active:bg-[var(--pink-pressed)]"
                 >
                   Open admin panel
                 </a>
@@ -537,7 +537,7 @@ export function ProfileSettingsSheet({
             <button
               type="button"
               onClick={() => void copyId()}
-              className="mx-auto mt-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 px-5 text-[14px] font-semibold text-white"
+              className="mx-auto mt-5 flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--pink)] px-5 text-[14px] font-semibold text-white active:bg-[var(--pink-pressed)]"
             >
               <Copy size={16} />
               {copied ? t("common.copied") : t("common.copy")}
@@ -722,7 +722,7 @@ function PrivacyPage({
           onClick={() =>
             onChange({ necessary: true, analytics: true, advertising: true, marketing: true })
           }
-          className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 text-[14px] font-semibold text-white"
+          className="flex h-12 items-center justify-center rounded-xl bg-[var(--pink)] text-[14px] font-semibold text-white active:bg-[var(--pink-pressed)]"
         >
           {t("settings.acceptAll")}
         </button>

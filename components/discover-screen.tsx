@@ -303,7 +303,7 @@ export function DiscoverScreen({
                     alert("Neon Shop is not available yet.");
                   }
                 }}
-                className="h-11 flex-1 rounded-xl bg-gradient-to-r from-[#ff2bd6] to-[#3b82ff] text-[15px] font-semibold text-white shadow-[0_4px_14px_rgba(255,43,214,0.35)]"
+                className="h-11 flex-1 rounded-xl bg-gradient-to-r from-[var(--pink)] to-[#3b82ff] text-[15px] font-semibold text-white shadow-[0_4px_14px_var(--pink-soft)]"
                 data-testid="buy-neon-btn"
               >
                 ◆ Buy Neon

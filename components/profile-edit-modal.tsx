@@ -101,7 +101,7 @@ interface ProfileEditModalProps {
 type SheetId = "name" | "about" | "languages" | "location" | "age" | "gender" | "badge" | null;
 
 const APPLY =
-  "flex h-12 w-full items-center justify-center rounded-[14px] bg-gradient-to-r from-fuchsia-600 to-pink-600 text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(192,38,211,0.22)] transition-transform active:scale-[0.985] disabled:bg-yn-bg disabled:text-yn-muted disabled:shadow-none";
+  "flex h-12 w-full items-center justify-center rounded-[14px] bg-[var(--pink)] text-[15px] font-semibold text-white shadow-[0_4px_16px_var(--pink-soft)] transition-transform active:scale-[0.985] active:bg-[var(--pink-pressed)] disabled:bg-yn-bg disabled:text-yn-muted disabled:shadow-none";
 
 function isProfileGender(value: string): value is ProfileGender {
   return (GENDER_OPTIONS as readonly string[]).includes(value);
@@ -900,7 +900,7 @@ export function ProfileEditModal({
                         key={id}
                         type="button"
                         onClick={() => setDraftLangs((prev) => prev.filter((x) => x !== id))}
-                        className="flex h-9 items-center gap-1.5 rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-600 px-3 text-[12px] font-medium text-white"
+                        className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--pink)] px-3 text-[12px] font-medium text-white active:bg-[var(--pink-pressed)]"
                       >
                         {languageLabel(id)}
                         <X size={12} />
@@ -1011,7 +1011,7 @@ export function ProfileEditModal({
                   onClick={() => applyGender(option)}
                   className={`flex h-12 w-full items-center justify-center rounded-xl text-[14px] font-semibold ${
                     formData.gender === option
-                      ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white"
+                      ? "bg-[var(--pink)] text-white"
                       : "bg-yn-bg text-yn-muted"
                   }`}
                 >

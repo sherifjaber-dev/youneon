@@ -365,8 +365,8 @@ export function LoungeScreen({
         <LoungeSkeleton showLive />
       ) : people.length === 0 && feed.length === 0 ? (
         <div className="px-6 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF2EC8]/12 ring-1 ring-[#A855F7]/40 shadow-[0_0_18px_rgba(255,46,200,0.25)]">
-            <MessageSquare size={26} className="text-[#FF2EC8]" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--pink)_12%,transparent)] ring-1 ring-[#A855F7]/40 shadow-[0_0_18px_var(--pink-soft)]">
+            <MessageSquare size={26} className="text-[var(--pink-text)]" />
           </div>
           <p className="text-[16px] font-semibold text-white">No one in the Lounge yet</p>
           <p className="mx-auto mt-1.5 max-w-xs text-sm text-[#b9a8c9]">

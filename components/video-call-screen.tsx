@@ -109,7 +109,7 @@ function CallIcon({
         <linearGradient id={gid} x1="3" y1="2" x2="21" y2="22">
           <stop stopColor="#c084fc" />
           <stop offset="0.5" stopColor="#a855f7" />
-          <stop offset="1" stopColor="#ec4899" />
+          <stop offset="1" stopColor="var(--pink)" />
         </linearGradient>
         <filter id={`${gid}-glow`} x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="0.55" result="b" />
@@ -208,7 +208,7 @@ function WaitingMatchPanel({
           <svg className="yn-wait-brand-cam" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
             <defs>
               <linearGradient id="yn-wait-brand-cam-g" x1="3" y1="4" x2="21" y2="20">
-                <stop stopColor="#ff4ec8" />
+                <stop stopColor="var(--pink)" />
                 <stop offset="1" stopColor="#c084fc" />
               </linearGradient>
             </defs>

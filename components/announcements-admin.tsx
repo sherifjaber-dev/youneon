@@ -68,7 +68,7 @@ export function AnnouncementsAdmin({ announcements, compact = false }: Announcem
               onClick={() => setType(option)}
               className={`h-9 rounded-full px-3 text-[12px] font-semibold capitalize ${
                 type === option
-                  ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white"
+                  ? "bg-[var(--pink)] text-white"
                   : "border border-black/10 text-yn-muted"
               }`}
             >

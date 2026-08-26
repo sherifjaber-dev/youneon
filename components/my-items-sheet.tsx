@@ -156,7 +156,7 @@ export function MyItemsSheet({
         <button
           type="button"
           onClick={enterShop}
-          className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-500 text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(192,38,211,0.22)] transition active:scale-[0.985]"
+          className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-[var(--pink)] text-[16px] font-bold text-white shadow-[0_8px_24px_var(--pink-soft)] transition active:scale-[0.985] active:bg-[var(--pink-pressed)]"
         >
           {t("settings.enterShop")}
         </button>

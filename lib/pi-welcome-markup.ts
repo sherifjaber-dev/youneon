@@ -54,7 +54,7 @@ export function youneonLogoSvg(idPrefix: string): string {
     '" x1="6" y1="4" x2="66" y2="68">' +
     '<stop offset="0%" stop-color="#d8b4fe"/>' +
     '<stop offset="52%" stop-color="#a855f7"/>' +
-    '<stop offset="100%" stop-color="#db2777"/>' +
+    '<stop offset="100%" stop-color="#C21875"/>' +
     "</linearGradient>" +
     '<linearGradient id="' +
     b +
@@ -80,7 +80,7 @@ export function youneonLogoSvg(idPrefix: string): string {
     ')"/>' +
     '<circle cx="25" cy="31" r="6" fill="#7c3aed"/>' +
     '<path d="M16 50c2.4-8.5 5.6-12.5 9-12.5s6.6 4 9 12.5" fill="#5b21b6"/>' +
-    '<circle cx="46" cy="35" r="6" fill="#db2777"/>' +
+    '<circle cx="46" cy="35" r="6" fill="#C21875"/>' +
     '<path d="M37 52.5c2.4-7.8 5.6-11.5 9-11.5s6.6 3.7 9 11.5" fill="#9d174d"/>' +
     '<circle cx="36" cy="13" r="4" fill="#f5d0fe"/>' +
     "</svg>"
@@ -173,7 +173,7 @@ export function youneonVideoChatArtSvg(idPrefix: string): string {
     tileR +
     ')"/>' +
     '<circle cx="286" cy="122" r="12" fill="#ffe4f1"/>' +
-    '<circle cx="286" cy="120" r="8.5" fill="#db2777"/>' +
+    '<circle cx="286" cy="120" r="8.5" fill="#C21875"/>' +
     '<path d="M268 156c3-12 8-18 18-18s15 6 18 18" fill="#9d174d"/>' +
     "</svg>"
   );

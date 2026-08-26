@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export const YN = {
-  pink: "#ec4899",
+  pink: "var(--pink-text)",
   purple: "#a855f7",
   lilac: "#f0abfc",
 } as const;

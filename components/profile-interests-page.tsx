@@ -112,7 +112,7 @@ export function ProfileInterestsPage({
                 disabled={blocked}
                 className={`yn-interest-chip inline-flex h-10 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-medium transition-all ${
                   on
-                    ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(192,38,211,0.22)]"
+                    ? "bg-[var(--pink)] text-white shadow-[0_4px_12px_var(--pink-soft)]"
                     : "bg-yn-bg text-yn-muted hover:bg-black/5"
                 } disabled:opacity-40`}
               >

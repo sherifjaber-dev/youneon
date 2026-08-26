@@ -3,7 +3,7 @@
     <linearGradient id="ynLogoBg" x1="16" y1="12" x2="164" y2="168">
       <stop offset="0%" stop-color="#d8b4fe"/>
       <stop offset="52%" stop-color="#a855f7"/>
-      <stop offset="100%" stop-color="#db2777"/>
+      <stop offset="100%" stop-color="#C21875"/>
     </linearGradient>
     <linearGradient id="ynLogoScreenL" x1="40" y1="36" x2="88" y2="140">
       <stop offset="0%" stop-color="#fdf4ff"/>
@@ -19,7 +19,7 @@
   <rect x="80" y="50" width="70" height="96" rx="20" fill="url(#ynLogoScreenR)"/>
   <circle cx="63" cy="78" r="16" fill="#7c3aed"/>
   <path d="M41 128c6-22 14-32 22-32s16 10 22 32" fill="#5b21b6"/>
-  <circle cx="115" cy="88" r="16" fill="#db2777"/>
+  <circle cx="115" cy="88" r="16" fill="#C21875"/>
   <path d="M93 134c6-20 14-30 22-30s16 10 22 30" fill="#9d174d"/>
   <circle cx="90" cy="32" r="11" fill="#f5d0fe"/>
 </svg>

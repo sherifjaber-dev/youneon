@@ -212,7 +212,7 @@ export function AdminPanel({
             onClick={() => setTab(item.id)}
             className={`h-10 rounded-full px-4 text-[13px] font-semibold tracking-[-0.01em] ${
               tab === item.id
-                ? "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white"
+                ? "bg-[var(--pink)] text-white"
                 : "border border-black/10 bg-white text-yn-muted"
             }`}
           >
@@ -274,7 +274,7 @@ export function AdminPanel({
               type="button"
               disabled={promoBusy}
               onClick={() => void createCode()}
-              className="mt-4 h-11 rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-600 px-5 text-[14px] font-semibold text-white"
+              className="mt-4 h-11 rounded-full bg-[var(--pink)] px-5 text-[14px] font-semibold text-white active:bg-[var(--pink-pressed)]"
             >
               Create code
             </button>
@@ -401,7 +401,7 @@ export function AdminPanel({
               type="button"
               disabled={searchBusy}
               onClick={() => void runSearch()}
-              className="h-12 rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 px-4 text-[14px] font-semibold text-white"
+              className="h-12 rounded-xl bg-[var(--pink)] px-4 text-[14px] font-semibold text-white active:bg-[var(--pink-pressed)]"
             >
               Search
             </button>
@@ -455,7 +455,7 @@ export function AdminPanel({
             type="button"
             disabled={cleanupBusy}
             onClick={() => void runCleanup()}
-            className="mt-4 h-11 rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-600 px-5 text-[14px] font-semibold text-white disabled:opacity-60"
+            className="mt-4 h-11 rounded-full bg-[var(--pink)] px-5 text-[14px] font-semibold text-white active:bg-[var(--pink-pressed)] disabled:opacity-60"
           >
             {cleanupBusy ? "Cleaning…" : "Delete marked test data"}
           </button>

@@ -179,7 +179,7 @@ export function FollowersScreen({
                       className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full text-[12px] font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
                         isFollowing
                           ? "border border-black/10 bg-yn-bg text-yn-muted"
-                          : "bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white shadow-[0_4px_12px_rgba(192,38,211,0.22)]"
+                          : "bg-[var(--pink)] text-white shadow-[0_4px_12px_var(--pink-soft)]"
                       }`}
                       data-testid={`follow-btn-${person.id}`}
                     >

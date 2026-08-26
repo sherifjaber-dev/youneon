@@ -716,7 +716,7 @@ export function YouNeonApp() {
         <button
           type="button"
           onClick={() => void logout()}
-          className="mt-6 h-12 rounded-full bg-gradient-to-r from-fuchsia-600 to-pink-600 px-6 text-[15px] font-semibold text-white"
+          className="mt-6 h-12 rounded-full bg-[var(--pink)] px-6 text-[15px] font-semibold text-white active:bg-[var(--pink-pressed)]"
         >
           Sign out
         </button>

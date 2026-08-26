@@ -11,7 +11,7 @@ function NeonStrokeDefs({ uid }: { uid: string }) {
   return (
     <defs>
       <linearGradient id={`${uid}-stroke`} x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#ff4fd8" />
+        <stop offset="0%" stopColor="var(--pink)" />
         <stop offset="48%" stopColor="#c084fc" />
         <stop offset="100%" stopColor="#7c3aed" />
       </linearGradient>

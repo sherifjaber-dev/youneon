@@ -38,7 +38,7 @@ export function MyItemsInventory({ username }: { username?: string }) {
               if (result.ok) setPromo("");
               setClaiming(false);
             }}
-            className="h-12 rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 px-4 text-[14px] font-semibold text-white"
+            className="h-12 rounded-xl bg-[var(--pink)] px-4 text-[14px] font-semibold text-white active:bg-[var(--pink-pressed)]"
           >
             {t("settings.claim")}
           </button>

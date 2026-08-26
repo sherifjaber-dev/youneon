@@ -272,7 +272,7 @@ export function ProfileOnboarding({ onComplete, onBack, isEditing }: ProfileOnbo
                   onClick={() => toggleLanguage(lang)}
                   className={`px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
                     formData.languages.includes(lang)
-                      ? "bg-fuchsia-600 text-white border-fuchsia-600"
+                      ? "bg-[var(--pink)] text-white border-[var(--pink)]"
                       : "bg-yn-card border-black/10 text-yn-muted hover:border-pink-300"
                   }`}
                 >
@@ -294,7 +294,7 @@ export function ProfileOnboarding({ onComplete, onBack, isEditing }: ProfileOnbo
                   onClick={() => toggleInterest(interest)}
                   className={`px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
                     formData.interests.includes(interest)
-                      ? "bg-fuchsia-600 text-white border-fuchsia-600"
+                      ? "bg-[var(--pink)] text-white border-[var(--pink)]"
                       : "bg-yn-card border-black/10 text-yn-muted hover:border-pink-300"
                   }`}
                 >

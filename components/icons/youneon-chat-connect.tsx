@@ -57,7 +57,7 @@ export function YouNeonChatConnectArt({ className }: { className?: string }) {
         <linearGradient id="ynChatStroke" x1="40" y1="40" x2="240" y2="140">
           <stop offset="0%" stopColor="#f0abfc" />
           <stop offset="50%" stopColor="#c084fc" />
-          <stop offset="100%" stopColor="#ec4899" />
+          <stop offset="100%" stopColor="var(--pink)" />
         </linearGradient>
         <linearGradient id="ynChatFillL" x1="48" y1="44" x2="110" y2="140">
           <stop offset="0%" stopColor="#c084fc" stopOpacity="0.22" />
@@ -147,8 +147,8 @@ export function YouNeonChatConnectArt({ className }: { className?: string }) {
         <rect x="108" y="70" width="38" height="22" rx="11" fill="#ffffff" stroke="#c026d3" strokeWidth="1.4" />
         <circle cx="119" cy="81" r="2" fill="#e879f9" />
         <circle cx="127" cy="81" r="2" fill="#f0abfc" />
-        <circle cx="135" cy="81" r="2" fill="#ec4899" />
-        <rect x="134" y="96" width="42" height="22" rx="11" fill="#ffffff" stroke="#db2777" strokeWidth="1.4" />
+        <circle cx="135" cy="81" r="2" fill="var(--pink)" />
+        <rect x="134" y="96" width="42" height="22" rx="11" fill="#ffffff" stroke="var(--pink)" strokeWidth="1.4" />
         <path d="M146 107h18" stroke="#f9a8d4" strokeWidth="1.6" strokeLinecap="round" />
       </g>
 
