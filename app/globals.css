@@ -1971,6 +1971,12 @@ html.youneon-signed-in select {
   box-shadow: 0 0 28px rgba(168, 85, 247, 0.22);
 }
 
+.yn-topbar {
+  background: #05050d;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .yn-chrome-icon {
   color: #d8b4fe;
   filter:
@@ -2048,10 +2054,14 @@ html.youneon-signed-in select {
     0 0 40px rgba(168, 85, 247, 0.28);
 }
 
-button.yn-script-logo {
+.yn-topbar .yn-script-logo {
   display: flex;
   align-items: center;
   line-height: 0;
+}
+
+.yn-topbar .yn-script-logo-img {
+  object-position: center center;
 }
 
 .yn-script-logo-img {

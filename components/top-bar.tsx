@@ -54,9 +54,9 @@ export function TopBar({
 
   return (
     <>
-      <div className="yn-chrome fixed top-0 left-0 right-0 z-50 border-b px-4 pt-[env(safe-area-inset-top)]">
-        <div className="flex h-14 items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
+      <div className="yn-chrome yn-topbar fixed top-0 left-0 right-0 z-50 border-b px-4 pt-[env(safe-area-inset-top)]">
+        <div className="relative flex h-14 items-center justify-between gap-3">
+          <div className="relative z-10 flex min-w-0 items-center">
             <button
               type="button"
               onClick={onProfileClick}
@@ -78,10 +78,13 @@ export function TopBar({
                 />
               </span>
             </button>
-            <YouNeonScriptLogo onClick={onProfileClick} />
           </div>
 
-          <div className="flex shrink-0 flex-col items-end gap-0.5">
+          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+            <YouNeonScriptLogo />
+          </div>
+
+          <div className="relative z-10 flex shrink-0 flex-col items-end gap-0.5">
             <div className="flex items-center gap-1">
               <button
                 type="button"
