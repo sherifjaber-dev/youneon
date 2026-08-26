@@ -608,13 +608,7 @@ export function ProfilePreviewSheet({
           <div className="yn-preview-body">
             <h2 id="yn-preview-name" className="yn-preview-name">
               <span className="yn-preview-name-cluster">
-                {profile.name ? <span className="yn-preview-name-text">{profile.name}</span> : null}
-                {profile.age ? (
-                  <span className="yn-preview-age">
-                    {profile.name ? ", " : ""}
-                    {profile.age}
-                  </span>
-                ) : null}
+                {profile.name ? <span className="yn-preview-name-text">{profile.name}</span> : null}{profile.name && profile.age ? <span className="yn-preview-name-comma">, </span> : null}{profile.age ? <span className="yn-preview-age">{profile.age}</span> : null}
               </span>
               {locationFlag ? <CountryFlag country={locationFlag} size={26} className="yn-preview-flag" /> : null}
               {profile.youneonBadge ? <YouNeonBadgeMark /> : null}
@@ -638,7 +632,7 @@ export function ProfilePreviewSheet({
                   {following ? "Following" : "+ Follow"}
                 </button>
                 <button type="button" onClick={handleMessage} className="yn-preview-btn is-message">
-                  <MessageCircle size={18} strokeWidth={2.2} />
+                  <MessageCircle size={16} strokeWidth={2.2} />
                   Message
                 </button>
               </div>

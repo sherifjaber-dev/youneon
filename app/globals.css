@@ -1211,17 +1211,24 @@ html.youneon-signed-in .yn-preview-name {
   color: #ffffff;
 }
 
+.yn-preview-name-comma {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
 .yn-preview-age {
   font-size: 34px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #ff2ec8;
+  color: #e03596;
   opacity: 1;
-  text-shadow: 0 0 12px rgba(255, 46, 200, 0.45);
+  text-shadow: 0 0 12px rgba(224, 53, 150, 0.45);
 }
 
 html.youneon-signed-in .yn-preview-age {
-  color: #ff2ec8;
+  color: #e03596;
   opacity: 1;
 }
 
@@ -1266,7 +1273,7 @@ html.youneon-signed-in .yn-preview-age {
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  gap: 10px;
+  gap: 8px;
   margin: 12px 0 4px;
   width: 100%;
 }
@@ -1285,14 +1292,14 @@ html.youneon-signed-in .yn-preview-section h3 {
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.2;
-  color: #ff2ec8;
+  color: #e03596;
   opacity: 1;
-  text-shadow: 0 0 10px rgba(255, 46, 200, 0.4);
+  text-shadow: 0 0 10px rgba(224, 53, 150, 0.4);
 }
 
 .yn-preview-section h3 svg,
 html.youneon-signed-in .yn-preview-section h3 svg {
-  color: #ff2ec8;
+  color: #e03596;
   opacity: 1;
   flex-shrink: 0;
 }
@@ -1400,16 +1407,17 @@ html.youneon-signed-in .yn-preview-btn {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 46px;
-  min-height: 46px;
-  max-height: 46px;
-  padding: 0 12px;
+  height: 37px;
+  min-height: 36px;
+  max-height: 38px;
+  padding: 0 16px;
   border: 0;
-  border-radius: 16px;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
   line-height: 1;
-  color: #fff;
+  white-space: nowrap;
+  color: #ffffff;
   cursor: pointer;
 }
 
@@ -1418,8 +1426,13 @@ html.youneon-signed-in .yn-preview-btn {
 }
 
 .yn-preview-btn.is-primary {
-  background: #ff2ec8;
-  box-shadow: 0 4px 18px rgba(255, 46, 200, 0.42);
+  background: #c21875;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.yn-preview-btn.is-primary:active:not(:disabled) {
+  background: #9e145f;
 }
 
 .yn-preview-btn.is-edit {
@@ -1428,17 +1441,22 @@ html.youneon-signed-in .yn-preview-btn {
 }
 
 .yn-preview-btn.is-message {
-  background: rgba(12, 6, 20, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #141018;
+  border: 1px solid #3f3548;
+  color: #ffffff;
+}
+
+.yn-preview-btn.is-message svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #ffffff;
 }
 
 .yn-preview-btn.is-ghost {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.32);
-  color: #fff;
+  color: #ffffff;
 }
 
 .yn-preview-report {
