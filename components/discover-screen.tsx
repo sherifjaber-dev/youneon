@@ -88,7 +88,7 @@ export function DiscoverScreen({
 
   return (
     <div className="yn-discover flex h-full min-h-0 flex-col gap-3.5 overflow-y-auto px-4 pb-4 pt-3">
-      <div className="yn-live-card relative flex-[1.08] overflow-hidden">
+      <div className="yn-live-card relative w-full flex-shrink-0 overflow-hidden">
         <div className="yn-live-banner-stage relative w-full">
           <img
             src="/youneon/live-banner.png"

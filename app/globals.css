@@ -2047,15 +2047,15 @@ button.yn-script-logo {
 }
 
 .yn-live-banner-stage {
-  aspect-ratio: 1024 / 687;
+  width: 100%;
+  line-height: 0;
 }
 
 .yn-live-banner-img {
-  position: absolute;
-  inset: 0;
-  height: 100%;
+  display: block;
   width: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   object-position: center center;
   pointer-events: none;
 }
