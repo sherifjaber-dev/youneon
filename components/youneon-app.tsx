@@ -66,6 +66,7 @@ import {
 } from "@/lib/chat-unlock";
 import { ChatUnlockModal, type ChatUnlockTarget } from "@/components/chat-unlock-modal";
 import { isRealPiUsername } from "@/lib/real-pi-user";
+import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 
 type VideoSession = {
   mode: "random" | "direct";
@@ -194,6 +195,7 @@ export function YouNeonApp() {
   const [accountBanned, setAccountBanned] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>("discover");
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileOverlayId, setProfileOverlayId] = useState<string | null>(null);
   const [videoSession, setVideoSession] = useState<VideoSession | null>(null);
   const [neonBalance, setNeonBalance] = useState(0);
   const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
@@ -741,6 +743,34 @@ export function YouNeonApp() {
       }
     : null;
 
+  const profileOverlayOpen = !!profileOverlayId;
+  const ownProfileSeed: CloudUserProfile | undefined =
+    profileOverlayId && profileOverlayId === currentUserId
+      ? {
+          piUsername: displayUser.piUsername,
+          id: displayUser.id,
+          uid: displayUser.uid,
+          fullName: displayUser.fullName,
+          age: displayUser.age,
+          country: displayUser.country,
+          location: displayUser.location,
+          gender: displayUser.gender,
+          languages: displayUser.languages,
+          interests: displayUser.interests,
+          avatar: displayUser.avatar,
+          profilePicture: displayUser.profilePicture,
+          photos: displayUser.photos,
+          bio: displayUser.bio,
+          reactionsReceived: displayUser.reactionsReceived,
+          giftsReceivedCount: displayUser.giftsReceivedCount,
+        }
+      : undefined;
+  const openProfileOverlay = (userId?: string) => {
+    const id = (userId || "").trim();
+    if (!id) return;
+    setProfileOverlayId(id);
+  };
+
   if (activeChat && displayUser) {
     return (
       <>
@@ -810,26 +840,28 @@ export function YouNeonApp() {
 
   return (
     <div className={`min-h-dvh ${activeTab === "discover" || activeTab === "lounge" || activeTab === "messages" || activeTab === "history" ? "bg-[#05050d] text-white" : "bg-yn-bg text-yn-text"}`}>
-      {sessionUnverified && (
+      {sessionUnverified && !profileOverlayOpen && (
         <div className="fixed left-0 right-0 top-[calc(var(--yn-topbar-inner)+env(safe-area-inset-top))] z-40 bg-amber-100/95 px-3 py-1 text-center text-[11px] text-amber-950">
           Signed in. Pi account verification is still pending.
         </div>
       )}
-      <TopBar
-        onProfileClick={() => setShowProfileModal(true)}
-        neonBalance={neonBalance}
-        onNeonClick={() => setShowNeonShop(true)}
-        isPremium={isPremium}
-        premiumUntil={premiumUntil}
-        announcements={announcements}
-        profilePicture={displayUser.profilePicture}
-        photos={displayUser.photos}
-        profileName={displayUser.fullName || displayUser.piUsername}
-        currentUserId={currentUserId}
-        onOpenChat={handleOpenChat}
-        onOpenMessages={() => setActiveTab("messages")}
-        freeUnlocksRemaining={freeUnlocksLeft}
-      />
+      {!profileOverlayOpen ? (
+        <TopBar
+          onProfileClick={() => openProfileOverlay(currentUserId)}
+          neonBalance={neonBalance}
+          onNeonClick={() => setShowNeonShop(true)}
+          isPremium={isPremium}
+          premiumUntil={premiumUntil}
+          announcements={announcements}
+          profilePicture={displayUser.profilePicture}
+          photos={displayUser.photos}
+          profileName={displayUser.fullName || displayUser.piUsername}
+          currentUserId={currentUserId}
+          onOpenChat={handleOpenChat}
+          onOpenMessages={() => setActiveTab("messages")}
+          freeUnlocksRemaining={freeUnlocksLeft}
+        />
+      ) : null}
       <div className={`fixed inset-x-0 top-[calc(var(--yn-topbar-inner)+env(safe-area-inset-top))] bottom-[calc(var(--yn-bottomnav-inner)+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (
           <div className="h-full">
@@ -863,6 +895,7 @@ export function YouNeonApp() {
               languages: displayUser.languages,
             }}
             onOpenChat={handleOpenChat}
+            onOpenProfile={openProfileOverlay}
           />
         )}
         {activeTab === "messages" && (
@@ -878,6 +911,7 @@ export function YouNeonApp() {
               age: displayUser.age,
             }}
             onOpenChat={handleOpenChat}
+            onOpenProfile={openProfileOverlay}
           />
         )}
         {activeTab === "history" && (
@@ -892,10 +926,27 @@ export function YouNeonApp() {
               age: displayUser.age,
             }}
             onOpenChat={handleOpenChat}
+            onOpenProfile={openProfileOverlay}
           />
         )}
       </div>
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      {!profileOverlayOpen ? <BottomNav activeTab={activeTab} onTabChange={setActiveTab} /> : null}
+      <ProfilePreviewSheet
+        open={profileOverlayOpen}
+        onClose={() => setProfileOverlayId(null)}
+        userId={profileOverlayId || undefined}
+        viewerId={currentUserId}
+        seed={ownProfileSeed}
+        isSelf={!!profileOverlayId && profileOverlayId === currentUserId}
+        onEdit={() => {
+          setProfileOverlayId(null);
+          setShowProfileModal(true);
+        }}
+        onMessage={(user) => {
+          setProfileOverlayId(null);
+          void handleOpenChat(user);
+        }}
+      />
       <ProfileEditModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}

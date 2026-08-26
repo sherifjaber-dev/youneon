@@ -42,6 +42,7 @@ interface LoungeScreenProps {
   currentUserId?: string;
   currentUser?: LoungeMe;
   onOpenChat?: (user: LoungeChatTarget) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
 const CHIPS: { id: LoungeFeedChip; label: string }[] = [
@@ -103,6 +104,7 @@ export function LoungeScreen({
   currentUserId,
   currentUser,
   onOpenChat,
+  onOpenProfile,
 }: LoungeScreenProps) {
   const meId = currentUser?.id || currentUserId || "";
   const me: LoungeMe = {
@@ -144,6 +146,13 @@ export function LoungeScreen({
   const [draft, setDraft] = useState<LoungeFilters>(DEFAULT_LOUNGE_FILTERS);
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
 
+  const openProfile = (userId: string) => {
+    if (onOpenProfile) {
+      onOpenProfile(userId);
+      return;
+    }
+    setPreviewUserId(userId);
+  };
   const { followingIds, busyId, toggleFollow } = useFollowGraph(meId);
   const blockedIds = useBlockedIds(meId);
   const loadedCountRef = useRef(0);
@@ -415,7 +424,7 @@ export function LoungeScreen({
                     key={`live-${person.id}`}
                     type="button"
                     className="yn-lounge-live-item"
-                    onClick={() => setPreviewUserId(person.id)}
+                    onClick={() => openProfile(person.id)}
                     aria-label={`${person.displayName || person.name} is live`}
                   >
                     <span className="yn-lounge-live-ring">
@@ -440,7 +449,7 @@ export function LoungeScreen({
                   busy={busyId === person.id || !meId}
                   onFollow={() => followPerson(person)}
                   onMessage={() => openChat(person)}
-                  onOpenProfile={() => setPreviewUserId(person.id)}
+                  onOpenProfile={() => openProfile(person.id)}
                 />
               ))}
             </div>
@@ -460,6 +469,7 @@ export function LoungeScreen({
         />
       ) : null}
 
+      {onOpenProfile ? null : (
       <ProfilePreviewSheet
         open={!!previewUserId}
         onClose={() => setPreviewUserId(null)}
@@ -471,6 +481,7 @@ export function LoungeScreen({
           onOpenChat?.(user);
         }}
       />
+      )}
     </div>
   );
 }

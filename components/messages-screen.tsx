@@ -16,6 +16,7 @@ interface MessagesScreenProps {
   hasOwnPhoto?: boolean;
   currentUser?: FollowSnapshot;
   onOpenChat?: (user: ChatTarget) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
 type PeopleView = "inbox" | "followers" | "following";
@@ -46,6 +47,7 @@ export function MessagesScreen({
   hasOwnPhoto = false,
   currentUser,
   onOpenChat,
+  onOpenProfile,
 }: MessagesScreenProps) {
   const [conversations, setConversations] = useState<any[]>([]);
   const [peopleView, setPeopleView] = useState<PeopleView>("inbox");
@@ -90,7 +92,15 @@ export function MessagesScreen({
     return map;
   }, [following, followers]);
 
-  const previewSheet = (
+  const openProfile = (id: string) => {
+    if (onOpenProfile) {
+      onOpenProfile(id);
+      return;
+    }
+    setPreviewUserId(id);
+  };
+
+  const previewSheet = onOpenProfile ? null : (
     <ProfilePreviewSheet
       open={!!previewUserId}
       onClose={() => setPreviewUserId(null)}
@@ -120,7 +130,7 @@ export function MessagesScreen({
           onBack={() => setPeopleView("inbox")}
           onToggleFollow={handleToggleFollow}
           onOpenChat={openChat}
-          onOpenProfile={(id) => setPreviewUserId(id)}
+          onOpenProfile={(id) => openProfile(id)}
         />
         {previewSheet}
       </div>
@@ -191,7 +201,7 @@ export function MessagesScreen({
                 <button
                   type="button"
                   className="flex w-full flex-col items-center"
-                  onClick={() => setPreviewUserId(person.id)}
+                  onClick={() => openProfile(person.id)}
                   aria-label={`View ${person.name}'s profile`}
                 >
                   <NeonAvatar
@@ -300,7 +310,7 @@ export function MessagesScreen({
                   <button
                     type="button"
                     className="shrink-0"
-                    onClick={() => setPreviewUserId(otherId)}
+                    onClick={() => openProfile(otherId)}
                     aria-label={`View ${name}'s profile`}
                   >
                     <NeonAvatar
@@ -317,7 +327,7 @@ export function MessagesScreen({
                       <button
                         type="button"
                         className="flex min-w-0 items-center text-left"
-                        onClick={() => setPreviewUserId(otherId)}
+                        onClick={() => openProfile(otherId)}
                       >
                         <span className="yn-messages-name" data-testid={`conversation-name-${otherId}`}>
                           <span className="truncate">{name}</span>

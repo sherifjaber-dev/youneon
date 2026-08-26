@@ -32,6 +32,7 @@ interface HistoryScreenProps {
     country?: string;
     isOnline?: boolean;
   }) => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
 type HistoryTab = "recent" | "viewed";
@@ -306,6 +307,7 @@ export function HistoryScreen({
   hasOwnPhoto = false,
   currentUser,
   onOpenChat,
+  onOpenProfile,
 }: HistoryScreenProps) {
   const [tab, setTab] = useState<HistoryTab>("recent");
   const [history, setHistory] = useState<HistoryRow[]>([]);
@@ -317,6 +319,13 @@ export function HistoryScreen({
   const [draft, setDraft] = useState<AppliedFilter>(EMPTY_FILTER);
   const [updatedFocus, setUpdatedFocus] = useState<string | "all">("all");
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
+  const openProfile = (userId: string) => {
+    if (onOpenProfile) {
+      onOpenProfile(userId);
+      return;
+    }
+    setPreviewUserId(userId);
+  };
 
   const me: FollowSnapshot = {
     id: currentUser?.id || currentUserId || "",
@@ -575,7 +584,7 @@ export function HistoryScreen({
                     following={followingIds.has(u.matchId)}
                     busy={busyId === u.matchId || !me.id}
                     tone="outline"
-                    onOpenProfile={() => setPreviewUserId(u.matchId)}
+                    onOpenProfile={() => openProfile(u.matchId)}
                     onFollow={() =>
                       followPerson(u.matchId, u.name, u.photo, u.country || u.countryFlag)
                     }
@@ -610,7 +619,7 @@ export function HistoryScreen({
                     following={followingIds.has(person.id)}
                     busy={busyId === person.id || !me.id}
                     tone="outline"
-                    onOpenProfile={() => setPreviewUserId(person.id)}
+                    onOpenProfile={() => openProfile(person.id)}
                     onFollow={() => followPerson(person.id, person.name, person.photo, country)}
                     onMessage={() =>
                       openChat({
@@ -647,7 +656,7 @@ export function HistoryScreen({
                       following={followingIds.has(u.matchId)}
                       busy={busyId === u.matchId || !me.id}
                       tone="outline"
-                      onOpenProfile={() => setPreviewUserId(u.matchId)}
+                      onOpenProfile={() => openProfile(u.matchId)}
                       onFollow={() =>
                         followPerson(u.matchId, u.name, u.photo, u.country || u.countryFlag)
                       }
@@ -697,7 +706,7 @@ export function HistoryScreen({
                   following={following}
                   busy={busyId === view.viewerId || !me.id}
                   tone="fill"
-                  onOpenProfile={() => setPreviewUserId(view.viewerId)}
+                  onOpenProfile={() => openProfile(view.viewerId)}
                   onFollow={() => followPerson(view.viewerId, name, photo, country)}
                   onMessage={() =>
                     openChat({
@@ -806,6 +815,7 @@ export function HistoryScreen({
         </div>
       ) : null}
 
+      {onOpenProfile ? null : (
       <ProfilePreviewSheet
         open={!!previewUserId}
         onClose={() => setPreviewUserId(null)}
@@ -817,6 +827,7 @@ export function HistoryScreen({
           openChat(user);
         }}
       />
+      )}
     </div>
   );
 }

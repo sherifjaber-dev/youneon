@@ -955,31 +955,33 @@ html.youneon-signed-in select {
 
 .yn-preview-overlay,
 .yn-remote-profile-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 45;
+  z-index: 220;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: rgba(4, 2, 10, 0.62);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: #070010;
   pointer-events: auto;
 }
 
 .yn-preview-overlay.yn-preview-overlay--standalone,
+.yn-preview-overlay.yn-preview-overlay--fullscreen,
 .yn-remote-profile-overlay.yn-remote-profile-overlay--standalone {
   position: fixed;
-  z-index: 140;
+  inset: 0;
+  z-index: 220;
 }
 
 .yn-preview-drag {
   width: min(100%, 430px);
-  max-height: min(94dvh, 820px);
+  margin: 0 auto;
+  height: 100%;
+  max-height: none;
   display: flex;
   flex-direction: column;
   pointer-events: auto;
-  will-change: transform;
 }
 
 .yn-preview-sheet {
@@ -987,43 +989,24 @@ html.youneon-signed-in select {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-height: min(94dvh, 820px);
+  max-width: 430px;
+  margin: 0 auto;
+  height: 100%;
+  max-height: none;
   overflow: hidden;
-  border-radius: 24px 24px 0 0;
+  border-radius: 0;
   background: #070010;
-  border: 1px solid rgba(192, 132, 252, 0.18);
-  border-bottom: 0;
+  border: 0;
   color: #ede8f5;
-  box-shadow:
-    0 -18px 50px rgba(0, 0, 0, 0.45),
-    0 0 28px rgba(255, 46, 200, 0.1);
-  animation: yn-remote-profile-in 0.28s ease forwards;
   pointer-events: auto;
 }
 
 .yn-preview-handle-hit {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 22px;
-  cursor: grab;
-  touch-action: none;
-  pointer-events: auto;
-  z-index: 20;
-}
-
-.yn-preview-handle-hit:active {
-  cursor: grabbing;
+  display: none;
 }
 
 .yn-preview-handle {
-  flex-shrink: 0;
-  width: 40px;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.28);
-  pointer-events: none;
+  display: none;
 }
 
 .yn-preview-close,
@@ -1041,10 +1024,8 @@ html.youneon-signed-in select {
   border: 0;
   border-radius: 50%;
   color: #fff;
-  background: rgba(8, 2, 16, 0.42);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: transparent;
+  box-shadow: none;
 }
 
 .yn-preview-close {
@@ -1052,8 +1033,8 @@ html.youneon-signed-in select {
   top: 10px;
   left: 10px;
   color: #ff2ec8;
-  background: rgba(8, 2, 16, 0.5);
-  filter: drop-shadow(0 0 8px rgba(255, 46, 200, 0.55));
+  background: transparent;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.55));
 }
 
 .yn-preview-photo-tools {
@@ -1111,16 +1092,17 @@ html.youneon-signed-in select {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px));
 }
 
 .yn-preview-photo {
   position: relative;
   width: 100%;
   aspect-ratio: 3 / 4;
-  max-height: min(52vh, 440px);
+  min-height: 280px;
+  max-height: min(58dvh, 560px);
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 20px;
   background: #1a1024;
   cursor: pointer;
 }
@@ -1138,6 +1120,7 @@ html.youneon-signed-in select {
   justify-content: center;
   width: 100%;
   height: 100%;
+  min-height: 280px;
   background:
     radial-gradient(circle at 50% 30%, rgba(236, 72, 153, 0.4), transparent 58%),
     linear-gradient(160deg, #e879f9 0%, #a855f7 40%, #ec4899 78%, #6d28d9 100%);
@@ -1218,7 +1201,9 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-name-text {
+  font-size: 34px;
   font-weight: 800;
+  letter-spacing: -0.03em;
   color: #ffffff;
 }
 
@@ -1264,10 +1249,7 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-gender {
-  margin: 8px 0 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(201, 192, 212, 0.62);
+  display: none;
 }
 
 .yn-preview-cta {
@@ -1277,7 +1259,7 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-section {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .yn-preview-section h3 {
@@ -1333,15 +1315,16 @@ html.youneon-signed-in select {
 .yn-preview-tag.is-lang {
   background: #12081c;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #fff;
+  color: #e8e0f0;
   font-weight: 600;
+  border-radius: 14px;
 }
 
 .yn-preview-about {
   padding: 12px 14px;
   border-radius: 16px;
   background: rgba(12, 4, 22, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 46, 200, 0.25);
   font-size: 16px;
   line-height: 1.5;
   color: #ede8f5;
@@ -1421,6 +1404,14 @@ html.youneon-signed-in select {
   position: absolute;
   inset: 0;
   z-index: 5;
+}
+
+html.yn-profile-open .yn-chrome {
+  display: none !important;
+}
+
+html.yn-profile-open {
+  overflow: hidden;
 }
 
 .yn-chat {
@@ -2094,13 +2085,13 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-rx .yn-gift-art {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 }
 
 .yn-preview-rx .yn-neon-glyph {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 }
 
 .yn-neon-glyph {

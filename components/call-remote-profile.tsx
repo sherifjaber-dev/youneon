@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Ban, Globe, MapPin, MessageCircle, MoreHorizontal, Plus, Share, Sparkles, Star, User, X } from "lucide-react";
 import { CallReportSheet } from "@/components/call-report-sheet";
+import { GiftArt } from "@/components/icons/gift-art";
 import { InterestIcon } from "@/components/icons/interest-icons";
-import { ReactionIcon } from "@/components/icons/reaction-icons";
 import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
 import { CountryFlag } from "@/components/country-flag";
 import { countryLabel, countryToIso } from "@/lib/countries";
@@ -13,7 +14,7 @@ import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service"
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { recordProfileView } from "@/lib/profile-views";
 import {
-  languageLabel,
+  canonicalLanguage,
   reactionCount,
   REACTION_TO_GIFT,
   REACTION_TYPES,
@@ -23,6 +24,26 @@ import {
 import { playGiftSound } from "@/lib/gift-sounds";
 import { badgeFromUserDoc, submitUserReport, type ReportReasonId } from "@/lib/safety";
 import { blockUserForMe } from "@/lib/user-settings";
+
+const NEON_ID_RE = /^YN-[A-Z0-9]{4}(?:-[A-Z0-9]{4})+$/i;
+
+function sanitizeDisplayName(name: string): string {
+  const t = name.trim();
+  if (!t || t === "—" || t === "-" || t === "–") return "";
+  if (NEON_ID_RE.test(t)) return "";
+  return t;
+}
+
+function formatLocationLine(countryName: string, location: string): string {
+  const country = countryName.trim();
+  const loc = location.trim();
+  if (!loc && !country) return "";
+  if (!loc) return country;
+  if (!country) return loc;
+  if (loc.toLowerCase() === country.toLowerCase()) return country;
+  if (loc.toLowerCase().includes(country.toLowerCase())) return loc;
+  return `${loc}, ${country}`;
+}
 
 export type CallPartnerHint = {
   userId?: string;
@@ -107,18 +128,23 @@ export function mergeRemoteProfile(
   dailyName?: string
 ) {
   const photos = collectPhotos(firestoreUser, hint);
-  const name =
+  const name = sanitizeDisplayName(
     (firestoreUser?.fullName && firestoreUser.fullName.trim()) ||
-    (hint?.name && hint.name.trim()) ||
-    (dailyName && dailyName.trim()) ||
-    "";
+      (hint?.name && hint.name.trim()) ||
+      (dailyName && dailyName.trim()) ||
+      (firestoreUser?.piUsername && firestoreUser.piUsername.trim()) ||
+      ""
+  );
   const ageRaw = firestoreUser?.age || hint?.age;
   const age = typeof ageRaw === "number" && ageRaw > 0 ? ageRaw : undefined;
-  const location =
+  const countryRaw =
     (firestoreUser?.country && firestoreUser.country.trim()) ||
-    (firestoreUser?.location && firestoreUser.location.trim()) ||
     (hint?.country && hint.country.trim()) ||
     "";
+  const locationRaw =
+    (firestoreUser?.location && firestoreUser.location.trim()) ||
+    (hint?.country && hint.country.trim()) ||
+    countryRaw;
   const bio =
     (firestoreUser?.bio && firestoreUser.bio.trim()) ||
     (hint?.bio && hint.bio.trim()) ||
@@ -131,11 +157,11 @@ export function mergeRemoteProfile(
   const genderRaw = hideGender ? undefined : firestoreUser?.gender || hint?.gender;
 
   return {
-    name: name || "—",
+    name,
     age,
-    location,
-    countryFlag: countryToIso(location) || countryToIso(hint?.countryFlag) || "",
-    countryName: countryLabel(location) || countryLabel(hint?.countryFlag) || location,
+    location: locationRaw,
+    countryFlag: countryToIso(countryRaw) || countryToIso(locationRaw) || countryToIso(hint?.countryFlag) || "",
+    countryName: countryLabel(countryRaw) || countryLabel(locationRaw) || countryLabel(hint?.countryFlag) || countryRaw || locationRaw,
     bio,
     photos,
     heroPhoto: photos[0] || "",
@@ -175,7 +201,7 @@ export function RemoteProfileAvatar({
       className="yn-remote-avatar"
       onClick={onOpen}
       data-testid="remote-profile-avatar"
-      aria-label={`View ${name === "—" ? "their" : `${name}'s`} profile`}
+      aria-label={`View ${name ? `${name}'s` : "their"} profile`}
     >
       {showPhoto ? (
         <img src={photo} alt="" onError={() => setImgFailed(true)} />
@@ -195,10 +221,11 @@ export function ProfilePreviewSheet({
   hint,
   dailyName,
   isSelf,
-  standalone = false,
+  standalone: _standalone = false,
   onMessage,
   onReport,
   onBlock,
+  onEdit,
 }: {
   open: boolean;
   onClose: () => void;
@@ -212,6 +239,7 @@ export function ProfilePreviewSheet({
   onMessage?: (user: ProfileChatTarget) => void;
   onReport?: () => void;
   onBlock?: () => void;
+  onEdit?: () => void;
 }) {
   const [live, setLive] = useState<UserProfile | null>(null);
   const [online, setOnline] = useState(false);
@@ -221,11 +249,8 @@ export function ProfilePreviewSheet({
   const [showMore, setShowMore] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [sendingRx, setSendingRx] = useState<string | null>(null);
-  const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const touchX = useRef<number | null>(null);
   const touchY = useRef<number | null>(null);
-  const dragRef = useRef<{ startY: number; dy: number } | null>(null);
 
   const resolvedId = (userId || hint?.userId || seed?.id || seed?.uid || seed?.piUsername || "").trim();
   const self = isSelf ?? (!!viewerId && !!resolvedId && viewerId === resolvedId);
@@ -274,7 +299,7 @@ export function ProfilePreviewSheet({
   const gallery = profile.photos;
   const current = gallery[Math.min(activePhoto, Math.max(0, gallery.length - 1))] || "";
   const reactionTotal = totalReactions(profile.reactions);
-  const displayName = profile.name === "—" ? "this person" : profile.name;
+  const displayName = profile.name || "this person";
 
   useEffect(() => {
     setActivePhoto(0);
@@ -293,51 +318,16 @@ export function ProfilePreviewSheet({
   }, [open, onClose]);
 
   useEffect(() => {
-    if (!open) {
-      setDragY(0);
-      setDragging(false);
-      dragRef.current = null;
-    }
+    if (!open) return;
+    const html = document.documentElement;
+    html.classList.add("yn-profile-open");
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      html.classList.remove("yn-profile-open");
+      document.body.style.overflow = prevOverflow;
+    };
   }, [open]);
-
-  const beginSheetDrag = (clientY: number) => {
-    dragRef.current = { startY: clientY, dy: 0 };
-    setDragging(true);
-  };
-
-  const moveSheetDrag = (clientY: number) => {
-    if (!dragRef.current) return;
-    const dy = Math.max(0, clientY - dragRef.current.startY);
-    dragRef.current.dy = dy;
-    setDragY(dy);
-  };
-
-  const endSheetDrag = () => {
-    const dy = dragRef.current?.dy ?? 0;
-    dragRef.current = null;
-    setDragging(false);
-    if (dy > 88) {
-      setDragY(0);
-      onClose();
-      return;
-    }
-    setDragY(0);
-  };
-
-  const onHandlePointerDown = (e: ReactPointerEvent) => {
-    if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    beginSheetDrag(e.clientY);
-  };
-
-  const onHandlePointerMove = (e: ReactPointerEvent) => {
-    if (!dragRef.current) return;
-    moveSheetDrag(e.clientY);
-  };
-
-  const onHandlePointerUp = () => {
-    endSheetDrag();
-  };
 
   const cyclePhoto = useCallback(
     (dir: number) => {
@@ -349,8 +339,7 @@ export function ProfilePreviewSheet({
 
   const handleShare = async () => {
     const title = "YouNeon";
-    const text =
-      profile.name && profile.name !== "—" ? `Meet ${profile.name} on YouNeon` : "Meet someone on YouNeon";
+    const text = profile.name ? `Meet ${profile.name} on YouNeon` : "Meet someone on YouNeon";
     try {
       const piShare = window.Pi?.openShareDialog;
       if (typeof piShare === "function") {
@@ -382,7 +371,7 @@ export function ProfilePreviewSheet({
     if (resolvedId && onMessage) {
       onMessage({
         id: resolvedId,
-        name: profile.name === "—" ? resolvedId : profile.name,
+        name: profile.name || resolvedId,
         avatar: profile.name,
         photo: profile.heroPhoto,
         country: profile.location,
@@ -458,41 +447,30 @@ export function ProfilePreviewSheet({
     onClose();
   };
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   const following = !!(resolvedId && followingIds.has(resolvedId));
-  const locationText = profile.countryName || profile.location || "";
+  const locationText = formatLocationLine(profile.countryName || "", profile.location || "");
   const locationFlag = profile.countryFlag || profile.countryName || profile.location;
   const bioText = profile.bio.trim();
 
-  return (
+  const reactionGlyph = (id: ReactionId) => {
+    const giftId = REACTION_TO_GIFT[id];
+    if (giftId) {
+      return <GiftArt id={giftId} size={32} variant="pick" instance={`profile-rx-${id}`} />;
+    }
+    return null;
+  };
+
+  const overlay = (
     <div
-      className={`yn-preview-overlay${standalone ? " yn-preview-overlay--standalone" : ""}`}
+      className="yn-preview-overlay yn-preview-overlay--fullscreen"
       role="dialog"
       aria-modal="true"
       aria-labelledby="yn-preview-name"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
       data-testid="profile-preview-sheet"
     >
-      <div
-        className="yn-preview-drag"
-        style={{
-          transform: `translateY(${dragY}px)`,
-          transition: dragging ? "none" : "transform 0.22s ease",
-        }}
-      >
-      <div className="yn-preview-sheet" onClick={(e) => e.stopPropagation()}>
-        <div
-          className="yn-preview-handle-hit"
-          onPointerDown={onHandlePointerDown}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={onHandlePointerUp}
-          onPointerCancel={onHandlePointerUp}
-        >
-          <div className="yn-preview-handle" aria-hidden="true" />
-        </div>
+      <div className="yn-preview-sheet">
         <div className="yn-preview-scroll">
           <div
             className="yn-preview-photo"
@@ -510,10 +488,6 @@ export function ProfilePreviewSheet({
               const t = e.changedTouches[0];
               const dx = (t?.clientX ?? startX) - startX;
               const dy = (t?.clientY ?? startY) - startY;
-              if (dy > 72 && dy > Math.abs(dx) * 1.15) {
-                onClose();
-                return;
-              }
               if (Math.abs(dx) <= 40 || Math.abs(dx) < Math.abs(dy)) return;
               if (dx < 0) cyclePhoto(1);
               else cyclePhoto(-1);
@@ -533,7 +507,7 @@ export function ProfilePreviewSheet({
               aria-label="Close profile"
               data-testid="profile-preview-close"
             >
-              <X size={22} strokeWidth={2.6} />
+              <X size={22} strokeWidth={2.4} />
             </button>
             <div className="yn-preview-photo-tools">
               <button
@@ -626,10 +600,15 @@ export function ProfilePreviewSheet({
           <div className="yn-preview-body">
             <h2 id="yn-preview-name" className="yn-preview-name">
               <span className="yn-preview-name-cluster">
-                <span className="yn-preview-name-text">{profile.name}</span>
-                {profile.age ? <span className="yn-preview-age">, {profile.age}</span> : null}
+                {profile.name ? <span className="yn-preview-name-text">{profile.name}</span> : null}
+                {profile.age ? (
+                  <span className="yn-preview-age">
+                    {profile.name ? ", " : ""}
+                    {profile.age}
+                  </span>
+                ) : null}
               </span>
-              {locationFlag ? <CountryFlag country={locationFlag} size={22} className="yn-preview-flag" /> : null}
+              {locationFlag ? <CountryFlag country={locationFlag} size={26} className="yn-preview-flag" /> : null}
               {profile.youneonBadge ? <YouNeonBadgeMark /> : null}
             </h2>
 
@@ -642,8 +621,15 @@ export function ProfilePreviewSheet({
 
             {self ? (
               <div className="yn-preview-cta">
-                <button type="button" onClick={onClose} className="yn-preview-btn is-primary is-edit">
-                  Edit profile
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onEdit) onEdit();
+                    else onClose();
+                  }}
+                  className="yn-preview-btn is-primary is-edit"
+                >
+                  Edit
                 </button>
               </div>
             ) : (
@@ -663,10 +649,6 @@ export function ProfilePreviewSheet({
                 </button>
               </div>
             )}
-
-            {!profile.hideGender && profile.gender ? (
-              <p className="yn-preview-gender">{profile.gender}</p>
-            ) : null}
 
             {bioText ? (
               <section className="yn-preview-section">
@@ -704,7 +686,7 @@ export function ProfilePreviewSheet({
                 <div className="yn-preview-tags">
                   {profile.languages.map((lang) => (
                     <span key={lang} className="yn-preview-tag is-lang">
-                      {languageLabel(lang)}
+                      {canonicalLanguage(lang) || lang}
                     </span>
                   ))}
                 </div>
@@ -719,6 +701,7 @@ export function ProfilePreviewSheet({
               <div className="yn-preview-rx-row" aria-label={`${reactionTotal} reactions received`}>
                 {REACTION_TYPES.map((r) => {
                   const count = reactionCount(profile.reactions, r.id);
+                  const glyph = reactionGlyph(r.id);
                   const tap = !self;
                   return tap ? (
                     <button
@@ -730,12 +713,12 @@ export function ProfilePreviewSheet({
                       aria-label={`Send ${r.id}, ${count} received`}
                       onClick={() => handleReactionTap(r.id)}
                     >
-                      <ReactionIcon id={r.id} size={30} />
+                      {glyph}
                       <span className="tabular-nums">{count}</span>
                     </button>
                   ) : (
                     <div key={r.id} className="yn-preview-rx" title={r.id}>
-                      <ReactionIcon id={r.id} size={30} />
+                      {glyph}
                       <span className="tabular-nums">{count}</span>
                     </div>
                   );
@@ -744,7 +727,6 @@ export function ProfilePreviewSheet({
             </section>
           </div>
         </div>
-      </div>
       </div>
 
       {showReport ? (
@@ -759,6 +741,8 @@ export function ProfilePreviewSheet({
       ) : null}
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
 
 /** @deprecated Use ProfilePreviewSheet — same UI. */
@@ -774,6 +758,7 @@ export function RemoteProfileModal({
   onBlock,
   onMessage,
   isSelf,
+  onEdit,
 }: {
   open: boolean;
   onClose: () => void;
@@ -786,6 +771,7 @@ export function RemoteProfileModal({
   onBlock?: () => void;
   onMessage?: (user: ProfileChatTarget) => void;
   isSelf?: boolean;
+  onEdit?: () => void;
 }) {
   return (
     <ProfilePreviewSheet
@@ -801,6 +787,7 @@ export function RemoteProfileModal({
       onMessage={onMessage}
       onReport={onReport}
       onBlock={onBlock}
+      onEdit={onEdit}
     />
   );
 }
