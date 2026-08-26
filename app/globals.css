@@ -342,7 +342,7 @@ html.youneon-signed-in select {
   }
   html,
   body {
-    background-color: #05050d;
+    background-color: #070010;
     color: #ffffff;
   }
   html.youneon-signed-in,
@@ -360,20 +360,27 @@ html.youneon-signed-in select {
   }
 }
 
-/* Sign in with Pi — keep native handlers; visual size only */
+/* Sign in with Pi — keep native handlers; visual size only (match Follow: pink fill, 12px radius) */
 .youneon-signin-btn {
-  height: 56px !important;
-  min-height: 56px !important;
-  padding: 0 22px !important;
-  font-size: 16px !important;
-  font-weight: 700 !important;
+  height: 37px !important;
+  min-height: 37px !important;
+  padding: 0 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
   line-height: 1 !important;
-  border-radius: 18px !important;
+  border-radius: 12px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 10px !important;
-  box-shadow: 0 14px 28px rgba(168, 85, 247, 0.4), 0 1px 0 rgba(255, 255, 255, 0.22) inset !important;
+  gap: 8px !important;
+  color: #ffffff !important;
+  background-color: #c21875 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.youneon-signin-btn:active {
+  background-color: #9e145f !important;
 }
 
 /* Video call — premium neon controls */

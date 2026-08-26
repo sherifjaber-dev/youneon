@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { applyPiSigninNativeAttrs } from "@/lib/pi-signin-onclick";
-import { PI_WELCOME_OVERLAY_STYLE, piWelcomeInnerHtml } from "@/lib/pi-welcome-markup";
+import { PI_WELCOME_OVERLAY_STYLE, piWelcomeInnerHtml, youneonWelcomeLegalHtml } from "@/lib/pi-welcome-markup";
 import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 interface LoginScreenProps {
@@ -23,7 +23,7 @@ const overlayStyle = {
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#0f0117",
+  backgroundColor: "#070010",
   minHeight: "100%",
   padding: 16,
   boxSizing: "border-box",
@@ -36,7 +36,7 @@ const overlayStyle = {
   MozUserSelect: "none",
   msUserSelect: "none",
   WebkitTouchCallout: "none",
-  WebkitTapHighlightColor: "rgba(168,85,247,0.35)",
+  WebkitTapHighlightColor: "rgba(194,24,117,0.35)",
   caretColor: "transparent",
 } as CSSProperties;
 
@@ -81,6 +81,11 @@ export function LoginScreen({
             piWelcomeInnerHtml("youneon-signin-btn-login", "ynlogin") +
             "</div>",
         }}
+      />
+
+      <div
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: youneonWelcomeLegalHtml() }}
       />
 
       <div

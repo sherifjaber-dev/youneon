@@ -8,15 +8,16 @@ import "./globals.css";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pinet.com";
 
 const CRITICAL_CSS =
-  "html,body{background:#05050d !important;background-color:#05050d !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}" +
+  "html,body{background:#070010 !important;background-color:#070010 !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}" +
   "html.youneon-signed-in,html.youneon-signed-in body{background:#05050d !important;background-color:#05050d !important;color:#1f1f23 !important}" +
   "html.youneon-legal,html.youneon-legal body{background:#F6F4F8 !important;background-color:#F6F4F8 !important;color:#1f1f23 !important}" +
   "@keyframes youneonLivePulse{0%,100%{opacity:1}50%{opacity:.4}}" +
   ".youneon-live-dot{animation:youneonLivePulse 1.4s ease-in-out infinite}" +
   "#youneon-static-login,.youneon-static-login,#youneon-static-login *,.youneon-static-login *{user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;caret-color:transparent !important;cursor:pointer !important}" +
-  "#youneon-static-login,.youneon-static-login{background:#0f0117;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
+  "#youneon-static-login,.youneon-static-login{background:#070010;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(194,24,117,0.5) !important}" +
   "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p,.youneon-welcome-card,.youneon-welcome-card svg,.youneon-welcome-card img,.youneon-welcome-hero{pointer-events:none !important}" +
-  "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin],input[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(168,85,247,0.5) !important}" +
+  ".youneon-welcome-legal,.youneon-welcome-legal a{pointer-events:auto !important;cursor:pointer !important}" +
+  "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin],input[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(194,24,117,0.5) !important}" +
   "#youneon-app-tree{pointer-events:none;position:relative;z-index:0}" +
   "html.youneon-signed-in #youneon-static-login,html.youneon-signed-in .youneon-static-login,html.youneon-signed-in [data-youneon-login-host],html.youneon-signed-in [data-youneon-login-hidden='1'],html.youneon-legal #youneon-static-login,html.youneon-legal .youneon-static-login,html.youneon-legal [data-youneon-login-host],html.youneon-legal [data-youneon-login-hidden='1']{display:none !important;visibility:hidden !important;pointer-events:none !important;z-index:0 !important}" +
   "html.youneon-signed-in #youneon-app-tree,html.youneon-legal #youneon-app-tree{pointer-events:auto !important;z-index:1}";
@@ -117,6 +118,7 @@ const PI_BOOT_SCRIPT =
   "if (!t) return false;" +
   "if (t.nodeType === 3) t = t.parentNode;" +
   "if (!t || !t.closest) return false;" +
+  "if (t.closest('[data-youneon-legal],.youneon-welcome-legal')) return false;" +
   "return !!(t.closest('.youneon-static-login') || t.closest('#youneon-static-login') || t.closest('[data-youneon-login-host]') || t.closest('[data-youneon-signin]') || t.closest('.youneon-signin-btn'));" +
   "}" +
   "function onLoginHit(ev) {" +
@@ -230,7 +232,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#0f0117"
+  themeColor: "#070010"
 };
 
 export default async function RootLayout({
@@ -240,7 +242,7 @@ export default async function RootLayout({
 }>) {
   const headerList = await headers();
   const isPublicLegal = isPublicLegalPath(headerList.get("x-youneon-pathname") || "");
-  const pageBg = isPublicLegal ? "#F6F4F8" : "#0f0117";
+  const pageBg = isPublicLegal ? "#F6F4F8" : "#070010";
   const pageColor = isPublicLegal ? "#1f1f23" : "#ffffff";
 
   return (
@@ -256,7 +258,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="YouNeon" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content={isPublicLegal ? "#F6F4F8" : "#0f0117"} />
+        <meta name="theme-color" content={isPublicLegal ? "#F6F4F8" : "#070010"} />
         <link rel="apple-touch-icon" href="/icon-180.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -280,7 +282,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=legal-public-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=login-restyle-1"></script>
         <div
           id="youneon-app-tree"
           style={{

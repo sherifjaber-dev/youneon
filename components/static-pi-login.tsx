@@ -7,7 +7,7 @@ import { piWelcomeOverlayHtml } from "@/lib/pi-welcome-markup";
  * controls are injected with dangerouslySetInnerHTML and never re-rendered as JSX.
  * The entire overlay is the hit target (click/tap anywhere = Pi.authenticate).
  *
- * First paint stays Studio-safe: dark html/body `#0f0117`, native onclick,
+ * First paint stays Studio-safe: dark html/body `#070010`, native onclick,
  * no preventDefault on pointerdown, scopes username + payments.
  */
 export function StaticPiLogin({
