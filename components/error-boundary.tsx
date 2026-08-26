@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { applyPiSigninNativeAttrs } from "@/lib/pi-signin-onclick";
+import { bindPiSigninButtonIn } from "@/lib/pi-signin-onclick";
 import { piWelcomeInnerHtml, youneonWelcomeLegalHtml } from "@/lib/pi-welcome-markup";
 import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
@@ -30,7 +30,7 @@ const overlayStyle: React.CSSProperties = {
   textAlign: "center",
   fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
   pointerEvents: "auto",
-  cursor: "pointer",
+  cursor: "default",
   touchAction: "manipulation",
   userSelect: "none",
   WebkitUserSelect: "none",
@@ -55,20 +55,28 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     tapPiAuthenticate();
   };
 
+  bindHost = (el: HTMLDivElement | null) => {
+    const btn = bindPiSigninButtonIn(el);
+    if (!btn || btn.getAttribute("data-youneon-extra-bound") === "1") return;
+    btn.setAttribute("data-youneon-extra-bound", "1");
+    const run = () => {
+      this.handleSignIn();
+    };
+    btn.addEventListener("pointerdown", run);
+    btn.addEventListener("mousedown", run);
+    btn.addEventListener("touchstart", run);
+    btn.addEventListener("click", run);
+  };
+
   render() {
     if (this.state.hasError) {
       return (
         <div
           className="youneon-static-login"
-          aria-label="Sign in with Pi Network"
-          data-youneon-signin="1"
-          data-youneon-login-v="neon-faces-2"
+          aria-label="YouNeon"
+          data-youneon-login-v="signin-btn-only-1"
           style={overlayStyle}
-          ref={(el) => applyPiSigninNativeAttrs(el)}
-          onPointerDown={this.handleSignIn}
-          onMouseDown={this.handleSignIn}
-          onTouchStart={this.handleSignIn}
-          onClick={this.handleSignIn}
+          ref={this.bindHost}
           dangerouslySetInnerHTML={{
             __html: piWelcomeInnerHtml("youneon-signin-btn-error", "ynerror") + youneonWelcomeLegalHtml(),
           }}

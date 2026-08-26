@@ -36,6 +36,9 @@ export function escapePiSigninAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
+const SIGNIN_BUTTON_SEL =
+  "button.youneon-signin-btn, button[data-youneon-signin], #youneon-signin-btn";
+
 export function applyPiSigninNativeAttrs(el: Element | null): void {
   if (!el) return;
   el.setAttribute("onclick", PI_SIGNIN_ONCLICK);
@@ -44,6 +47,27 @@ export function applyPiSigninNativeAttrs(el: Element | null): void {
   el.setAttribute("ontouchstart", PI_SIGNIN_ONCLICK);
   el.setAttribute("onselectstart", "return false");
   el.setAttribute("unselectable", "on");
+}
+
+/** Overlay / chrome must not start Pi auth — only the Sign in with Pi button. */
+export function stripPiSigninNativeAttrs(el: Element | null): void {
+  if (!el) return;
+  el.removeAttribute("onclick");
+  el.removeAttribute("onpointerdown");
+  el.removeAttribute("onmousedown");
+  el.removeAttribute("ontouchstart");
+  if (el.tagName !== "BUTTON") el.removeAttribute("data-youneon-signin");
+}
+
+/** Bind native Pi.authenticate handlers to the button inside a host; never the overlay. */
+export function bindPiSigninButtonIn(host: Element | null): HTMLElement | null {
+  if (!host) return null;
+  const self =
+    "matches" in host && host.matches(SIGNIN_BUTTON_SEL) ? (host as HTMLElement) : null;
+  const btn = self || host.querySelector<HTMLElement>(SIGNIN_BUTTON_SEL);
+  if (!self) stripPiSigninNativeAttrs(host);
+  applyPiSigninNativeAttrs(btn);
+  return btn;
 }
 
 export function piSigninButtonHtml(id: string): string {

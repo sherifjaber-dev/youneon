@@ -234,11 +234,11 @@
 
   var AUTH_JS =
     "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{wireAuth(P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}}));}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{wireAuth(P.authenticate({scopes:['username','payments']}));}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
-  var LOGIN_V = "neon-faces-2";
+  var LOGIN_V = "signin-btn-only-1";
   var NONE =
-    "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer";
+    "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:default";
   var OVERLAY_CHROME =
-    "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px 72px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:rgba(194,24,117,0.35);caret-color:transparent";
+    "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px 72px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;caret-color:transparent";
   var CTRL_STYLE =
     "height:37px;min-height:37px;padding:0 16px;font-size:14px;font-weight:600;line-height:1;border:0;border-radius:12px;color:#FFFFFF;background-color:#C21875;background-image:none;cursor:pointer;width:100%;max-width:100%;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(194,24,117,0.35);user-select:none;-webkit-user-select:none;caret-color:transparent;box-shadow:none";
   var STATUS_STYLE =
@@ -277,11 +277,9 @@
     if (!t || !t.closest) return false;
     if (t.closest("[data-youneon-legal], .youneon-welcome-legal")) return false;
     return !!(
-      t.closest(".youneon-static-login") ||
-      t.closest("#youneon-static-login") ||
-      t.closest("[data-youneon-login-host]") ||
-      t.closest("[data-youneon-signin]") ||
-      t.closest(".youneon-signin-btn")
+      t.closest("button.youneon-signin-btn") ||
+      t.closest("button[data-youneon-signin]") ||
+      t.closest("#youneon-signin-btn")
     );
   }
   function onLoginHit(ev) {
@@ -302,11 +300,11 @@
     if (!el || !el.style) return;
     el.style.zIndex = "2147483647";
     el.style.pointerEvents = "auto";
-    el.style.cursor = "pointer";
+    el.style.cursor = "default";
     el.style.touchAction = "manipulation";
     el.style.userSelect = "none";
     el.style.webkitUserSelect = "none";
-    el.style.webkitTapHighlightColor = "rgba(194,24,117,0.35)";
+    el.style.webkitTapHighlightColor = "transparent";
     el.style.caretColor = "transparent";
     el.style.backgroundColor = "#070010";
     el.style.background = "#070010";
@@ -322,6 +320,23 @@
       el.setAttribute("onselectstart", "return false");
       el.setAttribute("unselectable", "on");
     } catch (n) { console.log("[Pi] error: " + errMsg(n)); }
+  }
+  function stripOverlayAuthAttrs(el) {
+    if (!el) return;
+    try {
+      el.removeAttribute("onclick");
+      el.removeAttribute("onpointerdown");
+      el.removeAttribute("onmousedown");
+      el.removeAttribute("ontouchstart");
+      if ((el.tagName || "").toUpperCase() !== "BUTTON") el.removeAttribute("data-youneon-signin");
+    } catch (s) { console.log("[Pi] error: " + errMsg(s)); }
+  }
+  function bindButtonIn(overlay) {
+    if (!overlay) return;
+    stripOverlayAuthAttrs(overlay);
+    if (!overlay.querySelector) return;
+    var btns = overlay.querySelectorAll("button.youneon-signin-btn, button[data-youneon-signin], #youneon-signin-btn");
+    for (var i = 0; i < btns.length; i++) applyNativeAttrs(btns[i]);
   }
   function overlayIsCurrent(el) {
     if (!el) return false;
@@ -339,7 +354,7 @@
     }
     styleOverlay(overlay);
     if (overlayIsCurrent(overlay)) {
-      applyNativeAttrs(overlay);
+      bindButtonIn(overlay);
       return;
     }
     try {
@@ -347,12 +362,12 @@
       if (cls.indexOf("youneon-static-login") < 0) {
         overlay.className = cls ? cls + " youneon-static-login" : "youneon-static-login";
       }
-      overlay.setAttribute("data-youneon-signin", "1");
+      overlay.removeAttribute("data-youneon-signin");
       overlay.setAttribute("data-youneon-login-v", LOGIN_V);
-      overlay.setAttribute("aria-label", "Sign in with Pi Network");
+      overlay.setAttribute("aria-label", "YouNeon");
       overlay.style.cssText = OVERLAY_CHROME;
       overlay.innerHTML = overlayInnerHtml();
-      applyNativeAttrs(overlay);
+      bindButtonIn(overlay);
       try { window.__YOUNEON_LOGIN_V = LOGIN_V; } catch (lv) {}
     } catch (pe) {
       console.log("[Pi] error: " + errMsg(pe));
@@ -411,6 +426,7 @@
         if (!document.getElementById("youneon-pi-status") && !overlay.querySelector("[data-youneon-pi-status]")) {
           overlay.insertAdjacentHTML("beforeend", STATUS_HTML);
         }
+        bindButtonIn(overlay);
       }
       renderStatus();
     } catch (re) {

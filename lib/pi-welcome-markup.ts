@@ -1,11 +1,11 @@
 import { piSigninControlsHtml, piSigninStatusHtml } from "@/lib/pi-signin-onclick";
 
 const NONE =
-  "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:pointer";
+  "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:default";
 
-/** First-paint overlay: dark Studio-safe canvas. Auth handlers stay on the host. */
+/** First-paint overlay: dark Studio-safe canvas. Auth handlers stay on the Sign in button. */
 export const PI_WELCOME_OVERLAY_STYLE =
-  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px 72px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:rgba(194,24,117,0.35);caret-color:transparent";
+  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px 72px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;caret-color:transparent";
 
 const INNER_STYLE =
   "position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;" +
@@ -38,7 +38,7 @@ const HINT_STYLE =
 const BUTTON_WRAP =
   "pointer-events:auto;user-select:none;-webkit-user-select:none;width:100%;display:flex;justify-content:center";
 
-/** stopPropagation only — never preventDefault (Pi needs the user gesture on the overlay). */
+/** stopPropagation only — never preventDefault (Pi needs the user gesture on the button). */
 const LEGAL_STOP =
   'onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"';
 
@@ -119,7 +119,6 @@ export function piWelcomeInnerHtml(buttonId: string, idPrefix: string): string {
 export function piWelcomeOverlayHtml(opts: {
   overlayId?: string;
   buttonId: string;
-  nativeAttrs: string;
 }): string {
   const idAttr = opts.overlayId
     ? ' id="' + opts.overlayId.replace(/&/g, "&amp;").replace(/"/g, "&quot;") + '"'
@@ -128,11 +127,9 @@ export function piWelcomeOverlayHtml(opts: {
   return (
     '<div class="youneon-static-login"' +
     idAttr +
-    ' aria-label="Sign in with Pi Network" data-youneon-signin="1" data-youneon-login-v="neon-faces-2" style="' +
+    ' aria-label="YouNeon" data-youneon-login-v="signin-btn-only-1" style="' +
     PI_WELCOME_OVERLAY_STYLE +
-    '" ' +
-    opts.nativeAttrs +
-    ">" +
+    '">' +
     piWelcomeInnerHtml(opts.buttonId, prefix) +
     youneonWelcomeLegalHtml() +
     "</div>"

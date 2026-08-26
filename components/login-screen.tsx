@@ -1,7 +1,7 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { applyPiSigninNativeAttrs } from "@/lib/pi-signin-onclick";
+import { useRef, type CSSProperties } from "react";
+import { bindPiSigninButtonIn } from "@/lib/pi-signin-onclick";
 import { PI_WELCOME_OVERLAY_STYLE, piWelcomeInnerHtml, youneonWelcomeLegalHtml } from "@/lib/pi-welcome-markup";
 import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
@@ -29,14 +29,14 @@ const overlayStyle = {
   boxSizing: "border-box",
   fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
   pointerEvents: "auto",
-  cursor: "pointer",
+  cursor: "default",
   touchAction: "manipulation",
   userSelect: "none",
   WebkitUserSelect: "none",
   MozUserSelect: "none",
   msUserSelect: "none",
   WebkitTouchCallout: "none",
-  WebkitTapHighlightColor: "rgba(194,24,117,0.35)",
+  WebkitTapHighlightColor: "transparent",
   caretColor: "transparent",
 } as CSSProperties;
 
@@ -48,29 +48,34 @@ export function LoginScreen({
 }: LoginScreenProps) {
   const showPiBrowserHint = !piAvailable;
   const showError = Boolean(errorMessage) && (piAvailable || !errorMessage?.includes("Pi Browser"));
+  const signInRef = useRef(onLogin);
+  signInRef.current = onLogin;
 
   const handleSignIn = () => {
     tapPiAuthenticate();
-    onLogin();
+    signInRef.current();
   };
 
-  const bindOverlay = (el: HTMLDivElement | null) => {
-    applyPiSigninNativeAttrs(el);
+  const bindHost = (el: HTMLDivElement | null) => {
+    const btn = bindPiSigninButtonIn(el);
+    if (!btn || btn.getAttribute("data-youneon-extra-bound") === "1") return;
+    btn.setAttribute("data-youneon-extra-bound", "1");
+    const run = () => {
+      handleSignIn();
+    };
+    btn.addEventListener("pointerdown", run);
+    btn.addEventListener("mousedown", run);
+    btn.addEventListener("touchstart", run);
+    btn.addEventListener("click", run);
   };
 
   return (
     <div
-      ref={bindOverlay}
+      ref={bindHost}
       className="youneon-static-login"
-      aria-label="Sign in with Pi Network"
-      data-youneon-signin="1"
-      data-youneon-login-v="neon-faces-2"
+      aria-label="YouNeon"
+      data-youneon-login-v="signin-btn-only-1"
       style={overlayStyle}
-      onPointerDown={handleSignIn}
-      onMouseDown={handleSignIn}
-      onTouchStart={handleSignIn}
-      onClick={handleSignIn}
-      onSelect={(e) => e.preventDefault()}
     >
       <div
         suppressHydrationWarning
