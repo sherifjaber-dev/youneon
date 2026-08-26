@@ -6,7 +6,6 @@ import { db } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AdInterstitial } from "@/components/ad-placements";
 import { CountryLabel } from "@/components/country-flag";
-import { PremiumBadge } from "@/components/premium-badge";
 import { PremiumGem } from "@/components/premium-gem";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
@@ -199,13 +198,17 @@ export function DiscoverScreen({
 
       <div className="flex-shrink-0">
         <button
+          type="button"
           onClick={handleStart}
           className="yn-start-cta"
           data-testid="start-random-chat-btn"
+          aria-label="Start Random Chat"
         >
-          <img src="/youneon/camera.png" alt="" draggable={false} className="yn-cta-camera" />
-          <span>Start Random Chat</span>
-          {isPremium && <PremiumBadge />}
+          <img
+            src="/youneon/start-random-chat.png"
+            alt="Start Random Chat"
+            draggable={false}
+          />
         </button>
         {isPremium ? (
           <p className="mt-2 text-center text-[12px] font-medium text-[#c4b5d8]">
