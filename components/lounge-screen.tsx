@@ -22,6 +22,7 @@ import {
   type LoungeMe,
   type LoungePerson,
 } from "@/lib/lounge-service";
+import { DEMO_LUNA_ID, isDemoLunaId, withDemoLunaFirst } from "@/lib/demo-luna-profile";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
@@ -203,7 +204,12 @@ export function LoungeScreen({
     return applyLoungeFilters(visible, applied, me).all;
   }, [people, applied, me, blockedIds]);
 
-  const feed = useMemo(() => sortLoungeFeed(filtered, chip, me), [filtered, chip, me]);
+  const feed = useMemo(() => {
+    const sorted = sortLoungeFeed(filtered, chip, me);
+    if (chip !== "forYou") return sorted;
+    if (blockedIds.has(DEMO_LUNA_ID)) return sorted;
+    return withDemoLunaFirst(sorted);
+  }, [filtered, chip, me, blockedIds]);
   const liveNow = useMemo(
     () =>
       filtered
@@ -302,6 +308,7 @@ export function LoungeScreen({
   }, [refresh]);
 
   const openChat = (person: LoungePerson) => {
+    if (isDemoLunaId(person.id)) return;
     onOpenChat?.({
       id: person.id,
       name: person.displayName || person.name,
@@ -314,6 +321,7 @@ export function LoungeScreen({
   };
 
   const followPerson = (person: LoungePerson) => {
+    if (isDemoLunaId(person.id)) return;
     void toggleFollow(followMe, {
       id: person.id,
       name: person.displayName || person.name,
@@ -386,7 +394,7 @@ export function LoungeScreen({
         </div>
       ) : loading ? (
         <LoungeSkeleton showLive />
-      ) : people.length === 0 ? (
+      ) : people.length === 0 && feed.length === 0 ? (
         <div className="px-6 py-16 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF2EC8]/12 ring-1 ring-[#A855F7]/40 shadow-[0_0_18px_rgba(255,46,200,0.25)]">
             <MessageSquare size={26} className="text-[#FF2EC8]" />
@@ -396,7 +404,7 @@ export function LoungeScreen({
             People who were recently online will appear here. Jump into Video Chat to meet someone live.
           </p>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && feed.length === 0 ? (
         <div className="px-6 py-16 text-center">
           <p className="text-[16px] font-semibold text-white">No matches for these filters</p>
           <p className="mx-auto mt-1.5 max-w-xs text-sm text-[#b9a8c9]">

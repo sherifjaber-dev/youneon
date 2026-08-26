@@ -211,6 +211,7 @@ export const incrementGiftsReceived = async (
   }
 ) => {
   if (!recipientUserId || recipientUserId === "anon") return;
+  if (!isPersistableUsername(recipientUserId)) return;
   try {
     const reactionKey = meta?.giftId ? GIFT_TO_REACTION[meta.giftId] : undefined;
     await setDoc(

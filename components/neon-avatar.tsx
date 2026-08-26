@@ -10,7 +10,8 @@ export function isPhotoSrc(value?: string | null): boolean {
     v.startsWith("data:image") ||
     v.startsWith("https://") ||
     v.startsWith("http://") ||
-    v.startsWith("blob:")
+    v.startsWith("blob:") ||
+    (v.startsWith("/") && !v.startsWith("//") && /\.(avif|gif|jpe?g|png|webp)(\?.*)?$/i.test(v))
   );
 }
 

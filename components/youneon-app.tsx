@@ -66,6 +66,7 @@ import {
 } from "@/lib/chat-unlock";
 import { ChatUnlockModal, type ChatUnlockTarget } from "@/components/chat-unlock-modal";
 import { isRealPiUsername } from "@/lib/real-pi-user";
+import { isDemoLunaId } from "@/lib/demo-luna-profile";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 
 type VideoSession = {
@@ -590,7 +591,7 @@ export function YouNeonApp() {
     if (!currentUser) return;
     const meId = currentUser.id || currentUser.piUsername;
     const peerId = typeof other?.id === "string" ? other.id : "";
-    if (!meId || !peerId || peerId === meId) return;
+    if (!meId || !peerId || peerId === meId || isDemoLunaId(peerId)) return;
     if (unlockInFlightRef.current) return;
 
     if (isPeerUnlocked(unlockedChats, peerId)) {

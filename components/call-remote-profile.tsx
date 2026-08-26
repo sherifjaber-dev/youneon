@@ -24,6 +24,7 @@ import {
 import { playGiftSound } from "@/lib/gift-sounds";
 import { badgeFromUserDoc, submitUserReport, type ReportReasonId } from "@/lib/safety";
 import { blockUserForMe } from "@/lib/user-settings";
+import { demoLunaUserProfile, isDemoLunaId } from "@/lib/demo-luna-profile";
 
 /** Nested editor + public preview both need this class; ref-count so close-preview does not unhide chrome. */
 export function acquireProfileChromeLock() {
@@ -272,6 +273,11 @@ export function ProfilePreviewSheet({
   const touchY = useRef<number | null>(null);
 
   const resolvedId = (userId || hint?.userId || seed?.id || seed?.uid || seed?.piUsername || "").trim();
+  const demoProfile = isDemoLunaId(resolvedId);
+  const seedProfile = useMemo(
+    () => seed || (demoProfile ? demoLunaUserProfile() : null),
+    [seed, demoProfile]
+  );
   const selfPreview = mode === "selfPreview";
   const self =
     selfPreview || (isSelf ?? (!!viewerId && !!resolvedId && viewerId === resolvedId));
@@ -280,37 +286,41 @@ export function ProfilePreviewSheet({
   const { followingIds, busyId, toggleFollow } = useFollowGraph(viewerId);
 
   useEffect(() => {
-    if (!open || !resolvedId) {
+    if (!open || !resolvedId || demoProfile) {
       setLive(null);
       return;
     }
     return subscribeToUserProfile(resolvedId, setLive);
-  }, [open, resolvedId]);
+  }, [open, resolvedId, demoProfile]);
 
   useEffect(() => {
     if (!open || !resolvedId) {
       setOnline(false);
       return;
     }
+    if (demoProfile) {
+      setOnline(true);
+      return;
+    }
     return subscribeToOnlineMap([resolvedId], (map) => setOnline(!!map[resolvedId]));
-  }, [open, resolvedId]);
+  }, [open, resolvedId, demoProfile]);
 
   useEffect(() => {
     if (!open) return;
-    if (!viewerId || !resolvedId || self) return;
+    if (!viewerId || !resolvedId || self || demoProfile) return;
     void recordProfileView({ viewerId, viewedUserId: resolvedId });
-  }, [open, viewerId, resolvedId, self]);
+  }, [open, viewerId, resolvedId, self, demoProfile]);
 
   const mergedUser = useMemo(() => {
-    if (!seed && !live) return live;
+    if (!seedProfile && !live) return live;
     const compact: Record<string, unknown> = {};
-    if (seed) {
-      for (const [k, v] of Object.entries(seed)) {
+    if (seedProfile) {
+      for (const [k, v] of Object.entries(seedProfile)) {
         if (v !== undefined && v !== null) compact[k] = v;
       }
     }
     return { ...(live || {}), ...compact } as UserProfile;
-  }, [live, seed]);
+  }, [live, seedProfile]);
 
   const profile = useMemo(
     () => mergeRemoteProfile(mergedUser, hint || null, dailyName),
@@ -377,7 +387,7 @@ export function ProfilePreviewSheet({
   };
 
   const handleFollow = () => {
-    if (!viewerId || !resolvedId || self) return;
+    if (!viewerId || !resolvedId || self || demoProfile) return;
     void toggleFollow(followMe, {
       id: resolvedId,
       name: profile.name,
@@ -388,6 +398,7 @@ export function ProfilePreviewSheet({
   };
 
   const handleMessage = () => {
+    if (demoProfile) return;
     if (resolvedId && onMessage) {
       onMessage({
         id: resolvedId,
@@ -403,7 +414,7 @@ export function ProfilePreviewSheet({
   };
 
   const handleReactionTap = (id: ReactionId) => {
-    if (self || !viewerId || !resolvedId || sendingRx) return;
+    if (self || !viewerId || !resolvedId || sendingRx || demoProfile) return;
     const giftId = REACTION_TO_GIFT[id];
     if (!giftId) return;
     setSendingRx(id);
@@ -420,7 +431,7 @@ export function ProfilePreviewSheet({
       onBlock();
       return;
     }
-    if (!viewerId || !resolvedId || self) return;
+    if (!viewerId || !resolvedId || self || demoProfile) return;
     setBlocking(true);
     try {
       await blockUserForMe(viewerId, {
@@ -441,7 +452,7 @@ export function ProfilePreviewSheet({
     notes: string;
     alsoBlock: boolean;
   }) => {
-    if (!viewerId || !resolvedId) return;
+    if (!viewerId || !resolvedId || demoProfile) return;
     setReporting(true);
     try {
       await submitUserReport({
