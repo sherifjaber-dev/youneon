@@ -7,13 +7,11 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AdInterstitial } from "@/components/ad-placements";
 import { CountryLabel } from "@/components/country-flag";
 import { PremiumBadge } from "@/components/premium-badge";
-import { NeonAvatar } from "@/components/neon-avatar";
 import { PremiumGem } from "@/components/premium-gem";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
 import { isRealPiUsername } from "@/lib/real-pi-user";
-import { subscribeToLoungePeople, type LoungePerson } from "@/lib/lounge-service";
 
 interface DiscoverScreenProps {
   onStartVideo: (filters: { gender: "women" | "men" | "both"; country: string }) => void;
@@ -24,13 +22,6 @@ interface DiscoverScreenProps {
   isPremium?: boolean;
   announcements?: Announcement[];
 }
-
-const LIVE_RINGS = [
-  { left: "18.26%", top: "78.3%" },
-  { left: "38.77%", top: "78.3%" },
-  { left: "59.33%", top: "78.3%" },
-  { left: "79.20%", top: "78.3%" },
-];
 
 export function DiscoverScreen({
   onStartVideo,
@@ -46,7 +37,6 @@ export function DiscoverScreen({
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
-  const [livePeople, setLivePeople] = useState<LoungePerson[]>([]);
 
   const genderOptions: {
     value: "women" | "men" | "both";
@@ -68,8 +58,6 @@ export function DiscoverScreen({
   const adItems = announcements.filter((item) => item.active && item.type === "ad");
   const hasEnoughNeon = neonBalance >= totalCost;
   const missingNeon = Math.max(0, totalCost - neonBalance);
-  const liveAvatars = livePeople.slice(0, 4);
-
   useEffect(() => {
     if (!db || !isRealPiUsername(currentUserId)) return;
 
@@ -89,17 +77,6 @@ export function DiscoverScreen({
     return () => clearInterval(hbInterval);
   }, [currentUserId]);
 
-  useEffect(() => {
-    if (!isRealPiUsername(currentUserId)) {
-      setLivePeople([]);
-      return;
-    }
-    return subscribeToLoungePeople(currentUserId, (people) => {
-      const sorted = [...people].sort((a, b) => b.lastSeenMs - a.lastSeenMs);
-      setLivePeople(sorted);
-    });
-  }, [currentUserId]);
-
   const handleStart = () => {
     if (!hasEnoughNeon) {
       setShowInsufficientModal(true);
@@ -116,27 +93,10 @@ export function DiscoverScreen({
         <div className="yn-live-banner-stage relative w-full">
           <img
             src="/youneon/live-banner.png"
-            alt=""
+            alt="Start Random Video Chat"
             draggable={false}
             className="yn-live-banner-img"
           />
-          <p className="yn-live-title">
-            Start Random{" "}
-            <span className="text-[#ff4fd8] drop-shadow-[0_0_16px_rgba(255,78,200,0.95)]">Video Chat</span>
-          </p>
-          {LIVE_RINGS.map((ring, i) => {
-            const person = liveAvatars[i];
-            if (!person) return null;
-            return (
-              <div
-                key={person.id}
-                className="yn-live-ring-slot"
-                style={{ left: ring.left, top: ring.top }}
-              >
-                <NeonAvatar src={person.photo} name={person.name} size={48} showPhoto />
-              </div>
-            );
-          })}
         </div>
       </div>
 

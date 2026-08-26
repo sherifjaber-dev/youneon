@@ -2060,37 +2060,6 @@ button.yn-script-logo {
   pointer-events: none;
 }
 
-.yn-live-title {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 16%;
-  z-index: 2;
-  padding: 0 14px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  color: #fff;
-  text-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.7),
-    0 0 18px rgba(5, 5, 13, 0.85);
-}
-
-.yn-live-ring-slot {
-  position: absolute;
-  z-index: 2;
-  width: 9.2%;
-  transform: translate(-50%, -50%);
-}
-
-.yn-live-ring-slot > div {
-  width: 100% !important;
-  height: auto !important;
-  aspect-ratio: 1;
-}
-
 .yn-gender-pill {
   display: flex;
   height: 54px;
