@@ -974,14 +974,14 @@ html.youneon-signed-in select {
   width: 100%;
   max-height: min(94dvh, 820px);
   overflow: hidden;
-  border-radius: 28px 28px 0 0;
-  background: linear-gradient(180deg, #140a1f 0%, #07040f 55%, #05030a 100%);
-  border: 1px solid rgba(192, 132, 252, 0.28);
+  border-radius: 24px 24px 0 0;
+  background: #070010;
+  border: 1px solid rgba(192, 132, 252, 0.18);
   border-bottom: 0;
-  color: #f5f0ff;
+  color: #ede8f5;
   box-shadow:
     0 -18px 50px rgba(0, 0, 0, 0.45),
-    0 0 28px rgba(236, 72, 153, 0.12);
+    0 0 28px rgba(255, 46, 200, 0.1);
   animation: yn-remote-profile-in 0.28s ease forwards;
   pointer-events: auto;
 }
@@ -1012,9 +1012,9 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-close,
+.yn-preview-share,
 .yn-preview-more {
-  position: absolute;
-  top: 28px;
+  position: relative;
   z-index: 80;
   pointer-events: auto;
   display: flex;
@@ -1027,29 +1027,36 @@ html.youneon-signed-in select {
   border-radius: 50%;
   color: #fff;
   background: rgba(8, 2, 16, 0.42);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 .yn-preview-close {
-  left: 12px;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: #ff2ec8;
+  background: rgba(8, 2, 16, 0.5);
+  filter: drop-shadow(0 0 8px rgba(255, 46, 200, 0.55));
+}
+
+.yn-preview-photo-tools {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .yn-preview-more-wrap {
-  position: absolute;
-  top: 28px;
-  right: 12px;
-  z-index: 80;
-}
-
-.yn-preview-more {
   position: relative;
-  top: 0;
-  right: 0;
 }
 
 .yn-preview-close:active,
+.yn-preview-share:active,
 .yn-preview-more:active {
   transform: scale(0.94);
 }
@@ -1089,15 +1096,16 @@ html.youneon-signed-in select {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 0 calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
 }
 
 .yn-preview-photo {
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  max-height: min(52vh, 420px);
+  aspect-ratio: 3 / 4;
+  max-height: min(52vh, 440px);
   overflow: hidden;
+  border-radius: 18px;
   background: #1a1024;
   cursor: pointer;
 }
@@ -1123,9 +1131,9 @@ html.youneon-signed-in select {
 .yn-preview-segments {
   position: absolute;
   z-index: 2;
-  top: 10px;
+  top: 14px;
   left: 56px;
-  right: 56px;
+  right: 96px;
   display: flex;
   gap: 4px;
 }
@@ -1158,7 +1166,8 @@ html.youneon-signed-in select {
   font-size: 12px;
   font-weight: 700;
   color: #fff;
-  background: rgba(8, 2, 16, 0.72);
+  background: rgba(16, 48, 28, 0.88);
+  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.22);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -1172,28 +1181,42 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-body {
-  padding: 14px 18px 8px;
+  padding: 14px 0 8px;
 }
 
 .yn-preview-name {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 1.55rem;
+  font-size: 34px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #fff;
+  line-height: 1.12;
+  color: #ffffff;
+}
+
+.yn-preview-name-cluster {
+  display: inline;
+  min-width: 0;
+}
+
+.yn-preview-name-text {
+  font-weight: 800;
+  color: #ffffff;
 }
 
 .yn-preview-age {
-  font-weight: 700;
-  color: #ff4ec8;
-  text-shadow: 0 0 12px rgba(255, 78, 200, 0.45);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ff2ec8;
+  text-shadow: 0 0 12px rgba(255, 46, 200, 0.45);
 }
 
 .yn-preview-flag {
+  margin-left: 2px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
@@ -1207,65 +1230,39 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-row {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 15px;
   font-weight: 500;
-  color: rgba(245, 240, 255, 0.88);
+  color: #c9c0d4;
 }
 
 .yn-preview-location {
-  color: #fff;
+  color: #c9c0d4;
 }
 
 .yn-preview-location svg {
-  color: #ff4ec8;
-  filter: drop-shadow(0 0 6px rgba(255, 78, 200, 0.55));
+  color: #ff2ec8;
+  filter: drop-shadow(0 0 6px rgba(255, 46, 200, 0.55));
 }
 
-.yn-preview-gender-mark {
-  width: 16px;
-  text-align: center;
-  color: rgba(244, 114, 182, 0.9);
-}
-
-.yn-preview-id-icon {
-  display: inline-flex;
-  color: rgba(185, 168, 201, 0.9);
-}
-
-.yn-preview-code-label {
-  color: rgba(185, 168, 201, 0.75);
-}
-
-.yn-preview-code-value {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+.yn-preview-gender {
+  margin: 8px 0 0;
   font-size: 13px;
-  letter-spacing: 0.02em;
-  color: #fff;
-}
-
-.yn-preview-copy {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin-left: auto;
-  border-radius: 8px;
-  color: rgba(185, 168, 201, 0.9);
+  font-weight: 500;
+  color: rgba(201, 192, 212, 0.62);
 }
 
 .yn-preview-cta {
   display: flex;
   gap: 10px;
-  margin: 14px 0 6px;
+  margin: 12px 0 4px;
 }
 
 .yn-preview-section {
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .yn-preview-section h3 {
@@ -1273,10 +1270,10 @@ html.youneon-signed-in select {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #ff4ec8;
-  text-shadow: 0 0 10px rgba(255, 78, 200, 0.35);
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff2ec8;
+  text-shadow: 0 0 10px rgba(255, 46, 200, 0.35);
 }
 
 .yn-preview-tags {
@@ -1286,86 +1283,81 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-tags.is-pills {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.yn-preview-tags.is-pills::-webkit-scrollbar {
-  display: none;
+  flex-wrap: wrap;
 }
 
 .yn-preview-tag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
-  height: 34px;
-  padding: 0 12px;
+  min-height: 40px;
+  padding: 0 14px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: #fff;
 }
 
 .yn-preview-tag.is-interest {
-  background: rgba(12, 6, 22, 0.7);
-  border: 1px solid rgba(192, 132, 252, 0.55);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.18);
+  background: rgba(8, 2, 18, 0.88);
+  border: 1.5px solid rgba(192, 132, 252, 0.85);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.22);
 }
 
 .yn-preview-tag.is-interest:nth-child(3n+2) {
-  border-color: rgba(34, 211, 238, 0.55);
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.16);
+  border-color: rgba(34, 211, 238, 0.85);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
 }
 
 .yn-preview-tag.is-interest:nth-child(3n) {
-  border-color: rgba(244, 114, 182, 0.6);
-  box-shadow: 0 0 10px rgba(244, 114, 182, 0.18);
+  border-color: rgba(255, 46, 200, 0.85);
+  box-shadow: 0 0 12px rgba(255, 46, 200, 0.22);
 }
 
 .yn-preview-tag.is-lang {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #12081c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-weight: 600;
 }
 
 .yn-preview-about {
-  min-height: 52px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(18, 10, 28, 0.72);
+  background: rgba(12, 4, 22, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
-  color: rgba(245, 240, 255, 0.92);
+  color: #ede8f5;
   white-space: pre-wrap;
 }
 
 .yn-preview-rx-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 2px;
-  overflow-x: auto;
-  padding: 2px 0 4px;
-  scrollbar-width: none;
-}
-
-.yn-preview-rx-row::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 4px;
+  padding: 4px 0 2px;
 }
 
 .yn-preview-rx {
   display: flex;
-  min-width: 32px;
+  min-width: 0;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 6px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1;
   color: #fff;
+  cursor: pointer;
+}
+
+.yn-preview-rx:disabled {
+  opacity: 0.55;
 }
 
 .yn-preview-btn {
@@ -1373,12 +1365,14 @@ html.youneon-signed-in select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  height: 46px;
-  border-radius: 999px;
-  font-size: 14px;
+  gap: 8px;
+  height: 48px;
+  border: 0;
+  border-radius: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: #fff;
+  cursor: pointer;
 }
 
 .yn-preview-btn:disabled {
@@ -1386,21 +1380,25 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-btn.is-primary {
-  background: #ff4ec8;
-  box-shadow: 0 4px 18px rgba(255, 78, 200, 0.42);
+  background: #ff2ec8;
+  box-shadow: 0 4px 18px rgba(255, 46, 200, 0.42);
+}
+
+.yn-preview-btn.is-edit {
+  flex: 1 1 100%;
 }
 
 .yn-preview-btn.is-message {
-  background: rgba(18, 10, 28, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(18, 10, 28, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   color: #fff;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .yn-preview-btn.is-ghost {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   color: #fff;
 }
 
@@ -2038,8 +2036,13 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-rx .yn-gift-art {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 30px;
+}
+
+.yn-preview-rx .yn-neon-glyph {
+  width: 30px;
+  height: 30px;
 }
 
 .yn-neon-glyph {
@@ -2050,7 +2053,11 @@ html.youneon-signed-in select {
     drop-shadow(0 0 5px rgba(168, 85, 247, 0.22));
 }
 
-.yn-preview-tag .yn-neon-glyph,
+.yn-preview-tag .yn-neon-glyph {
+  width: 18px;
+  height: 18px;
+}
+
 .yn-interest-chip .yn-neon-glyph {
   width: 15px;
   height: 15px;
