@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Bell } from "lucide-react";
 import { NotificationsScreen } from "@/components/notifications-screen";
 import { MyItemsSheet } from "@/components/my-items-sheet";
-import { YouNeonBagIcon } from "@/components/icons/youneon-chat-connect";
+import { YouNeonBagIconNeon, YouNeonBellIcon } from "@/components/icons/youneon-chrome-icons";
 import { YouNeonScriptLogo } from "@/components/youneon-script-logo";
 import { NeonAvatar } from "@/components/neon-avatar";
 import { useNotificationInbox } from "@/hooks/use-notification-inbox";
@@ -83,25 +82,25 @@ export function TopBar({
           </div>
 
           <div className="flex shrink-0 flex-col items-end gap-0.5">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={openPanel}
-                className="yn-chrome-icon relative flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95"
+                className="yn-chrome-neon relative flex h-9 w-9 items-center justify-center rounded-full active:scale-95"
                 aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
               >
-                <Bell size={18} strokeWidth={1.7} />
+                <YouNeonBellIcon size={27} />
                 {unread > 0 && (
-                  <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#ff4ec8] shadow-[0_0_8px_#ff4ec8]" />
+                  <span className="yn-chrome-count is-bell">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
                 )}
               </button>
 
               <button
                 type="button"
                 onClick={() => setItemsOpen(true)}
-                className={`yn-chrome-icon relative flex h-8 w-8 items-center justify-center rounded-full transition-colors active:scale-95 ${
-                  bagActive ? "text-[#60a5fa]" : ""
-                }`}
+                className="yn-chrome-neon relative flex h-9 w-9 items-center justify-center rounded-full active:scale-95"
                 title={
                   bagActive
                     ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} today`
@@ -114,9 +113,9 @@ export function TopBar({
                 }
                 data-testid="free-message-bag"
               >
-                <YouNeonBagIcon size={18} />
+                <YouNeonBagIconNeon size={27} />
                 {bagActive && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#3b82ff] px-1 text-[9px] font-bold leading-none text-white">
+                  <span className="yn-chrome-count is-bag">
                     {bagCount > 9 ? "9+" : bagCount}
                   </span>
                 )}

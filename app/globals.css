@@ -1978,6 +1978,44 @@ html.youneon-signed-in select {
     drop-shadow(0 0 12px rgba(168, 85, 247, 0.55));
 }
 
+.yn-chrome-neon {
+  overflow: visible;
+  filter:
+    drop-shadow(0 0 3px rgba(255, 79, 216, 0.95))
+    drop-shadow(0 0 9px rgba(168, 85, 247, 0.55));
+}
+
+.yn-chrome-count {
+  position: absolute;
+  display: flex;
+  min-width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border-radius: 999px;
+  border: 1.4px solid #5ec8ff;
+  background: #080412;
+  color: #5ec8ff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  box-shadow:
+    0 0 6px #5ec8ff,
+    0 0 12px rgba(94, 200, 255, 0.55);
+}
+
+.yn-chrome-count.is-bell {
+  right: -2px;
+  bottom: -1px;
+}
+
+.yn-chrome-count.is-bag {
+  right: -3px;
+  top: -2px;
+}
+
 .yn-chrome-gold {
   color: #f5d76e;
   text-shadow:
@@ -2286,6 +2324,92 @@ button.yn-script-logo {
   color: #1a1408;
   background-image: linear-gradient(90deg, #f5d76e, #f6e27a);
   box-shadow: 0 0 12px rgba(245, 215, 110, 0.45);
+}
+
+.yn-premium-interstitial {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.yn-premium-interstitial-card {
+  position: relative;
+  overflow: visible;
+  border-radius: 32px;
+  padding: 18px 18px 28px;
+  background:
+    linear-gradient(180deg, rgba(16, 8, 28, 0.82) 0%, rgba(8, 4, 18, 0.9) 100%) padding-box,
+    linear-gradient(135deg, #f5d76e 0%, #ffb347 28%, #ff6ec7 62%, #c084fc 100%) border-box;
+  border: 2px solid transparent;
+  box-shadow:
+    0 0 22px rgba(245, 215, 110, 0.32),
+    0 0 48px rgba(236, 72, 153, 0.28),
+    0 0 72px rgba(168, 85, 247, 0.18);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.yn-premium-interstitial-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  background-image: linear-gradient(180deg, #f5d76e 0%, #f6c1a8 42%, #e9b0d8 72%, #d8b4fe 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(245, 215, 110, 0.35));
+}
+
+.yn-premium-hl-neon {
+  color: #e9d5ff;
+  font-weight: 700;
+  text-shadow:
+    0 0 8px rgba(216, 180, 254, 0.95),
+    0 0 16px rgba(168, 85, 247, 0.55);
+}
+
+.yn-premium-hl-gold {
+  color: #f5d76e;
+  font-weight: 700;
+  text-shadow:
+    0 0 8px rgba(245, 215, 110, 0.95),
+    0 0 16px rgba(212, 175, 55, 0.5);
+}
+
+.yn-premium-notnow {
+  height: 48px;
+  border-radius: 14px;
+  border: 1.5px solid #c084fc;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 650;
+  box-shadow:
+    0 0 10px rgba(192, 132, 252, 0.55),
+    0 0 22px rgba(168, 85, 247, 0.28);
+}
+
+.yn-premium-seecta {
+  height: 48px;
+  border-radius: 14px;
+  color: #1a1408;
+  font-size: 15px;
+  font-weight: 800;
+  background-image: linear-gradient(180deg, #ffe38a 0%, #f5d76e 42%, #e0a83c 100%);
+  box-shadow:
+    0 0 16px rgba(245, 215, 110, 0.75),
+    0 0 28px rgba(212, 175, 55, 0.4);
+}
+
+.yn-premium-interstitial-crown {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  transform: translateX(-50%);
+  color: #f5d76e;
+  filter: drop-shadow(0 0 8px rgba(245, 215, 110, 0.85));
 }
 
 .yn-messages {
