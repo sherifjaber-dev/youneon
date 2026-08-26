@@ -1,6 +1,12 @@
 "use client";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
+import {
+  YouNeonNavCameraIcon,
+  YouNeonNavChatIcon,
+  YouNeonNavClockIcon,
+  YouNeonNavSofaIcon,
+} from "@/components/icons/youneon-nav-icons";
 
 export type AppTab = "discover" | "lounge" | "history" | "messages";
 
@@ -9,11 +15,11 @@ interface BottomNavProps {
   onTabChange: (tab: AppTab) => void;
 }
 
-const TAB_ICONS: Record<AppTab, string> = {
-  discover: "/youneon/camera.png",
-  lounge: "/youneon/nav-sofa.png",
-  history: "/youneon/nav-clock.png",
-  messages: "/youneon/nav-chat.png",
+const TAB_ICONS: Record<AppTab, typeof YouNeonNavCameraIcon> = {
+  discover: YouNeonNavCameraIcon,
+  lounge: YouNeonNavSofaIcon,
+  history: YouNeonNavClockIcon,
+  messages: YouNeonNavChatIcon,
 };
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
@@ -26,39 +32,27 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   ];
 
   return (
-    <div className="yn-chrome fixed bottom-0 left-0 right-0 z-50 border-t pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex h-14 max-w-lg w-full items-center justify-around px-1">
+    <div className="yn-chrome yn-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t pb-[env(safe-area-inset-bottom)]">
+      <nav className="yn-bottom-nav-inner mx-auto flex max-w-lg w-full items-center justify-around px-1" aria-label="Main">
         {tabs.map(({ id, label }) => {
           const active = activeTab === id;
+          const Icon = TAB_ICONS[id];
           return (
             <button
               key={id}
+              type="button"
               onClick={() => onTabChange(id)}
-              className={cn(
-                "yn-nav-slot flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 transition-colors active:scale-95",
-                active ? "is-on" : "text-[#8b8098]"
-              )}
+              className={cn("yn-nav-slot", active && "is-on")}
+              aria-current={active ? "page" : undefined}
             >
               <span className="yn-nav-icon">
-                <img
-                  src={TAB_ICONS[id]}
-                  alt=""
-                  draggable={false}
-                  className="yn-nav-img"
-                />
+                <Icon size={30} className="yn-nav-svg" />
               </span>
-              <span
-                className={cn(
-                  "yn-nav-label text-[10px] font-medium leading-none",
-                  !active && "text-[#8b8098]"
-                )}
-              >
-                {label}
-              </span>
+              <span className="yn-nav-label">{label}</span>
             </button>
           );
         })}
-      </div>
+      </nav>
     </div>
   );
 }

@@ -830,7 +830,7 @@ export function YouNeonApp() {
         onOpenMessages={() => setActiveTab("messages")}
         freeUnlocksRemaining={freeUnlocksLeft}
       />
-      <div className={`fixed inset-x-0 top-[calc(var(--yn-topbar-inner)+env(safe-area-inset-top))] bottom-[calc(56px+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
+      <div className={`fixed inset-x-0 top-[calc(var(--yn-topbar-inner)+env(safe-area-inset-top))] bottom-[calc(var(--yn-bottomnav-inner)+env(safe-area-inset-bottom))] ${activeTab === "discover" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeTab === "discover" && (
           <div className="h-full">
             <DiscoverScreen

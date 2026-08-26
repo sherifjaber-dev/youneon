@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, MessageSquare } from "lucide-react";
 import { isPhotoSrc, NeonAvatar } from "@/components/neon-avatar";
+import { YouNeonLoungeFilterIcon } from "@/components/icons/youneon-nav-icons";
 import { LoungeFilterSheet } from "@/components/lounge-filter-sheet";
 import { CountryFlag } from "@/components/country-flag";
 import {
@@ -344,7 +345,7 @@ export function LoungeScreen({
           aria-label="Filter lounge"
           data-testid="lounge-filter-btn"
         >
-          <img src="/youneon/lounge-filter.png" alt="" draggable={false} />
+          <YouNeonLoungeFilterIcon className="yn-lounge-filter-svg" />
           {filtersActive ? <span className="yn-lounge-filter-dot" /> : null}
         </button>
       </div>
