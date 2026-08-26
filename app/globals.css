@@ -3853,7 +3853,6 @@ html.youneon-signed-in .yn-lounge h2.yn-lounge-live-title,
 .yn-lounge-empty-cta:active {
   background: var(--pink-pressed);
 }
-}
 
 .yn-lounge-refresh {
   display: flex;
