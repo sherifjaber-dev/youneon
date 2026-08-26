@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, MessageSquare } from "lucide-react";
-import { isPhotoSrc } from "@/components/neon-avatar";
+import { isPhotoSrc, NeonAvatar } from "@/components/neon-avatar";
 import { LoungeFilterSheet } from "@/components/lounge-filter-sheet";
 import { CountryFlag } from "@/components/country-flag";
 import {
@@ -50,12 +50,43 @@ const CHIPS: { id: LoungeFeedChip; label: string }[] = [
   { id: "new", label: "New" },
 ];
 
-function CardPhoto({ src }: { src?: string }) {
-  const photo = isPhotoSrc(src);
+function CardPhoto({ src, name }: { src?: string; name?: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  const photo = isPhotoSrc(src) && !failed;
   if (photo) {
-    return <img src={src} alt="" className="h-full w-full object-cover" />;
+    return (
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full object-cover"
+        onError={() => setFailed(true)}
+      />
+    );
   }
-  return <div className="yn-lounge-photo-fallback" />;
+  return (
+    <div className="yn-lounge-photo-fallback">
+      <NeonAvatar src={src} name={name} size={64} showPhoto={false} />
+    </div>
+  );
+}
+
+function LiveAvatar({ src, name }: { src?: string; name?: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  const photo = isPhotoSrc(src) && !failed;
+  if (photo) {
+    return <img src={src} alt="" onError={() => setFailed(true)} />;
+  }
+  return (
+    <span className="yn-lounge-live-fallback">
+      <NeonAvatar src={src} name={name} size={58} showPhoto={false} />
+    </span>
+  );
 }
 
 function PresenceBadge({ online }: { online: boolean }) {
@@ -164,12 +195,13 @@ export function LoungeScreen({
 
   const feed = useMemo(() => sortLoungeFeed(filtered, chip, me), [filtered, chip, me]);
   const liveNow = useMemo(
-    () => filtered.filter((p) => isLoungeOnline(p.lastSeenMs)),
+    () =>
+      filtered
+        .filter((p) => isLoungeOnline(p.lastSeenMs))
+        .sort((a, b) => b.lastSeenMs - a.lastSeenMs)
+        .slice(0, 16),
     [filtered]
   );
-
-  const featured = chip === "forYou" ? feed[0] : undefined;
-  const grid = chip === "forYou" ? feed.slice(1) : feed;
 
   const filtersActive =
     applied.gender !== "all" ||
@@ -191,9 +223,9 @@ export function LoungeScreen({
 
   useEffect(() => {
     if (!hasMore || loading || loadingMore || refreshing) return;
-    if (grid.length >= 8) return;
+    if (feed.length >= 8) return;
     loadMore();
-  }, [grid.length, hasMore, loading, loadingMore, refreshing, loadMore]);
+  }, [feed.length, hasMore, loading, loadingMore, refreshing, loadMore]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -262,8 +294,8 @@ export function LoungeScreen({
   const openChat = (person: LoungePerson) => {
     onOpenChat?.({
       id: person.id,
-      name: person.name,
-      avatar: person.name,
+      name: person.displayName || person.name,
+      avatar: person.displayName || person.name,
       photo: person.photo,
       country: person.country,
       countryFlag: person.country,
@@ -274,7 +306,7 @@ export function LoungeScreen({
   const followPerson = (person: LoungePerson) => {
     void toggleFollow(followMe, {
       id: person.id,
-      name: person.name,
+      name: person.displayName || person.name,
       photo: person.photo,
       country: person.country,
       age: person.age,
@@ -343,7 +375,7 @@ export function LoungeScreen({
           </p>
         </div>
       ) : loading ? (
-        <LoungeSkeleton />
+        <LoungeSkeleton showLive />
       ) : people.length === 0 ? (
         <div className="px-6 py-16 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF2EC8]/12 ring-1 ring-[#A855F7]/40 shadow-[0_0_18px_rgba(255,46,200,0.25)]">
@@ -373,53 +405,36 @@ export function LoungeScreen({
         </div>
       ) : (
         <>
-          {liveNow.length > 0 ? (
-            <section className="yn-lounge-live" aria-label="Live now">
-              <h2 className="yn-lounge-live-title">Live now</h2>
-              <div className="yn-lounge-live-row">
-                {liveNow.map((person) => (
+          <section className="yn-lounge-live" aria-label="Live now">
+            <h2 className="yn-lounge-live-title">Live now</h2>
+            <div className="yn-lounge-live-row">
+              {liveNow.length > 0 ? (
+                liveNow.map((person) => (
                   <button
                     key={`live-${person.id}`}
                     type="button"
                     className="yn-lounge-live-item"
                     onClick={() => setPreviewUserId(person.id)}
-                    aria-label={`${person.name} is live`}
+                    aria-label={`${person.displayName || person.name} is live`}
                   >
                     <span className="yn-lounge-live-ring">
-                      {isPhotoSrc(person.photo) ? (
-                        <img src={person.photo} alt="" />
-                      ) : (
-                        <span className="yn-lounge-photo-fallback is-round" />
-                      )}
+                      <LiveAvatar src={person.photo} name={person.displayName || person.name} />
                     </span>
                     <span className="yn-lounge-live-badge">LIVE</span>
                   </button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {featured ? (
-            <div className="px-4">
-              <LoungeCard
-                person={featured}
-                variant="featured"
-                following={followingIds.has(featured.id)}
-                busy={busyId === featured.id || !meId}
-                onFollow={() => followPerson(featured)}
-                onMessage={() => openChat(featured)}
-                onOpenProfile={() => setPreviewUserId(featured.id)}
-              />
+                ))
+              ) : (
+                <p className="yn-lounge-live-empty">No one live right now</p>
+              )}
             </div>
-          ) : null}
+          </section>
 
-          {grid.length > 0 ? (
+          {feed.length > 0 ? (
             <div className="yn-lounge-grid">
-              {grid.map((person) => (
+              {feed.map((person) => (
                 <LoungeCard
                   key={person.id}
                   person={person}
-                  variant="card"
                   following={followingIds.has(person.id)}
                   busy={busyId === person.id || !meId}
                   onFollow={() => followPerson(person)}
@@ -461,7 +476,6 @@ export function LoungeScreen({
 
 function LoungeCard({
   person,
-  variant,
   following,
   busy,
   onFollow,
@@ -469,35 +483,32 @@ function LoungeCard({
   onOpenProfile,
 }: {
   person: LoungePerson;
-  variant: "featured" | "card";
   following: boolean;
   busy: boolean;
   onFollow: () => void;
   onMessage: () => void;
   onOpenProfile: () => void;
 }) {
-  const featured = variant === "featured";
   const online = isLoungeOnline(person.lastSeenMs);
-  const title = person.age ? `${person.name} ${person.age}` : person.name;
+  const label = person.displayName || person.name;
+  const title = person.age ? `${label}  ${person.age}` : label;
 
   return (
-    <article className={`yn-lounge-card ${featured ? "is-featured" : ""}`}>
+    <article className="yn-lounge-card">
       <button
         type="button"
         className="yn-lounge-card-photo"
         onClick={onOpenProfile}
-        aria-label={`View ${person.name}'s profile`}
+        aria-label={`View ${label}'s profile`}
       >
-        <CardPhoto src={person.photo} />
+        <CardPhoto src={person.photo} name={label} />
       </button>
       <div className="yn-lounge-card-top">
         <PresenceBadge online={online} />
       </div>
       <div className="yn-lounge-card-meta">
         <p className="yn-lounge-card-name">{title}</p>
-        {person.country ? (
-          <CountryFlag country={person.country} size={featured ? 14 : 12} />
-        ) : null}
+        {person.country ? <CountryFlag country={person.country} size={12} /> : null}
         <div className="yn-lounge-card-actions">
           <button
             type="button"
@@ -506,11 +517,7 @@ function LoungeCard({
             className={`yn-lounge-follow ${following ? "is-on" : ""}`}
             aria-label={following ? "Following" : "Follow"}
           >
-            {following ? (
-              <Check size={featured ? 14 : 12} />
-            ) : (
-              <span className="text-[13px] leading-none">+</span>
-            )}
+            {following ? <Check size={12} /> : <span className="yn-lounge-follow-plus">+</span>}
             {following ? "Following" : "Follow"}
           </button>
           <button
@@ -528,9 +535,19 @@ function LoungeCard({
   );
 }
 
-function LoungeSkeleton() {
+function LoungeSkeleton({ showLive = false }: { showLive?: boolean }) {
   return (
-    <div className="pt-4">
+    <div className="pt-1">
+      {showLive ? (
+        <section className="yn-lounge-live" aria-hidden>
+          <h2 className="yn-lounge-live-title">Live now</h2>
+          <div className="yn-lounge-live-row">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="yn-lounge-skel is-avatar" />
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="yn-lounge-grid">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="yn-lounge-skel" />

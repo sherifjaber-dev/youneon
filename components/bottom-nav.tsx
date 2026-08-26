@@ -35,7 +35,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               key={id}
               onClick={() => onTabChange(id)}
               className={cn(
-                "yn-nav-slot flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors active:scale-95",
+                "yn-nav-slot flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 transition-colors active:scale-95",
                 active ? "is-on" : "text-[#8b8098]"
               )}
             >

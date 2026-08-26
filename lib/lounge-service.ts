@@ -70,6 +70,7 @@ export const DEFAULT_LOUNGE_FILTERS: LoungeFilters = {
 export type LoungePerson = {
   id: string;
   name: string;
+  displayName: string;
   photo: string;
   age?: number;
   country: string;
@@ -82,6 +83,8 @@ export type LoungePerson = {
   followersCount: number;
   lat?: number;
   lng?: number;
+  online: boolean;
+  isLive: boolean;
 };
 
 export type LoungeMe = {
@@ -178,26 +181,103 @@ export function haversineKm(
   return Number.isFinite(km) ? Math.round(km) : undefined;
 }
 
+function asTrimmed(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isPhotoUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const v = value.trim();
+  return (
+    v.startsWith("data:image") ||
+    v.startsWith("https://") ||
+    v.startsWith("http://") ||
+    v.startsWith("blob:")
+  );
+}
+
+function photoFromUnknown(value: unknown): string {
+  if (isPhotoUrl(value)) return value.trim();
+  if (value && typeof value === "object") {
+    const rec = value as Record<string, unknown>;
+    for (const key of ["url", "src", "photo", "profilePicture", "downloadURL"]) {
+      if (isPhotoUrl(rec[key])) return String(rec[key]).trim();
+    }
+  }
+  return "";
+}
+
+export function loungePhotoFromDoc(data: Record<string, unknown>): string {
+  const direct = [
+    data.profilePicture,
+    data.photo,
+    data.photoUrl,
+    data.avatarUrl,
+    data.picture,
+  ];
+  for (const value of direct) {
+    const url = photoFromUnknown(value);
+    if (url) return url;
+  }
+  const avatar = photoFromUnknown(data.avatar);
+  if (avatar) return avatar;
+  if (Array.isArray(data.photos)) {
+    for (const item of data.photos) {
+      const url = photoFromUnknown(item);
+      if (url) return url;
+    }
+  }
+  return "";
+}
+
+function looksLikePiUsername(value: string, username: string): boolean {
+  if (!value) return true;
+  if (username && value.toLowerCase() === username.toLowerCase()) return true;
+  if (/\s/.test(value)) return false;
+  if (/[A-Z]/.test(value.slice(1))) return false;
+  return /^[a-z0-9._-]{3,}$/i.test(value) && /\d/.test(value);
+}
+
+export function pretifyLoungeUsername(username: string): string {
+  const stripped = username
+    .replace(/[0-9]+/g, " ")
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!stripped) return username;
+  return stripped
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+export function loungeDisplayName(data: Record<string, unknown>, id: string): string {
+  const username = asTrimmed(data.piUsername) || id;
+  const candidates = [
+    asTrimmed(data.fullName),
+    asTrimmed(data.displayName),
+    asTrimmed(data.firstName),
+    asTrimmed(data.name),
+    asTrimmed(data.nickname),
+  ].filter(Boolean);
+  const real = candidates.find((n) => !looksLikePiUsername(n, username));
+  if (real) return real;
+  return pretifyLoungeUsername(username);
+}
+
 function personFromUserDoc(
   id: string,
   data: Record<string, unknown>,
   lastSeenMs: number
 ): LoungePerson | null {
   if (isFakeUserRecord(id, data)) return null;
-  const name =
-    (typeof data.fullName === "string" && data.fullName.trim()) ||
-    (typeof data.piUsername === "string" && data.piUsername.trim()) ||
-    "";
+  const name = loungeDisplayName(data, id);
   if (!name) return null;
-  const photo =
-    (typeof data.profilePicture === "string" && data.profilePicture) ||
-    (Array.isArray(data.photos)
-      ? String(data.photos.find((p) => typeof p === "string" && p.trim()) || "")
-      : "") ||
-    "";
+  const photo = loungePhotoFromDoc(data);
   const country =
-    (typeof data.country === "string" && data.country.trim()) ||
-    (typeof data.location === "string" && data.location.trim()) ||
+    asTrimmed(data.country) ||
+    asTrimmed(data.location) ||
     "";
   const ageRaw = asNum(data.age);
   const age = ageRaw && ageRaw > 0 ? Math.round(ageRaw) : undefined;
@@ -207,16 +287,22 @@ function personFromUserDoc(
     ? data.languages.filter((l): l is string => typeof l === "string" && !!l.trim())
     : [];
   const coords = parseCoords(data);
+  const presenceMs = Math.max(
+    lastSeenMs,
+    toMillis(data.lastSeen) || toMillis(data.lastSeenAt) || 0
+  );
+  const live = isLoungeOnline(presenceMs);
   return {
     id,
     name,
+    displayName: name,
     photo,
     age,
     country,
     gender: data.hideGender ? undefined : typeof data.gender === "string" ? data.gender : undefined,
     languages,
     youneonBadge: badgeFromUserDoc(data),
-    lastSeenMs,
+    lastSeenMs: presenceMs,
     createdAtMs: toMillis(data.createdAt) || toMillis(data.createdAtMs),
     giftsReceivedCount: asNum(data.giftsReceivedCount) ?? 0,
     followersCount:
@@ -226,6 +312,8 @@ function personFromUserDoc(
       0,
     lat: coords?.lat,
     lng: coords?.lng,
+    online: live,
+    isLive: live,
   };
 }
 
