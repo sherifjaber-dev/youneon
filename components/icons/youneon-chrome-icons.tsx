@@ -15,20 +15,12 @@ function NeonStrokeDefs({ uid }: { uid: string }) {
         <stop offset="48%" stopColor="#c084fc" />
         <stop offset="100%" stopColor="#7c3aed" />
       </linearGradient>
-      <filter id={`${uid}-glow`} x="-55%" y="-55%" width="210%" height="210%">
-        <feGaussianBlur stdDeviation="1.55" result="blur" />
-        <feMerge>
-          <feMergeNode in="blur" />
-          <feMergeNode in="blur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
     </defs>
   );
 }
 
 /** Outline notification bell — neon pink → purple stroke, matching the header chrome. */
-export function YouNeonBellIcon({ size = 27, className }: ChromeIconProps) {
+export function YouNeonBellIcon({ size = 28, className }: ChromeIconProps) {
   const uid = useId().replace(/:/g, "");
   const stroke = `url(#${uid}-stroke)`;
   return (
@@ -42,19 +34,16 @@ export function YouNeonBellIcon({ size = 27, className }: ChromeIconProps) {
       className={className}
     >
       <NeonStrokeDefs uid={uid} />
-      <g filter={`url(#${uid}-glow)`} stroke={stroke} strokeLinejoin="round" strokeLinecap="round">
-        <path
-          d="M12 3.15c-3.62 0-6.35 2.78-6.35 6.42 0 4.28-1.48 5.82-2.28 6.85-.22.28-.08.78.32.78h16.62c.4 0 .54-.5.32-.78-.8-1.03-2.28-2.57-2.28-6.85 0-3.64-2.73-6.42-6.35-6.42Z"
-          strokeWidth="1.65"
-        />
-        <path d="M10.15 18.55c.42 1.42 1.2 2.2 1.85 2.2s1.43-.78 1.85-2.2" strokeWidth="1.65" />
+      <g stroke={stroke} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round">
+        <path d="M18 8.2A6 6 0 0 0 6 8.2c0 6.6-2.7 8.5-2.7 8.5h17.4S18 14.8 18 8.2Z" />
+        <path d="M10.2 19.55a2.05 2.05 0 0 0 3.6 0" />
       </g>
     </svg>
   );
 }
 
 /** Outline shopping bag — two arched handles, neon pink → purple stroke. */
-export function YouNeonBagIconNeon({ size = 27, className }: ChromeIconProps) {
+export function YouNeonBagIconNeon({ size = 28, className }: ChromeIconProps) {
   const uid = useId().replace(/:/g, "");
   const stroke = `url(#${uid}-stroke)`;
   return (
@@ -68,15 +57,9 @@ export function YouNeonBagIconNeon({ size = 27, className }: ChromeIconProps) {
       className={className}
     >
       <NeonStrokeDefs uid={uid} />
-      <g filter={`url(#${uid}-glow)`} stroke={stroke} strokeLinejoin="round" strokeLinecap="round">
-        <path
-          d="M6.85 9.55h10.3c.88 0 1.56.73 1.5 1.6l-.72 9.05A1.55 1.55 0 0 1 16.4 21.6H7.6a1.55 1.55 0 0 1-1.53-1.4l-.72-9.05a1.52 1.52 0 0 1 1.5-1.6Z"
-          strokeWidth="1.65"
-        />
-        <circle cx="8.85" cy="9.55" r="1.05" strokeWidth="1.45" />
-        <circle cx="15.15" cy="9.55" r="1.05" strokeWidth="1.45" />
-        <path d="M8.85 8.45c0-2.7 1.15-4.05 2.45-4.05" strokeWidth="1.65" />
-        <path d="M15.15 8.45c0-2.7-1.15-4.05-2.45-4.05" strokeWidth="1.65" />
+      <g stroke={stroke} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round">
+        <path d="M5.35 8.85h13.3a1.35 1.35 0 0 1 1.34 1.5l-.95 9.35A1.55 1.55 0 0 1 17.52 21.4H6.48a1.55 1.55 0 0 1-1.52-1.7l-.95-9.35a1.35 1.35 0 0 1 1.34-1.5Z" />
+        <path d="M9.1 8.85V6.35a2.9 2.9 0 0 1 5.8 0v2.5" />
       </g>
     </svg>
   );

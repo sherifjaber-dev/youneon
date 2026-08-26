@@ -1978,17 +1978,13 @@ html.youneon-signed-in select {
 }
 
 .yn-chrome-icon {
+  display: block;
   color: #d8b4fe;
-  filter:
-    drop-shadow(0 0 5px rgba(192, 132, 252, 0.95))
-    drop-shadow(0 0 12px rgba(168, 85, 247, 0.55));
+  filter: drop-shadow(0 0 0.8px rgba(255, 79, 216, 0.7));
 }
 
 .yn-chrome-neon {
   overflow: visible;
-  filter:
-    drop-shadow(0 0 3px rgba(255, 79, 216, 0.95))
-    drop-shadow(0 0 9px rgba(168, 85, 247, 0.55));
 }
 
 .yn-chrome-count {

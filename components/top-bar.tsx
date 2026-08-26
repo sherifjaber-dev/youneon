@@ -92,7 +92,7 @@ export function TopBar({
                 className="yn-chrome-neon relative flex h-9 w-9 items-center justify-center rounded-full active:scale-95"
                 aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
               >
-                <YouNeonBellIcon size={27} />
+                <YouNeonBellIcon size={28} className="yn-chrome-icon" />
                 {unread > 0 && (
                   <span className="yn-chrome-count is-bell">
                     {unread > 9 ? "9+" : unread}
@@ -116,7 +116,7 @@ export function TopBar({
                 }
                 data-testid="free-message-bag"
               >
-                <YouNeonBagIconNeon size={27} />
+                <YouNeonBagIconNeon size={28} className="yn-chrome-icon" />
                 {bagActive && (
                   <span className="yn-chrome-count is-bag">
                     {bagCount > 9 ? "9+" : bagCount}
