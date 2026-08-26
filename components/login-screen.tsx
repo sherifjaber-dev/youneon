@@ -64,6 +64,7 @@ export function LoginScreen({
       className="youneon-static-login"
       aria-label="Sign in with Pi Network"
       data-youneon-signin="1"
+      data-youneon-login-v="neon-faces-2"
       style={overlayStyle}
       onPointerDown={handleSignIn}
       onMouseDown={handleSignIn}

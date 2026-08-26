@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { applyPiSigninNativeAttrs, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
+import { applyPiSigninNativeAttrs } from "@/lib/pi-signin-onclick";
+import { piWelcomeInnerHtml, youneonWelcomeLegalHtml } from "@/lib/pi-welcome-markup";
 import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 interface ErrorBoundaryProps {
@@ -23,9 +24,9 @@ const overlayStyle: React.CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#0f0117",
+  backgroundColor: "#070010",
   color: "#ffffff",
-  padding: 16,
+  padding: "48px 16px 72px",
   textAlign: "center",
   fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
   pointerEvents: "auto",
@@ -61,32 +62,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           className="youneon-static-login"
           aria-label="Sign in with Pi Network"
           data-youneon-signin="1"
+          data-youneon-login-v="neon-faces-2"
           style={overlayStyle}
           ref={(el) => applyPiSigninNativeAttrs(el)}
           onPointerDown={this.handleSignIn}
           onMouseDown={this.handleSignIn}
           onTouchStart={this.handleSignIn}
           onClick={this.handleSignIn}
-        >
-          <h1
-            style={{
-              fontSize: "2rem",
-              fontWeight: 800,
-              margin: "0 0 1.25rem",
-              color: "#e9d5ff",
-              pointerEvents: "none",
-              userSelect: "none",
-            }}
-          >
-            YouNeon
-          </h1>
-          <div
-            style={{ pointerEvents: "auto", userSelect: "none" }}
-            dangerouslySetInnerHTML={{
-              __html: piSigninControlsHtml("youneon-signin-btn-error"),
-            }}
-          />
-        </div>
+          dangerouslySetInnerHTML={{
+            __html: piWelcomeInnerHtml("youneon-signin-btn-error", "ynerror") + youneonWelcomeLegalHtml(),
+          }}
+        />
       );
     }
 

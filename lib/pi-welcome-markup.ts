@@ -128,7 +128,7 @@ export function piWelcomeOverlayHtml(opts: {
   return (
     '<div class="youneon-static-login"' +
     idAttr +
-    ' aria-label="Sign in with Pi Network" data-youneon-signin="1" style="' +
+    ' aria-label="Sign in with Pi Network" data-youneon-signin="1" data-youneon-login-v="neon-faces-2" style="' +
     PI_WELCOME_OVERLAY_STYLE +
     '" ' +
     opts.nativeAttrs +

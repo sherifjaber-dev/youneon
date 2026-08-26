@@ -282,7 +282,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=login-restyle-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=login-overlay-2"></script>
         <div
           id="youneon-app-tree"
           style={{
