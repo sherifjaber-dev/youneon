@@ -823,6 +823,7 @@ export function YouNeonApp() {
         premiumUntil={premiumUntil}
         announcements={announcements}
         profilePicture={displayUser.profilePicture}
+        photos={displayUser.photos}
         profileName={displayUser.fullName || displayUser.piUsername}
         currentUserId={currentUserId}
         onOpenChat={handleOpenChat}

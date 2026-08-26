@@ -6,6 +6,7 @@ import { NotificationsScreen } from "@/components/notifications-screen";
 import { MyItemsSheet } from "@/components/my-items-sheet";
 import { YouNeonBagIcon } from "@/components/icons/youneon-chat-connect";
 import { YouNeonScriptLogo } from "@/components/youneon-script-logo";
+import { NeonAvatar } from "@/components/neon-avatar";
 import { useNotificationInbox } from "@/hooks/use-notification-inbox";
 import type { Announcement } from "@/lib/announcements";
 
@@ -17,6 +18,7 @@ interface TopBarProps {
   premiumUntil?: string | null;
   announcements?: Announcement[];
   profilePicture?: string;
+  photos?: string[];
   profileName?: string;
   currentUserId?: string;
   onOpenChat?: (user: { id: string; name: string; avatar: string; photo?: string }) => void;
@@ -31,6 +33,9 @@ export function TopBar({
   isPremium = false,
   premiumUntil = null,
   announcements = [],
+  profilePicture,
+  photos,
+  profileName,
   currentUserId,
   onOpenChat,
   onOpenMessages,
@@ -41,6 +46,7 @@ export function TopBar({
   const { items, unread, markAllRead } = useNotificationInbox(currentUserId, announcements);
   const bagActive = freeUnlocksRemaining > 0;
   const bagCount = Math.min(99, Math.max(0, Math.floor(freeUnlocksRemaining)));
+  const photoSrc = profilePicture || photos?.[0] || "";
 
   const openPanel = () => {
     setPanelOpen(true);
@@ -51,7 +57,30 @@ export function TopBar({
     <>
       <div className="yn-chrome fixed top-0 left-0 right-0 z-50 border-b px-4 pt-[env(safe-area-inset-top)]">
         <div className="flex h-14 items-center justify-between gap-3">
-          <YouNeonScriptLogo onClick={onProfileClick} />
+          <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              onClick={onProfileClick}
+              className="relative shrink-0 rounded-full p-[2px] active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, #ff4ec8 0%, #c084fc 48%, #7c3aed 100%)",
+                boxShadow:
+                  "0 0 8px rgba(255, 78, 200, 0.75), 0 0 16px rgba(168, 85, 247, 0.5)",
+              }}
+              aria-label="Open profile"
+              data-testid="topbar-profile-photo"
+            >
+              <span className="block overflow-hidden rounded-full bg-[#080412]">
+                <NeonAvatar
+                  src={photoSrc}
+                  name={profileName}
+                  size={32}
+                  alt={profileName || "Your profile"}
+                />
+              </span>
+            </button>
+            <YouNeonScriptLogo onClick={onProfileClick} />
+          </div>
 
           <div className="flex shrink-0 flex-col items-end gap-0.5">
             <div className="flex items-center gap-1.5">
