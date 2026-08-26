@@ -68,7 +68,7 @@ export interface UserProfile {
 
 export interface ChatMessage {
   id?: string; conversationId: string; senderId: string;
-  text?: string; imageBase64?: string; timestamp?: Date;
+  text?: string; imageBase64?: string; giftId?: string; timestamp?: Date;
 }
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
@@ -325,10 +325,19 @@ export const recordCall = async (conversationId: string, userId: string) => {
 };
 
 export const sendChatMessage = async (
-  conversationId: string, senderId: string, text?: string, imageBase64?: string
+  conversationId: string,
+  senderId: string,
+  text?: string,
+  imageBase64?: string,
+  extra?: { giftId?: string }
 ) => {
+  const giftId = extra?.giftId || "";
   await addDoc(collection(db, "conversations", conversationId, "messages"), {
-    senderId, text: text || "", imageBase64: imageBase64 || "", timestamp: serverTimestamp(),
+    senderId,
+    text: text || "",
+    imageBase64: imageBase64 || "",
+    giftId,
+    timestamp: serverTimestamp(),
   });
   const ref = doc(db, "conversations", conversationId);
   const snap = await getDoc(ref);
@@ -336,7 +345,7 @@ export const sendChatMessage = async (
     const data = snap.data();
     const recipient = (data.participants as string[]).find((p) => p !== senderId);
     const currentUnread = (data.unreadCount && data.unreadCount[recipient!]) || 0;
-    const preview = text || (imageBase64 ? "📷 Image" : "");
+    const preview = text || (imageBase64 ? "📷 Image" : giftId ? "✨ Reaction" : "");
     await updateDoc(ref, {
       lastMessage: preview,
       lastMessageTime: serverTimestamp(),
@@ -365,7 +374,7 @@ export const subscribeToMessages = (conversationId: string, cb: (msgs: ChatMessa
     const msgs = snap.docs.map((d) => {
       const data = d.data() as any;
       return { id: d.id, conversationId, senderId: data.senderId, text: data.text,
-        imageBase64: data.imageBase64, timestamp: data.timestamp?.toDate() } as ChatMessage;
+        imageBase64: data.imageBase64, giftId: data.giftId || "", timestamp: data.timestamp?.toDate() } as ChatMessage;
     });
     cb(msgs);
   });

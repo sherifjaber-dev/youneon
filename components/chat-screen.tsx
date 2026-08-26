@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ArrowLeft, Send, Smile, ImageIcon, Video, Lock, Diamond } from "lucide-react";
+import { ArrowLeft, Send, Smile, ImageIcon, Video, Lock, Diamond, Sparkles } from "lucide-react";
 import {
   subscribeToMessages,
   sendChatMessage,
@@ -10,6 +10,7 @@ import {
   cleanupOldReadMessages,
   getCallCost,
   recordCall,
+  incrementGiftsReceived,
   PAID_CALL_COST,
   ChatMessage,
 } from "@/lib/firestore-service";
@@ -24,6 +25,9 @@ import {
   smileyToken,
   type SmileyId,
 } from "@/components/icons/youneon-smileys";
+import { CALL_GIFTS, ChatReactionPicker, resolveGiftId, type CallGift } from "@/components/gift-overlay";
+import { GiftArt } from "@/components/icons/gift-art";
+import { playGiftSound } from "@/lib/gift-sounds";
 
 const UNLOCK_COST = 100;
 
@@ -63,6 +67,7 @@ export function ChatScreen({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
   const [sending, setSending] = useState(false);
   const [conv, setConv] = useState<any | null>(null);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
@@ -130,6 +135,7 @@ export function ChatScreen({
     const text = input.trim();
     setInput("");
     setShowEmoji(false);
+    setShowReactions(false);
     setSending(true);
     try {
       await sendChatMessage(conversationId, currentUserId, text);
@@ -146,6 +152,26 @@ export function ChatScreen({
       if (!prev) return token;
       return prev.endsWith(" ") ? prev + token : `${prev} ${token}`;
     });
+  };
+
+  const handleReaction = async (gift: CallGift) => {
+    if (!isUnlocked) { setShowInsufficientModal(neonBalance < UNLOCK_COST); return; }
+    if (sending) return;
+    setShowReactions(false);
+    setSending(true);
+    try {
+      await sendChatMessage(conversationId, currentUserId, gift.label, "", { giftId: gift.id });
+      playGiftSound(gift.id);
+      await incrementGiftsReceived(otherUser.id, {
+        fromId: currentUserId,
+        giftId: gift.id,
+        giftEmoji: gift.emoji,
+      });
+    } catch (e) {
+      console.error(e);
+      alert("Could not send reaction");
+    }
+    setSending(false);
   };
 
   const compressImage = (file: File, maxW = 800, quality = 0.7): Promise<string> =>
@@ -374,7 +400,17 @@ export function ChatScreen({
                           className="rounded-xl max-w-full mb-1.5"
                         />
                       )}
-                      {msg.text && <ChatSmileyText text={msg.text} />}
+                      {(() => {
+                        const giftId = resolveGiftId(msg.giftId);
+                        if (!giftId) return msg.text ? <ChatSmileyText text={msg.text} /> : null;
+                        const gift = CALL_GIFTS.find((g) => g.id === giftId);
+                        return (
+                          <span className="yn-chat-rx-msg">
+                            <GiftArt id={giftId} size={36} variant="pick" instance={msg.id || giftId} />
+                            <span>{gift?.label || msg.text}</span>
+                          </span>
+                        );
+                      })()}
                       <p className={`yn-chat-time ${mine ? "is-mine" : "is-theirs"}`}>
                         {msg.timestamp
                           ? new Date(msg.timestamp).toLocaleTimeString([], {
@@ -403,14 +439,40 @@ export function ChatScreen({
             </>
           )}
 
+          {showReactions && (
+            <>
+              <button
+                type="button"
+                className="yn-smiley-scrim"
+                aria-label="Close reactions"
+                onClick={() => setShowReactions(false)}
+              />
+              <ChatReactionPicker onSelect={(g) => void handleReaction(g)} />
+            </>
+          )}
+
           <div className="yn-chat-composer fixed bottom-0 left-0 right-0 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] flex items-center gap-2 z-40">
             <div className="yn-chat-bar">
               <button
-                onClick={() => setShowEmoji((v) => !v)}
+                onClick={() => {
+                  setShowReactions(false);
+                  setShowEmoji((v) => !v);
+                }}
                 className={`yn-chat-icon ${showEmoji ? "is-on" : ""}`}
                 data-testid="chat-emoji-btn"
               >
                 <Smile size={22} />
+              </button>
+              <button
+                onClick={() => {
+                  setShowEmoji(false);
+                  setShowReactions((v) => !v);
+                }}
+                className={`yn-chat-icon ${showReactions ? "is-on" : ""}`}
+                data-testid="chat-reaction-btn"
+                aria-label="Send a reaction"
+              >
+                <Sparkles size={20} />
               </button>
               <button
                 onClick={() => fileRef.current?.click()}

@@ -8,7 +8,9 @@ export type GiftSoundId =
   | "naughty"
   | "funny"
   | "beautiful"
-  | "cool";
+  | "cool"
+  | "fire"
+  | "rabbit";
 
 const SFX_MUTE_KEY = "younn-sfx-muted";
 
@@ -213,6 +215,20 @@ function playCool(ctx: AudioContext, t: number, dest: AudioNode) {
   tone(ctx, dest, { freq: 880, start: t + 0.52, duration: 0.38, peak: 0.05, attack: 0.02, type: "sine" });
 }
 
+function playFire(ctx: AudioContext, t: number, dest: AudioNode) {
+  noiseBurst(ctx, dest, { start: t, duration: 0.28, freqFrom: 420, freqTo: 180, peak: 0.07, q: 2.4 });
+  tone(ctx, dest, { freq: 196, freqEnd: 330, start: t, duration: 0.42, peak: 0.1, attack: 0.02, type: "sawtooth" });
+  tone(ctx, dest, { freq: 392, freqEnd: 523, start: t + 0.16, duration: 0.38, peak: 0.08, attack: 0.03, type: "triangle" });
+  tone(ctx, dest, { freq: 784, start: t + 0.4, duration: 0.32, peak: 0.05, attack: 0.02, type: "sine" });
+}
+
+function playRabbit(ctx: AudioContext, t: number, dest: AudioNode) {
+  [659.25, 783.99, 987.77, 1174.66].forEach((freq, i) => {
+    tone(ctx, dest, { freq, start: t + i * 0.07, duration: 0.22, peak: 0.08, attack: 0.01, type: "triangle" });
+  });
+  tone(ctx, dest, { freq: 1318.51, freqEnd: 1760, start: t + 0.32, duration: 0.45, peak: 0.06, attack: 0.04, type: "sine" });
+}
+
 const PLAYERS: Record<GiftSoundId, (ctx: AudioContext, t: number, dest: AudioNode) => void> = {
   rose: playRose,
   heart: playHeart,
@@ -224,6 +240,8 @@ const PLAYERS: Record<GiftSoundId, (ctx: AudioContext, t: number, dest: AudioNod
   funny: playFunny,
   beautiful: playBeautiful,
   cool: playCool,
+  fire: playFire,
+  rabbit: playRabbit,
 };
 
 export function playGiftSound(giftId: GiftSoundId, opts?: { muted?: boolean }) {

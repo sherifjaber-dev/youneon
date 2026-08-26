@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Ban, Check, Copy, Languages, MessageCircle, ShieldAlert, UserPlus, X } from "lucide-react";
+import { Ban, Check, Copy, Globe, MapPin, MessageCircle, MoreHorizontal, Plus, Sparkles, Star, User, X } from "lucide-react";
 import { CallReportSheet } from "@/components/call-report-sheet";
 import { InterestIcon } from "@/components/icons/interest-icons";
-import { ReactionIcon, ReactionsEarnedIcon } from "@/components/icons/reaction-icons";
+import { ReactionIcon } from "@/components/icons/reaction-icons";
 import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
-import { CountryLabel } from "@/components/country-flag";
+import { CountryFlag } from "@/components/country-flag";
 import { countryLabel, countryToIso } from "@/lib/countries";
 import { subscribeToUserProfile, type UserProfile } from "@/lib/firestore-service";
 import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
@@ -231,6 +231,7 @@ export function ProfilePreviewSheet({
   const [ensuredId, setEnsuredId] = useState("");
   const [reporting, setReporting] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -307,6 +308,7 @@ export function ProfilePreviewSheet({
     setActivePhoto(0);
     setCopied(false);
     setShowReport(false);
+    setShowMore(false);
   }, [profile.heroPhoto, open, resolvedId]);
 
   useEffect(() => {
@@ -464,15 +466,8 @@ export function ProfilePreviewSheet({
   if (!open) return null;
 
   const following = !!(resolvedId && followingIds.has(resolvedId));
-  const countryLine = profile.countryFlag || profile.countryName || profile.location ? (
-    <CountryLabel
-      country={profile.countryFlag || profile.countryName || profile.location}
-      name={profile.countryName || profile.location}
-      size={18}
-    />
-  ) : (
-    <span>—</span>
-  );
+  const locationText = profile.countryName || profile.location || "";
+  const locationFlag = profile.countryFlag || profile.countryName || profile.location;
 
   return (
     <div
@@ -513,8 +508,51 @@ export function ProfilePreviewSheet({
           aria-label="Close profile"
           data-testid="profile-preview-close"
         >
-          <X size={18} strokeWidth={2.4} />
+          <X size={20} strokeWidth={2.2} />
         </button>
+        {!self ? (
+          <div className="yn-preview-more-wrap">
+            <button
+              type="button"
+              className="yn-preview-more"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMore((v) => !v);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label="More profile actions"
+              data-testid="profile-preview-more"
+            >
+              <MoreHorizontal size={20} strokeWidth={2.2} />
+            </button>
+            {showMore ? (
+              <div className="yn-preview-more-menu" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMore(false);
+                    if (onReport) onReport();
+                    else setShowReport(true);
+                  }}
+                >
+                  Report
+                </button>
+                <button
+                  type="button"
+                  className="is-danger"
+                  disabled={blocking}
+                  onClick={() => {
+                    setShowMore(false);
+                    void handleBlockClick();
+                  }}
+                >
+                  <Ban size={14} />
+                  Block
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="yn-preview-scroll">
           <div
             className="yn-preview-photo"
@@ -561,7 +599,7 @@ export function ProfilePreviewSheet({
               </div>
             ) : null}
             {online ? (
-              <span className={`yn-preview-online${gallery.length > 1 ? "" : " is-solo"}`}>
+              <span className="yn-preview-online">
                 <span className="yn-preview-online-dot" />
                 Online
               </span>
@@ -581,10 +619,16 @@ export function ProfilePreviewSheet({
                 {profile.name}
                 {profile.age ? <span className="yn-preview-age">, {profile.age}</span> : null}
               </span>
+              {locationFlag ? <CountryFlag country={locationFlag} size={16} className="yn-preview-flag" /> : null}
               {profile.youneonBadge ? <YouNeonBadgeMark /> : null}
             </h2>
 
-            <p className="yn-preview-row">{countryLine}</p>
+            {locationText ? (
+              <p className="yn-preview-row yn-preview-location">
+                <MapPin size={15} strokeWidth={2.2} />
+                {locationText}
+              </p>
+            ) : null}
 
             {!profile.hideGender && profile.gender ? (
               <p className="yn-preview-row">
@@ -593,34 +637,67 @@ export function ProfilePreviewSheet({
               </p>
             ) : null}
 
-            <p className="yn-preview-row yn-preview-code">
-              <span className="yn-preview-id-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-                  <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
-                  <circle cx="8.5" cy="12" r="1.8" stroke="currentColor" strokeWidth="1.4" />
-                  <path d="M12.5 10.5h6M12.5 13.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                </svg>
-              </span>
-              <span className="text-white/45">Code</span>
-              <span className="yn-preview-code-value">{neonId || "—"}</span>
-              {neonId ? (
+            {self ? (
+              <p className="yn-preview-row yn-preview-code">
+                <span className="yn-preview-id-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                    <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                    <circle cx="8.5" cy="12" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+                    <path d="M12.5 10.5h6M12.5 13.5h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <span className="yn-preview-code-label">Code</span>
+                <span className="yn-preview-code-value">{neonId || "—"}</span>
+                {neonId ? (
+                  <button
+                    type="button"
+                    className="yn-preview-copy"
+                    onClick={() => void copyCode()}
+                    aria-label="Copy Neon ID"
+                  >
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                ) : null}
+              </p>
+            ) : null}
+
+            {!self ? (
+              <div className="yn-preview-cta">
                 <button
                   type="button"
-                  className="yn-preview-copy"
-                  onClick={() => void copyCode()}
-                  aria-label="Copy Neon ID"
+                  disabled={!viewerId || !resolvedId || busyId === resolvedId}
+                  onClick={handleFollow}
+                  className={`yn-preview-btn ${following ? "is-ghost" : "is-primary"}`}
                 >
-                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {following ? null : <Plus size={16} strokeWidth={2.6} />}
+                  {following ? "Following" : "Follow"}
                 </button>
-              ) : null}
-            </p>
+                {onMessage ? (
+                  <button type="button" onClick={handleMessage} className="yn-preview-btn is-message">
+                    <MessageCircle size={16} strokeWidth={2.2} />
+                    Message
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            <section className="yn-preview-section">
+              <h3>
+                <User size={16} strokeWidth={2.2} />
+                About me
+              </h3>
+              <div className="yn-preview-about">{displayOrDash(profile.bio)}</div>
+            </section>
 
             {profile.interests.length > 0 ? (
               <section className="yn-preview-section">
-                <h3>Interests</h3>
-                <div className="yn-preview-tags">
+                <h3>
+                  <Star size={16} strokeWidth={2.2} />
+                  Interests
+                </h3>
+                <div className="yn-preview-tags is-pills">
                   {profile.interests.map((tag) => (
-                    <span key={tag} className="yn-preview-tag">
+                    <span key={tag} className="yn-preview-tag is-interest">
                       <InterestIcon tag={tag} size={15} />
                       {tag}
                     </span>
@@ -631,11 +708,13 @@ export function ProfilePreviewSheet({
 
             {profile.languages.length > 0 ? (
               <section className="yn-preview-section">
-                <h3>Languages</h3>
+                <h3>
+                  <Globe size={16} strokeWidth={2.2} />
+                  Languages
+                </h3>
                 <div className="yn-preview-tags">
                   {profile.languages.map((lang) => (
-                    <span key={lang} className="yn-preview-tag">
-                      <Languages size={13} className="text-white/45" />
+                    <span key={lang} className="yn-preview-tag is-lang">
                       {languageLabel(lang)}
                     </span>
                   ))}
@@ -644,78 +723,21 @@ export function ProfilePreviewSheet({
             ) : null}
 
             <section className="yn-preview-section">
-              <h3>About me</h3>
-              <div className="yn-preview-about">{displayOrDash(profile.bio)}</div>
-            </section>
-
-            <section className="yn-preview-section">
-              <h3>Reactions Received</h3>
-              <div className="yn-preview-reactions">
-                <p className="yn-preview-reactions-sum">
-                  <span className="yn-preview-smile" aria-hidden="true">
-                    <ReactionsEarnedIcon size={16} />
-                  </span>
-                  {reactionTotal} video chat reactions earned!
-                </p>
-                <ul>
-                  {REACTION_TYPES.map((r) => (
-                    <li key={r.id}>
-                      <span>
-                        <ReactionIcon id={r.id} size={20} />
-                        {r.id}
-                      </span>
-                      <span className="tabular-nums">{reactionCount(profile.reactions, r.id)}</span>
-                    </li>
-                  ))}
-                </ul>
+              <h3>
+                <Sparkles size={16} strokeWidth={2.2} />
+                Reactions
+              </h3>
+              <div className="yn-preview-rx-row" aria-label={`${reactionTotal} reactions received`}>
+                {REACTION_TYPES.map((r) => (
+                  <div key={r.id} className="yn-preview-rx" title={r.id}>
+                    <ReactionIcon id={r.id} size={22} />
+                    <span className="tabular-nums">{reactionCount(profile.reactions, r.id)}</span>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
         </div>
-
-        {!self ? (
-          <div className="yn-preview-actions">
-            <div className="yn-preview-actions-row">
-              <button
-                type="button"
-                disabled={!viewerId || !resolvedId || busyId === resolvedId}
-                onClick={handleFollow}
-                className={`yn-preview-btn ${following ? "is-ghost" : "is-primary"}`}
-              >
-                <UserPlus size={15} />
-                {following ? "Following" : "Follow"}
-              </button>
-              {onMessage ? (
-                <button type="button" onClick={handleMessage} className="yn-preview-btn is-message">
-                  <MessageCircle size={15} />
-                  Message
-                </button>
-              ) : null}
-            </div>
-            <div className="yn-preview-actions-row">
-              <button
-                type="button"
-                className="yn-preview-btn is-ghost"
-                onClick={() => {
-                  if (onReport) onReport();
-                  else setShowReport(true);
-                }}
-              >
-                <ShieldAlert size={15} />
-                Report
-              </button>
-              <button
-                type="button"
-                className="yn-preview-btn is-danger"
-                disabled={blocking}
-                onClick={() => void handleBlockClick()}
-              >
-                <Ban size={15} />
-                Block
-              </button>
-            </div>
-          </div>
-        ) : null}
       </div>
       </div>
 

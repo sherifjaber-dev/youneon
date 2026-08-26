@@ -1,9 +1,159 @@
 import { RenderGlyph, SPARK_GLYPH, YN, type GlyphProps, type NeonEl } from "@/components/icons/youneon-glyphs";
-import { INTEREST_CATEGORIES } from "@/lib/profile-catalog";
+import { INTEREST_CATEGORIES, interestIconKey } from "@/lib/profile-catalog";
 
 const P = YN.pink;
 const U = YN.purple;
 const L = YN.lilac;
+
+/** 24 mockup interest pills — neon outline icons. */
+const PILL_GLYPHS: Record<string, NeonEl[]> = {
+  Friends: [
+    { t: "c", cx: 7.6, cy: 8.2, r: 2.4, c: L },
+    { t: "c", cx: 15.2, cy: 8.2, r: 2.4, c: P },
+    { t: "p", d: "M3.8 18.6c.3-3.6 2.2-5.6 4.8-5.6h.8", c: L },
+    { t: "p", d: "M14.6 13h.8c2.6 0 4.5 2 4.8 5.6", c: P },
+  ],
+  Sports: [
+    { t: "c", cx: 14.6, cy: 6.4, r: 1.85, c: L },
+    { t: "p", d: "M7.2 19.2l2.6-4.4 3.4 1.2 1.6-3.6", c: P },
+    { t: "p", d: "M11.8 11.6 9.4 14 6 13.2", c: U },
+    { t: "p", d: "M13.4 12.2l3.4 2.4 1.8-1.4", c: U },
+  ],
+  Fashion: [
+    { t: "p", d: "M7 8.6h10l-1.1 10.6H8.1z", c: P },
+    { t: "p", d: "M9.4 8.6V7.2A2.6 2.6 0 0 1 12 4.6a2.6 2.6 0 0 1 2.6 2.6v1.4", c: U },
+    { t: "p", d: "M12 11.2s-1.6 1.2-1.6 2.4a1.6 1.6 0 0 0 3.2 0c0-1.2-1.6-2.4-1.6-2.4z", c: L },
+  ],
+  Music: [
+    { t: "c", cx: 8.4, cy: 17, r: 2.5, c: P },
+    { t: "p", d: "M10.9 17V6.4l7.2 1.2v6.6", c: L },
+    { t: "c", cx: 18.1, cy: 14.2, r: 0.9, c: U, fill: true },
+  ],
+  Movies: [
+    { t: "p", d: "M6.2 8.2h11.6v9.6H6.2z", c: U },
+    { t: "p", d: "M6.2 8.2l2.2-2.6h7.2L17.8 8.2", c: P },
+    { t: "p", d: "M8.8 8.2v9.6M15.2 8.2v9.6", c: L },
+    { t: "p", d: "M6.2 12h11.6", c: L },
+  ],
+  Travel: [
+    { t: "p", d: "M4.6 14.2L12 11.6l7.4 2.6-3.2-1.2V9.4L12 11.2 8.4 9.4v3.6z", c: P },
+    { t: "p", d: "M12 11.6V18", c: U },
+    { t: "p", d: "M4.8 18.2c2.6-1.6 5-1 7.2-.2 2.4.8 4.8.4 7.2-1.2", c: L },
+  ],
+  Gaming: [
+    { t: "r", x: 4.2, y: 8.8, w: 15.6, h: 8.4, rx: 3.6, c: U },
+    { t: "p", d: "M8.2 11.6v3.2M6.6 13.2h3.2", c: P },
+    { t: "c", cx: 15.1, cy: 12, r: 0.85, c: L, fill: true },
+    { t: "c", cx: 17, cy: 14, r: 0.85, c: P, fill: true },
+  ],
+  Food: [
+    { t: "p", d: "M8.2 4.8v10.2c0 1.6-1 2.6-2.2 2.6", c: P },
+    { t: "p", d: "M8.2 4.8c1.6 1.2 1.6 4.2 0 5.6", c: L },
+    { t: "p", d: "M15.6 4.8v14.4", c: U },
+    { t: "p", d: "M13.6 4.8c0 3.2 4 3.2 4 0", c: L },
+  ],
+  Fitness: [
+    { t: "p", d: "M5.2 12h13.6", c: U },
+    { t: "r", x: 4.4, y: 8.2, w: 2.6, h: 7.6, rx: 1, c: P },
+    { t: "r", x: 17, y: 8.2, w: 2.6, h: 7.6, rx: 1, c: P },
+    { t: "r", x: 7.4, y: 9.6, w: 2, h: 4.8, rx: 0.7, c: L },
+    { t: "r", x: 14.6, y: 9.6, w: 2, h: 4.8, rx: 0.7, c: L },
+  ],
+  Art: [
+    { t: "p", d: "M6.2 16.4c0-4.4 2.6-8.4 6.2-8.4 1.6 0 2.4 1.2 2.4 2.4 0 2.2-2.6 2.6-2.6 4.4 0 1.2.8 2 2 2 2.8 0 5.2-3.2 5.2-7.2", c: P },
+    { t: "c", cx: 9.2, cy: 12.2, r: 0.85, c: L, fill: true },
+    { t: "c", cx: 12.4, cy: 10.4, r: 0.75, c: U, fill: true },
+    { t: "c", cx: 11.2, cy: 14.8, r: 0.75, c: U, fill: true },
+    { t: "p", d: "M16.4 8.4l3.2-3.4", c: L },
+  ],
+  Photography: [
+    { t: "r", x: 4.4, y: 8.2, w: 15.2, h: 10.4, rx: 2.4, c: U },
+    { t: "c", cx: 12, cy: 13.4, r: 3.4, c: P },
+    { t: "c", cx: 12, cy: 13.4, r: 1.3, c: L },
+    { t: "r", x: 7.6, y: 6.2, w: 3.2, h: 2, rx: 0.7, c: L },
+    { t: "c", cx: 17.2, cy: 10.4, r: 0.7, c: P, fill: true },
+  ],
+  Pets: [
+    { t: "c", cx: 12, cy: 14.4, r: 3.6, c: P },
+    { t: "c", cx: 6.8, cy: 10.2, r: 1.7, c: L },
+    { t: "c", cx: 17.2, cy: 10.2, r: 1.7, c: L },
+    { t: "c", cx: 8.8, cy: 7.2, r: 1.35, c: U },
+    { t: "c", cx: 15.2, cy: 7.2, r: 1.35, c: U },
+  ],
+  Dance: [
+    { t: "c", cx: 13.2, cy: 5.8, r: 1.8, c: L },
+    { t: "p", d: "M12.8 7.8l-2.6 5.6 4 1.4", c: P },
+    { t: "p", d: "M10.2 13.4 6.4 18.2M14.2 14.8l3.8 3.4", c: U },
+    { t: "p", d: "M10.8 10.2l5-1.4", c: P },
+  ],
+  Nightlife: [
+    { t: "p", d: "M8.2 5.4h7.6L14.2 13H9.8z", c: P },
+    { t: "p", d: "M12 13v5.4", c: U },
+    { t: "p", d: "M9.2 18.4h5.6", c: L },
+    { t: "c", cx: 13.6, cy: 9.2, r: 0.7, c: L, fill: true },
+    { t: "p", d: "M15.8 5.8l2.4-1.6", c: U },
+  ],
+  Reading: [
+    { t: "p", d: "M12 7.2c-1.8-1.4-4.2-1.8-6.4-.8v10.6c2.4-1.2 4.8-.8 6.4.8", c: P },
+    { t: "p", d: "M12 7.2c1.8-1.4 4.2-1.8 6.4-.8v10.6c-2.4-1.2-4.8-.8-6.4.8", c: U },
+    { t: "p", d: "M12 7.2v10.6", c: L },
+  ],
+  Tech: [
+    { t: "r", x: 4.4, y: 6.2, w: 15.2, h: 9.6, rx: 1.8, c: U },
+    { t: "p", d: "M8.4 18.8h7.2M12 15.8v3", c: P },
+    { t: "p", d: "M7.4 10.4h9.2", c: L },
+  ],
+  Nature: [
+    { t: "p", d: "M4.6 18.2 10.4 8.4l2.8 4.6 2-3.4 4.2 8.6", c: U },
+    { t: "p", d: "M9.2 18.2c-2.8-3.2-3.2-7.2-1.2-9.6 3.2.6 4.8 3.8 4 7", c: P },
+  ],
+  Cooking: [
+    { t: "p", d: "M7.4 10.4h9.2v2.2c0 1.6-1.8 2.6-4.6 2.6s-4.6-1-4.6-2.6z", c: P },
+    { t: "p", d: "M8.6 10.4c0-3.2 1.4-5.4 3.4-5.4s3.4 2.2 3.4 5.4", c: L },
+    { t: "p", d: "M12 15.2v4.2", c: U },
+    { t: "p", d: "M9.6 19.4h4.8", c: U },
+  ],
+  Flirting: [
+    { t: "c", cx: 11.2, cy: 12, r: 6.6, c: P },
+    { t: "p", d: "M8.2 10.6c.7-.9 1.6-1.2 2.4-.2", c: L },
+    { t: "c", cx: 14, cy: 10.6, r: 0.7, c: L, fill: true },
+    { t: "p", d: "M8.8 13.8c.9 1.4 1.8 2 2.8 2s1.8-.6 2.6-1.8", c: U },
+    { t: "p", d: "M16.4 9.2c0-1.4.9-2.2 2-2.2s2.1.9 2.1 2.2c0 1.6-2.1 3.2-2.1 3.2S16.4 10.8 16.4 9.2z", c: P },
+  ],
+  Comedy: [
+    { t: "c", cx: 8.4, cy: 12, r: 5.4, c: P },
+    { t: "c", cx: 16.2, cy: 12.4, r: 4.8, c: U },
+    { t: "p", d: "M6.2 13.2c.8 1.4 1.6 2 2.4 2s1.5-.6 2.2-1.8", c: L },
+    { t: "p", d: "M14.2 14.2c.6-.9 1.3-1.3 2.1-1.3s1.4.4 2 .9", c: L },
+    { t: "c", cx: 6.8, cy: 10.4, r: 0.6, c: L, fill: true },
+    { t: "c", cx: 10, cy: 10.4, r: 0.6, c: L, fill: true },
+    { t: "c", cx: 14.8, cy: 11.2, r: 0.55, c: P, fill: true },
+    { t: "c", cx: 17.6, cy: 11.2, r: 0.55, c: P, fill: true },
+  ],
+  Cars: [
+    { t: "p", d: "M4.4 14.4h15.2l-1.5-4.4c-.4-1.2-1.4-2-2.6-2H8.6c-1.2 0-2.2.8-2.6 2z", c: P },
+    { t: "p", d: "M7.2 9.8l1.3-2.5h7l1.3 2.5", c: U },
+    { t: "c", cx: 8.2, cy: 16.4, r: 1.6, c: L },
+    { t: "c", cx: 15.8, cy: 16.4, r: 1.6, c: L },
+  ],
+  Anime: [
+    { t: "c", cx: 12, cy: 12.4, r: 6.8, c: U },
+    { t: "p", d: "M8.4 11.2l1.6-1.6 1.6 1.6M12.4 11.2l1.6-1.6 1.6 1.6", c: L },
+    { t: "c", cx: 9.4, cy: 11.8, r: 0.7, c: P, fill: true },
+    { t: "c", cx: 14.6, cy: 11.8, r: 0.7, c: P, fill: true },
+    { t: "p", d: "M9.2 14.8c.9 1.3 1.8 1.9 2.8 1.9s1.9-.6 2.8-1.9", c: P },
+  ],
+  Business: [
+    { t: "r", x: 5, y: 9.4, w: 14, h: 9, rx: 2, c: U },
+    { t: "p", d: "M9 9.4V7.8A2.2 2.2 0 0 1 11.2 5.6h1.6A2.2 2.2 0 0 1 15 7.8v1.6", c: P },
+    { t: "p", d: "M5 13.4h14", c: L },
+  ],
+  Spiritual: [
+    { t: "p", d: "M12 19.2c-3.6-2.2-6-5.4-6-8.4 0-2.4 1.6-3.8 3.4-3.8 1.2 0 2 .6 2.6 1.6.6-1 1.4-1.6 2.6-1.6 1.8 0 3.4 1.4 3.4 3.8 0 3-2.4 6.2-6 8.4z", c: P },
+    { t: "p", d: "M12 8.6V19", c: U },
+    { t: "p", d: "M8.4 11.4c1.2 1.6 2.4 2.4 3.6 2.4s2.4-.8 3.6-2.4", c: L },
+  ],
+};
 
 const CATEGORY_GLYPHS: Record<string, NeonEl[]> = {
   food: [
@@ -843,8 +993,11 @@ function categoryIdFor(tag: string): string | undefined {
 }
 
 export function InterestIcon({ tag, size = 16, className }: GlyphProps & { tag: string }) {
+  const key = interestIconKey(tag);
   const spec =
+    PILL_GLYPHS[key] ||
     TAG_GLYPHS[tag] ||
+    TAG_GLYPHS[key] ||
     (categoryIdFor(tag) ? CATEGORY_GLYPHS[categoryIdFor(tag)!] : undefined) ||
     SPARK_GLYPH;
   return <RenderGlyph spec={spec} size={size} className={className} />;

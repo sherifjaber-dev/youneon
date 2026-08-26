@@ -5,14 +5,16 @@ export type GiftArtId = GiftSoundId;
 export const GIFT_ACCENT: Record<GiftArtId, { a: string; b: string; c: string }> = {
   rose: { a: "#fb7185", b: "#e879f9", c: "#a855f7" },
   heart: { a: "#fb7185", b: "#f472b6", c: "#ec4899" },
-  bouquet: { a: "#f0abfc", b: "#c084fc", c: "#818cf8" },
-  diamond: { a: "#e0e7ff", b: "#c4b5fd", c: "#f5d0fe" },
+  bouquet: { a: "#c084fc", b: "#f472b6", c: "#818cf8" },
+  diamond: { a: "#67e8f9", b: "#c4b5fd", c: "#e0e7ff" },
   gift: { a: "#f9a8d4", b: "#a855f7", c: "#ec4899" },
   teddy: { a: "#e9d5ff", b: "#d8b4fe", c: "#f5d0fe" },
   naughty: { a: "#f43f5e", b: "#e11d48", c: "#a21caf" },
   funny: { a: "#fbbf24", b: "#f472b6", c: "#a855f7" },
-  beautiful: { a: "#f9a8d4", b: "#c4b5fd", c: "#e879f9" },
+  beautiful: { a: "#fde68a", b: "#f9a8d4", c: "#c4b5fd" },
   cool: { a: "#818cf8", b: "#c084fc", c: "#22d3ee" },
+  fire: { a: "#fb923c", b: "#f43f5e", c: "#fbbf24" },
+  rabbit: { a: "#f9a8d4", b: "#e879f9", c: "#c084fc" },
 };
 
 export function GiftArt({
@@ -85,16 +87,16 @@ export function GiftArt({
       )}
 
       {id === "bouquet" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined}>
-          <path d="M32 58c-1-8 0-16 0-22" fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" />
-          <path d="M32 42c-8 2-12 8-10 12 4-1 8-6 10-12z" fill={`url(#${g})`} opacity="0.42" />
-          <path d="M32 42c8 2 12 8 10 12-4-1-8-6-10-12z" fill={`url(#${g})`} opacity="0.42" />
-          <ellipse cx="22" cy="22" rx="8" ry="9.5" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.1" />
-          <ellipse cx="42" cy="22" rx="8" ry="9.5" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.1" />
-          <ellipse cx="32" cy="16" rx="8.5" ry="10" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.1" />
-          <circle cx="32" cy="16" r="2" fill="#fff" fillOpacity="0.55" />
-          <circle cx="22" cy="22" r="1.6" fill="#fff" fillOpacity="0.45" />
-          <circle cx="42" cy="22" r="1.6" fill="#fff" fillOpacity="0.45" />
+        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 38c-6.2-1.2-10-8.2-7.4-14.4C17.2 17.4 24 16 26.8 21.6 29 26.4 26.6 34.2 22 38z" fill={`url(#${g}-fill)`} />
+          <path d="M32 14c-6.4 0-10.6 7.6-7.2 14.2C28.2 35 36 36.2 39 30.2 41.6 24.8 38.4 14 32 14z" fill={`url(#${g}-fill)`} />
+          <path d="M44 38c6.2-1.2 10-8.2 7.4-14.4C48.8 17.4 42 16 39.2 21.6 37 26.4 39.4 34.2 44 38z" fill={`url(#${g}-fill)`} />
+          <path d="M22 38c2.4 6 6.6 12.5 10 18" />
+          <path d="M32 28.5V56" />
+          <path d="M44 38c-2.4 6-6.6 12.5-10 18" />
+          <circle cx="24" cy="24" r="1.5" fill="#fff" fillOpacity="0.55" stroke="none" />
+          <circle cx="30" cy="18" r="1.7" fill="#fff" fillOpacity="0.62" stroke="none" />
+          <circle cx="42" cy="24" r="1.5" fill="#fff" fillOpacity="0.55" stroke="none" />
         </g>
       )}
 
@@ -185,6 +187,33 @@ export function GiftArt({
           <path d="M19.2 29.4h8.2" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.4" strokeLinecap="round" />
           <path d="M36.6 29.4h8.2" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.4" strokeLinecap="round" />
           <path d="M24 42.5c3.4 3.2 12.6 3.2 16 0" fill="none" stroke="#2e1064" strokeWidth="1.8" strokeLinecap="round" />
+        </g>
+      )}
+
+      {id === "fire" && (
+        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+          <path
+            d="M32 58c-11.4 0-18.6-9.2-18.6-20.2 0-7.6 4.2-13.6 8.8-19.4 1.6 5.2 4.6 8.4 8.2 9.2-1.2-7.8 1.4-14.6 7.6-19.6 1.8 6.4 5.8 10.6 10.8 12.2 2.8 5.6 3.8 11.2 3.8 17.6C52.6 48.4 45.2 58 32 58z"
+            fill={`url(#${g}-fill)`}
+          />
+          <path d="M32 50c-6.2 0-10-5-10-11.2 0-4.2 2.2-7.6 4.8-10.8 1 3 2.8 4.8 5.2 5.2-.4-4.4 1.4-8.2 5.2-11 1.2 3.6 3.4 6 6.2 7 1.4 3.2 2 6.2 2 9.6 0 6.4-4.2 11.2-13.4 11.2z" fill="#fff" fillOpacity="0.22" />
+          <path d="M32 44c-3.4 0-5.6-2.8-5.6-6.2 0-2.4 1.2-4.4 2.6-6.2.6 1.8 1.6 2.8 3 3-.2-2.6 1-4.8 3.2-6.4.8 2.2 2.2 3.6 3.8 4.2.8 1.8 1.2 3.4 1.2 5.2 0 3.6-2.4 6.4-8.2 6.4z" fill="#fff" fillOpacity="0.4" stroke="none" />
+        </g>
+      )}
+
+      {id === "rabbit" && (
+        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 28c-2.4-14 2.2-22.5 7.2-22.5 3.2 0 5.2 4.8 4.4 14.2" />
+          <path d="M46 28c2.4-14-2.2-22.5-7.2-22.5-3.2 0-5.2 4.8-4.4 14.2" />
+          <path d="M20.4 16c-1.2-6.5 2.6-10 5-6.2M43.6 16c1.2-6.5-2.6-10-5-6.2" fill={`url(#${g}-fill)`} />
+          <circle cx="32" cy="36" r="16" fill={`url(#${g}-fill)`} />
+          <circle cx="25.6" cy="33.4" r="2.1" fill="#2e1064" stroke="none" />
+          <circle cx="38.4" cy="33.4" r="2.1" fill="#2e1064" stroke="none" />
+          <circle cx="26.2" cy="32.7" r="0.7" fill="#fff" stroke="none" />
+          <circle cx="39" cy="32.7" r="0.7" fill="#fff" stroke="none" />
+          <ellipse cx="32" cy="38.4" rx="2.4" ry="1.7" fill="#2e1064" stroke="none" />
+          <path d="M27.2 43.2c1.8 2.4 7.8 2.4 9.6 0" stroke="#2e1064" strokeWidth="1.6" />
+          <path d="M48 22.5l4.2-4.2M50.6 24.8l3.4.2M50.2 20.2l1.8-3" strokeWidth="1.5" />
         </g>
       )}
     </svg>

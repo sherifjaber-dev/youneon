@@ -946,9 +946,9 @@ html.youneon-signed-in select {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(31, 31, 35, 0.32);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(4, 2, 10, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   pointer-events: auto;
 }
 
@@ -975,12 +975,13 @@ html.youneon-signed-in select {
   max-height: min(94dvh, 820px);
   overflow: hidden;
   border-radius: 28px 28px 0 0;
-  background: linear-gradient(180deg, #ffffff 0%, #F8F5FB 55%, var(--yn-bg) 100%);
-  border: 1px solid rgba(192, 38, 211, 0.12);
+  background: linear-gradient(180deg, #140a1f 0%, #07040f 55%, #05030a 100%);
+  border: 1px solid rgba(192, 132, 252, 0.28);
   border-bottom: 0;
+  color: #f5f0ff;
   box-shadow:
-    0 -18px 50px rgba(31, 31, 35, 0.12),
-    0 0 28px rgba(192, 38, 211, 0.06);
+    0 -18px 50px rgba(0, 0, 0, 0.45),
+    0 0 28px rgba(236, 72, 153, 0.12);
   animation: yn-remote-profile-in 0.28s ease forwards;
   pointer-events: auto;
 }
@@ -990,7 +991,7 @@ html.youneon-signed-in select {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
+  height: 22px;
   cursor: grab;
   touch-action: none;
   pointer-events: auto;
@@ -1003,17 +1004,17 @@ html.youneon-signed-in select {
 
 .yn-preview-handle {
   flex-shrink: 0;
-  width: 44px;
-  height: 5px;
+  width: 40px;
+  height: 4px;
   border-radius: 999px;
-  background: rgba(31, 31, 35, 0.18);
+  background: rgba(255, 255, 255, 0.28);
   pointer-events: none;
 }
 
-.yn-preview-close {
+.yn-preview-close,
+.yn-preview-more {
   position: absolute;
-  top: 8px;
-  right: 10px;
+  top: 28px;
   z-index: 80;
   pointer-events: auto;
   display: flex;
@@ -1022,19 +1023,64 @@ html.youneon-signed-in select {
   width: 40px;
   height: 40px;
   padding: 0;
-  border: 1px solid rgba(192, 38, 211, 0.18);
+  border: 0;
   border-radius: 50%;
-  color: var(--yn-text);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    0 4px 18px rgba(31, 31, 35, 0.1),
-    0 0 0 1px rgba(192, 38, 211, 0.08);
+  color: #fff;
+  background: rgba(8, 2, 16, 0.42);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-.yn-preview-close:active {
+.yn-preview-close {
+  left: 12px;
+}
+
+.yn-preview-more-wrap {
+  position: absolute;
+  top: 28px;
+  right: 12px;
+  z-index: 80;
+}
+
+.yn-preview-more {
+  position: relative;
+  top: 0;
+  right: 0;
+}
+
+.yn-preview-close:active,
+.yn-preview-more:active {
   transform: scale(0.94);
+}
+
+.yn-preview-more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 148px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  background: rgba(12, 6, 22, 0.96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.yn-preview-more-menu button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: #f5f0ff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.yn-preview-more-menu button.is-danger {
+  color: #fb7185;
 }
 
 .yn-preview-scroll {
@@ -1043,7 +1089,7 @@ html.youneon-signed-in select {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 16px 18px;
+  padding: 0 0 calc(18px + env(safe-area-inset-bottom, 0px));
 }
 
 .yn-preview-photo {
@@ -1052,8 +1098,7 @@ html.youneon-signed-in select {
   aspect-ratio: 1 / 1;
   max-height: min(52vh, 420px);
   overflow: hidden;
-  border-radius: 22px;
-  background: #EDE8F2;
+  background: #1a1024;
   cursor: pointer;
 }
 
@@ -1079,8 +1124,8 @@ html.youneon-signed-in select {
   position: absolute;
   z-index: 2;
   top: 10px;
-  left: 10px;
-  right: 10px;
+  left: 56px;
+  right: 56px;
   display: flex;
   gap: 4px;
 }
@@ -1101,8 +1146,9 @@ html.youneon-signed-in select {
 .yn-preview-online {
   position: absolute;
   z-index: 2;
-  top: 22px;
-  left: 10px;
+  left: 12px;
+  bottom: 12px;
+  top: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1111,14 +1157,10 @@ html.youneon-signed-in select {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  color: #4ade80;
+  color: #fff;
   background: rgba(8, 2, 16, 0.72);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-}
-
-.yn-preview-online.is-solo {
-  top: 10px;
 }
 
 .yn-preview-online-dot {
@@ -1130,24 +1172,29 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-body {
-  padding: 14px 2px 8px;
+  padding: 14px 18px 8px;
 }
 
 .yn-preview-name {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 1.45rem;
+  font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: var(--yn-text);
+  color: #fff;
 }
 
 .yn-preview-age {
   font-weight: 700;
-  color: var(--yn-muted);
+  color: #ff4ec8;
+  text-shadow: 0 0 12px rgba(255, 78, 200, 0.45);
+}
+
+.yn-preview-flag {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .yn-preview-badge {
@@ -1166,7 +1213,16 @@ html.youneon-signed-in select {
   gap: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--yn-muted);
+  color: rgba(245, 240, 255, 0.88);
+}
+
+.yn-preview-location {
+  color: #fff;
+}
+
+.yn-preview-location svg {
+  color: #ff4ec8;
+  filter: drop-shadow(0 0 6px rgba(255, 78, 200, 0.55));
 }
 
 .yn-preview-gender-mark {
@@ -1177,14 +1233,18 @@ html.youneon-signed-in select {
 
 .yn-preview-id-icon {
   display: inline-flex;
-  color: var(--yn-muted);
+  color: rgba(185, 168, 201, 0.9);
+}
+
+.yn-preview-code-label {
+  color: rgba(185, 168, 201, 0.75);
 }
 
 .yn-preview-code-value {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
   letter-spacing: 0.02em;
-  color: var(--yn-text);
+  color: #fff;
 }
 
 .yn-preview-copy {
@@ -1195,7 +1255,13 @@ html.youneon-signed-in select {
   height: 32px;
   margin-left: auto;
   border-radius: 8px;
-  color: var(--yn-muted);
+  color: rgba(185, 168, 201, 0.9);
+}
+
+.yn-preview-cta {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 6px;
 }
 
 .yn-preview-section {
@@ -1204,9 +1270,13 @@ html.youneon-signed-in select {
 
 .yn-preview-section h3 {
   margin: 0 0 10px;
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--yn-text);
+  color: #ff4ec8;
+  text-shadow: 0 0 10px rgba(255, 78, 200, 0.35);
 }
 
 .yn-preview-tags {
@@ -1215,90 +1285,87 @@ html.youneon-signed-in select {
   gap: 8px;
 }
 
+.yn-preview-tags.is-pills {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.yn-preview-tags.is-pills::-webkit-scrollbar {
+  display: none;
+}
+
 .yn-preview-tag {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
   height: 34px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(192, 38, 211, 0.12);
-  background: #F8F5FB;
   font-size: 13px;
   font-weight: 500;
-  color: var(--yn-text);
+  color: #fff;
+}
+
+.yn-preview-tag.is-interest {
+  background: rgba(12, 6, 22, 0.7);
+  border: 1px solid rgba(192, 132, 252, 0.55);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.18);
+}
+
+.yn-preview-tag.is-interest:nth-child(3n+2) {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.16);
+}
+
+.yn-preview-tag.is-interest:nth-child(3n) {
+  border-color: rgba(244, 114, 182, 0.6);
+  box-shadow: 0 0 10px rgba(244, 114, 182, 0.18);
+}
+
+.yn-preview-tag.is-lang {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .yn-preview-about {
   min-height: 52px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: #F8F5FB;
-  border: 1px solid rgba(31, 31, 35, 0.06);
+  background: rgba(18, 10, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 14px;
   line-height: 1.5;
-  color: var(--yn-muted);
+  color: rgba(245, 240, 255, 0.92);
   white-space: pre-wrap;
 }
 
-.yn-preview-reactions {
-  border-radius: 16px;
-  border: 1px solid rgba(31, 31, 35, 0.08);
-  background: var(--yn-card);
-  overflow: hidden;
-}
-
-.yn-preview-reactions-sum {
-  margin: 0;
+.yn-preview-rx-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--yn-text);
-}
-
-.yn-preview-smile {
-  display: inline-flex;
-  width: 28px;
-  height: 28px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #c084fc, #ec4899);
-}
-
-.yn-preview-reactions ul {
-  margin: 0;
-  padding: 8px 12px 12px;
-  list-style: none;
-  background: #F8F5FB;
-}
-
-.yn-preview-reactions li {
-  display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  min-height: 36px;
-  font-size: 14px;
-  color: var(--yn-muted);
+  gap: 2px;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+  scrollbar-width: none;
 }
 
-.yn-preview-actions {
-  flex-shrink: 0;
-  padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid rgba(31, 31, 35, 0.06);
-  background: rgba(255, 255, 255, 0.96);
+.yn-preview-rx-row::-webkit-scrollbar {
+  display: none;
 }
 
-.yn-preview-actions-row {
+.yn-preview-rx {
   display: flex;
-  gap: 8px;
-}
-
-.yn-preview-actions-row + .yn-preview-actions-row {
-  margin-top: 8px;
+  min-width: 32px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
 }
 
 .yn-preview-btn {
@@ -1307,10 +1374,10 @@ html.youneon-signed-in select {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 44px;
+  height: 46px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: #fff;
 }
 
@@ -1319,26 +1386,22 @@ html.youneon-signed-in select {
 }
 
 .yn-preview-btn.is-primary {
-  background: linear-gradient(90deg, #7c3aed, #ec4899);
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.32);
+  background: #ff4ec8;
+  box-shadow: 0 4px 18px rgba(255, 78, 200, 0.42);
 }
 
 .yn-preview-btn.is-message {
-  background: #fdf2f8;
-  border: 1px solid rgba(219, 39, 119, 0.22);
-  color: #9d174d;
+  background: rgba(18, 10, 28, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .yn-preview-btn.is-ghost {
-  background: #F8F5FB;
-  border: 1px solid rgba(31, 31, 35, 0.1);
-  color: var(--yn-text);
-}
-
-.yn-preview-btn.is-danger {
-  background: #fff1f2;
-  border: 1px solid rgba(244, 63, 94, 0.28);
-  color: #be123c;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
 }
 
 .yn-preview-report {
@@ -1602,6 +1665,47 @@ html.youneon-signed-in select {
   box-shadow:
     0 16px 40px rgba(8, 4, 18, 0.55),
     0 0 22px rgba(168, 85, 247, 0.28);
+}
+
+.yn-chat-rx-picker {
+  position: fixed;
+  left: 50%;
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  width: min(calc(100% - 16px), 360px);
+  transform: translateX(-50%);
+  padding: 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  background: #12081c;
+  box-shadow:
+    0 16px 40px rgba(8, 4, 18, 0.55),
+    0 0 22px rgba(168, 85, 247, 0.28);
+}
+
+.yn-chat-rx-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(192, 132, 252, 0.22);
+}
+
+.yn-chat-rx-tile:active {
+  transform: scale(0.94);
+  background: rgba(236, 72, 153, 0.16);
+}
+
+.yn-chat-rx-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
 }
 
 .yn-smiley-picker-title {
@@ -1933,9 +2037,9 @@ html.youneon-signed-in select {
   flex-shrink: 0;
 }
 
-.yn-preview-reactions .yn-gift-art {
-  width: 20px;
-  height: 20px;
+.yn-preview-rx .yn-gift-art {
+  width: 22px;
+  height: 22px;
 }
 
 .yn-neon-glyph {
@@ -1950,16 +2054,6 @@ html.youneon-signed-in select {
 .yn-interest-chip .yn-neon-glyph {
   width: 15px;
   height: 15px;
-}
-
-.yn-preview-reactions li {
-  gap: 10px;
-}
-
-.yn-preview-reactions li > span:first-child {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .yn-chrome {

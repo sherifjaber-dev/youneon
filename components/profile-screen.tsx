@@ -47,7 +47,7 @@ export function ProfileScreen() {
     { name: "Rose", emoji: "🌹" },
     { name: "Naughty", emoji: "😏" },
     { name: "Beautiful", emoji: "✨" },
-    { name: "Cool", emoji: "😎" },
+    { name: "Fire", emoji: "🔥" },
   ];
 
   useEffect(() => {

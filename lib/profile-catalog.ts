@@ -250,16 +250,16 @@ export function languageLabel(id: string): string {
 }
 
 export const REACTION_TYPES = [
-  { id: "Awesome", emoji: "👍" },
-  { id: "Funny", emoji: "😂" },
-  { id: "Friendly", emoji: "🙌" },
-  { id: "Magic Rabbit", emoji: "🪄" },
-  { id: "WOW", emoji: "😲" },
-  { id: "Charming", emoji: "❤️" },
-  { id: "Rose", emoji: "🌹" },
-  { id: "Naughty", emoji: "😏" },
-  { id: "Beautiful", emoji: "✨" },
-  { id: "Cool", emoji: "😎" },
+  { id: "Awesome", emoji: "🎁", giftId: "gift" },
+  { id: "Funny", emoji: "😂", giftId: "funny" },
+  { id: "Friendly", emoji: "🎈", giftId: "bouquet" },
+  { id: "Magic Rabbit", emoji: "🐰", giftId: "rabbit" },
+  { id: "WOW", emoji: "💎", giftId: "diamond" },
+  { id: "Charming", emoji: "❤️", giftId: "heart" },
+  { id: "Rose", emoji: "🌹", giftId: "rose" },
+  { id: "Naughty", emoji: "😈", giftId: "naughty" },
+  { id: "Beautiful", emoji: "✨", giftId: "beautiful" },
+  { id: "Fire", emoji: "🔥", giftId: "fire" },
 ] as const;
 
 export type ReactionId = (typeof REACTION_TYPES)[number]["id"];
@@ -270,30 +270,55 @@ export const EMPTY_REACTIONS: Record<string, number> = Object.fromEntries(
 
 /** Map in-call gift ids onto reaction rows. Unmapped types stay at 0. */
 export const GIFT_TO_REACTION: Record<string, ReactionId> = {
-  rose: "Rose",
-  heart: "Charming",
-  bouquet: "Friendly",
-  diamond: "WOW",
   gift: "Awesome",
-  teddy: "Funny",
-  naughty: "Naughty",
   funny: "Funny",
+  teddy: "Funny",
+  bouquet: "Friendly",
+  rabbit: "Magic Rabbit",
+  diamond: "WOW",
+  heart: "Charming",
+  rose: "Rose",
+  naughty: "Naughty",
   beautiful: "Beautiful",
-  cool: "Cool",
+  fire: "Fire",
+  cool: "Fire",
 };
 
 /** Shared glyph map: profile reaction rows use the matching in-call gift SVG. */
 export const REACTION_TO_GIFT: Partial<Record<ReactionId, GiftSoundId>> = {
-  Rose: "rose",
-  Charming: "heart",
-  Friendly: "bouquet",
-  WOW: "diamond",
   Awesome: "gift",
   Funny: "funny",
+  Friendly: "bouquet",
+  "Magic Rabbit": "rabbit",
+  WOW: "diamond",
+  Charming: "heart",
+  Rose: "rose",
   Naughty: "naughty",
   Beautiful: "beautiful",
-  Cool: "cool",
+  Fire: "fire",
 };
+
+/** Catalog tags that share a profile-pill icon with one of the 24 mockup interests. */
+const INTEREST_ICON_ALIASES: Record<string, string> = {
+  dancing: "Dance",
+  dance: "Dance",
+  "going out": "Nightlife",
+  parties: "Nightlife",
+  nightlife: "Nightlife",
+  books: "Reading",
+  reading: "Reading",
+  technology: "Tech",
+  tech: "Tech",
+  meditation: "Spiritual",
+  astrology: "Spiritual",
+  spiritual: "Spiritual",
+};
+
+export function interestIconKey(tag: string): string {
+  const trimmed = tag.trim();
+  if (!trimmed) return trimmed;
+  return INTEREST_ICON_ALIASES[trimmed.toLowerCase()] || trimmed;
+}
 
 export type CompletenessInput = {
   profilePicture?: string;
@@ -356,12 +381,18 @@ export function nameChangesLeft(
   return Math.max(0, NAME_CHANGES_PER_MONTH - used);
 }
 
+function countOne(map: Record<string, number> | undefined, id: string): number {
+  const n = map?.[id];
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
 export function reactionCount(
   map: Record<string, number> | undefined,
   id: string
 ): number {
-  const n = map?.[id];
-  return typeof n === "number" && Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+  let n = countOne(map, id);
+  if (id === "Fire") n += countOne(map, "Cool");
+  return n;
 }
 
 export function totalReactions(map?: Record<string, number>): number {

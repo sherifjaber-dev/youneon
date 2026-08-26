@@ -14,37 +14,47 @@ export interface CallGift {
 }
 
 export const CALL_GIFTS: CallGift[] = [
+  { id: "gift", emoji: "🎁", label: "Awesome", tagline: "Wrapped in neon" },
+  { id: "funny", emoji: "😂", label: "Funny", tagline: "Can't stop laughing" },
+  { id: "bouquet", emoji: "🎈", label: "Friendly", tagline: "A bunch of balloons" },
+  { id: "rabbit", emoji: "🐰", label: "Magic Rabbit", tagline: "A little magic" },
+  { id: "diamond", emoji: "💎", label: "WOW", tagline: "Cut to catch light" },
+  { id: "heart", emoji: "❤️", label: "Charming", tagline: "A quiet spark" },
   { id: "rose", emoji: "🌹", label: "Rose", tagline: "A velvet bloom" },
-  { id: "heart", emoji: "❤️", label: "Heart", tagline: "A quiet spark" },
-  { id: "bouquet", emoji: "💐", label: "Bouquet", tagline: "A full flourish" },
-  { id: "diamond", emoji: "💎", label: "Diamond", tagline: "Cut to catch light" },
-  { id: "gift", emoji: "🎁", label: "Gift", tagline: "Wrapped in neon" },
-  { id: "teddy", emoji: "🧸", label: "Teddy", tagline: "Soft and lasting" },
-  { id: "naughty", emoji: "😏", label: "Naughty", tagline: "Fræk" },
-  { id: "funny", emoji: "😂", label: "Funny", tagline: "Sjov" },
-  { id: "beautiful", emoji: "✨", label: "Beautiful", tagline: "Smuk" },
-  { id: "cool", emoji: "😎", label: "Cool", tagline: "Awesome" },
+  { id: "naughty", emoji: "😈", label: "Naughty", tagline: "A little devil" },
+  { id: "beautiful", emoji: "✨", label: "Beautiful", tagline: "Catch the sparkle" },
+  { id: "fire", emoji: "🔥", label: "Fire", tagline: "Too hot" },
 ];
+
+const LEGACY_GIFT_IDS: Record<string, GiftId> = {
+  cool: "fire",
+  teddy: "funny",
+};
 
 const EMOJI_TO_ID: Record<string, GiftId> = {
   "🌹": "rose",
   "❤️": "heart",
   "❤": "heart",
   "💐": "bouquet",
+  "🎈": "bouquet",
   "💎": "diamond",
   "🎁": "gift",
-  "🧸": "teddy",
+  "🧸": "funny",
   "😏": "naughty",
   "😈": "naughty",
   "😂": "funny",
   "✨": "beautiful",
   "😍": "beautiful",
-  "😎": "cool",
+  "😎": "fire",
+  "🔥": "fire",
+  "🐰": "rabbit",
+  "🐇": "rabbit",
 };
 
 export function resolveGiftId(giftId?: unknown, emoji?: unknown): GiftId | null {
-  const id = String(giftId || "");
-  if (CALL_GIFTS.some((g) => g.id === id)) return id as GiftId;
+  const raw = String(giftId || "");
+  if (LEGACY_GIFT_IDS[raw]) return LEGACY_GIFT_IDS[raw];
+  if (CALL_GIFTS.some((g) => g.id === raw)) return raw as GiftId;
   const fromEmoji = EMOJI_TO_ID[String(emoji || "")];
   return fromEmoji || null;
 }
@@ -178,6 +188,29 @@ export function GiftPickerPanel({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function ChatReactionPicker({
+  onSelect,
+}: {
+  onSelect: (gift: CallGift) => void;
+}) {
+  return (
+    <div className="yn-chat-rx-picker" role="listbox" aria-label="Send a reaction">
+      {CALL_GIFTS.map((g) => (
+        <button
+          key={g.id}
+          type="button"
+          onClick={() => onSelect(g)}
+          className="yn-chat-rx-tile"
+          data-testid={`chat-rx-${g.id}`}
+          aria-label={`Send ${g.label}`}
+        >
+          <GiftArt id={g.id} size={28} variant="pick" instance={`chat-${g.id}`} />
+        </button>
+      ))}
     </div>
   );
 }
