@@ -2482,46 +2482,65 @@ html.yn-profile-open {
 .yn-start-caption {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 6px;
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
-}
-.yn-start-caption::before,
-.yn-start-caption::after {
-  content: "";
-  flex: 1 1 0;
-  height: 1px;
-  background: rgba(192, 132, 252, 0.38);
-}
-.yn-start-caption::before {
-  background: linear-gradient(90deg, transparent, rgba(192, 132, 252, 0.42));
-}
-.yn-start-caption::after {
-  background: linear-gradient(90deg, rgba(192, 132, 252, 0.42), transparent);
+  color: #9b8bb8;
 }
 .yn-start-caption-world {
-  color: #c4b5fd;
+  color: #9b8bb8;
   font-weight: 500;
 }
 .yn-start-caption-free {
-  color: #f472d0;
+  color: var(--pink-text);
   font-weight: 700;
 }
 
 .yn-premium-card {
   display: flex;
   align-items: center;
-  border-radius: 18px;
-  border: 1.5px solid rgba(245, 215, 110, 0.72);
-  background: linear-gradient(180deg, #1a1408 0%, #0c0616 100%);
-  padding: 12px 12px 12px 14px;
-  box-shadow:
-    0 0 22px rgba(212, 175, 55, 0.38),
-    0 0 40px rgba(212, 175, 55, 0.16);
+  border-radius: 16px;
+  border: 1px solid #e0b84a;
+  background: #0c0616;
+  padding: 12px 10px 12px 14px;
+  box-shadow: 0 0 16px rgba(224, 184, 74, 0.22);
+}
+.yn-premium-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #e0b84a;
+}
+.yn-premium-kicker-icon {
+  flex-shrink: 0;
+  color: #e0b84a;
+}
+.yn-premium-headline {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #e0b84a;
+}
+.yn-premium-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: #b8a9c9;
+}
+.yn-premium-gift {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 0 10px rgba(176, 38, 255, 0.55));
 }
 
 .yn-bottom-nav {
@@ -2633,14 +2652,15 @@ html.yn-profile-open {
 }
 
 .yn-see-premium {
-  height: 30px;
-  border-radius: 999px;
-  padding: 0 12px;
-  font-size: 12px;
+  height: 36px;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #1a1408;
-  background-image: linear-gradient(90deg, #f5d76e, #f6e27a);
-  box-shadow: 0 0 12px rgba(245, 215, 110, 0.45);
+  background: #e0b84a;
+  box-shadow: none;
+  gap: 2px;
 }
 
 .yn-premium-interstitial {

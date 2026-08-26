@@ -6,7 +6,7 @@ import { db } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AdInterstitial } from "@/components/ad-placements";
 import { CountryLabel } from "@/components/country-flag";
-import { PremiumGem } from "@/components/premium-gem";
+import { GiftArt } from "@/components/icons/gift-art";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
@@ -207,48 +207,40 @@ export function DiscoverScreen({
           <Video className="yn-start-cta-icon" strokeWidth={2.15} aria-hidden />
           Start Random Chat
         </button>
-        {isPremium ? (
-          <p className="mt-2 text-center text-[12px] font-medium text-[#c4b5d8]">
-            Priority matching · filters included
-          </p>
-        ) : totalCost > 0 ? (
-          <p className="mt-2 text-center text-[12px] font-medium text-[#c4b5d8]">
-            ◆ {totalCost} Neon · first chat is free
-          </p>
-        ) : (
-          <p className="yn-start-caption">
-            <span className="yn-start-caption-world">Matching worldwide</span>
-            {" · "}
-            <span className="yn-start-caption-free">Free</span>
-          </p>
-        )}
-      </div>
-
-      {!isPremium && (
+        <p className="yn-start-caption">
+          <span aria-hidden>•</span>
+          <span className="yn-start-caption-world">Matching worldwide</span>
+          <span className="yn-start-caption-free">Free</span>
+          <span aria-hidden>•</span>
+        </p>
         <button
           type="button"
           onClick={() => onOpenNeonShop?.()}
-          className="yn-premium-card flex-shrink-0 text-left"
+          className="yn-premium-card mt-2.5 w-full flex-shrink-0 text-left"
+          data-testid="sponsored-premium-card"
+          aria-label="See Premium"
         >
           <div className="min-w-0 flex-1 pr-2">
-            <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f5d76e] drop-shadow-[0_0_8px_rgba(245,215,110,0.55)]">
-              <Crown size={12} className="text-[#f5d76e] drop-shadow-[0_0_8px_rgba(245,215,110,0.7)]" />
+            <p className="yn-premium-kicker">
+              <Crown size={12} className="yn-premium-kicker-icon" />
               Sponsored · YouNeon Premium
             </p>
-            <p className="mt-1 text-[15px] font-bold leading-snug text-[#f5d76e] drop-shadow-[0_0_10px_rgba(245,215,110,0.45)]">
-              Unlock Premium Features,
-            </p>
-            <p className="mt-0.5 text-[11px] leading-snug text-[#b8a9c9]">
-              Better matches, HD quality, and no waiting.
-            </p>
-            <span className="yn-see-premium mt-2.5 inline-flex items-center gap-1">
+            <p className="yn-premium-headline">Unlock Premium Features,</p>
+            <p className="yn-premium-sub">Better matches, HD quality, and no waiting.</p>
+            <span className="yn-see-premium mt-2.5 inline-flex items-center">
               See Premium
-              <ChevronRight size={14} className="text-[#1a1408]" />
+              <ChevronRight size={14} strokeWidth={2.6} className="text-[#1a1408]" />
             </span>
           </div>
-          <PremiumGem className="h-[72px] w-[64px] shrink-0" />
+          <GiftArt
+            id="diamond"
+            size={88}
+            variant="pick"
+            instance="sponsored-premium"
+            className="yn-premium-gift shrink-0"
+          />
         </button>
-      )}
+      </div>
 
       {!isPremium && privacy.advertising && (
         <AdInterstitial ads={adItems} onSubscribe={onOpenNeonShop} />
