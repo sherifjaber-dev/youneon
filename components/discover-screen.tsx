@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, Crown, Globe } from "lucide-react";
+import { ChevronDown, ChevronRight, Crown, Globe, Video } from "lucide-react";
 import { db } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AdInterstitial } from "@/components/ad-placements";
@@ -204,11 +204,8 @@ export function DiscoverScreen({
           data-testid="start-random-chat-btn"
           aria-label="Start Random Chat"
         >
-          <img
-            src="/youneon/start-random-chat.png"
-            alt="Start Random Chat"
-            draggable={false}
-          />
+          <Video className="yn-start-cta-icon" strokeWidth={2.15} aria-hidden />
+          Start Random Chat
         </button>
         {isPremium ? (
           <p className="mt-2 text-center text-[12px] font-medium text-[#c4b5d8]">
@@ -219,8 +216,10 @@ export function DiscoverScreen({
             ◆ {totalCost} Neon · first chat is free
           </p>
         ) : (
-          <p className="mt-2 text-center text-[12px] font-medium text-[#b9a8c9]">
-            • Matching worldwide · <span className="font-semibold text-white">Free</span> •
+          <p className="yn-start-caption">
+            <span className="yn-start-caption-world">Matching worldwide</span>
+            {" · "}
+            <span className="yn-start-caption-free">Free</span>
           </p>
         )}
       </div>
