@@ -18,7 +18,7 @@ import { ReactionIcon } from "@/components/icons/reaction-icons";
 import { PremiumBadge } from "@/components/premium-badge";
 import { ProfileInterestsPage } from "@/components/profile-interests-page";
 import { ProfileSettingsSheet } from "@/components/profile-settings-sheet";
-import { ProfilePreviewSheet } from "@/components/call-remote-profile";
+import { acquireProfileChromeLock, ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { compressImageFile } from "@/lib/compress-image";
 import { CountryLabel } from "@/components/country-flag";
 import { COUNTRY_OPTIONS, isCountryOption } from "@/lib/countries";
@@ -281,6 +281,11 @@ export function ProfileEditModal({
     setShowPreview(false);
   }, [isOpen, currentUser]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    return acquireProfileChromeLock();
+  }, [isOpen]);
+
   const persist = async (next: ProfileSavePayload) => {
     if (!Number.isFinite(next.age) || next.age < AGE_MIN) {
       setError(`YouNeon is ${AGE_MIN}+. You cannot save an age under ${AGE_MIN}.`);
@@ -510,7 +515,7 @@ export function ProfileEditModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center bg-yn-bg">
+    <div className="fixed inset-0 z-[100] flex justify-center bg-yn-bg" data-testid="profile-editor">
       <div className="relative flex h-full w-full max-w-md flex-col">
         <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-black/6 px-2 pt-[env(safe-area-inset-top)]">
           <button
@@ -1053,7 +1058,7 @@ export function ProfileEditModal({
           userId={currentUsername}
           viewerId={currentUsername}
           seed={previewUser}
-          isSelf
+          mode="selfPreview"
           standalone
         />
       </div>

@@ -744,30 +744,19 @@ export function YouNeonApp() {
     : null;
 
   const profileOverlayOpen = !!profileOverlayId;
-  const ownProfileSeed: CloudUserProfile | undefined =
-    profileOverlayId && profileOverlayId === currentUserId
-      ? {
-          piUsername: displayUser.piUsername,
-          id: displayUser.id,
-          uid: displayUser.uid,
-          fullName: displayUser.fullName,
-          age: displayUser.age,
-          country: displayUser.country,
-          location: displayUser.location,
-          gender: displayUser.gender,
-          languages: displayUser.languages,
-          interests: displayUser.interests,
-          avatar: displayUser.avatar,
-          profilePicture: displayUser.profilePicture,
-          photos: displayUser.photos,
-          bio: displayUser.bio,
-          reactionsReceived: displayUser.reactionsReceived,
-          giftsReceivedCount: displayUser.giftsReceivedCount,
-        }
-      : undefined;
+  const chromeHidden = showProfileModal || profileOverlayOpen;
+  const openEditor = () => {
+    setProfileOverlayId(null);
+    setShowProfileModal(true);
+  };
   const openProfileOverlay = (userId?: string) => {
     const id = (userId || "").trim();
     if (!id) return;
+    if (id === currentUserId) {
+      openEditor();
+      return;
+    }
+    setShowProfileModal(false);
     setProfileOverlayId(id);
   };
 
@@ -840,14 +829,14 @@ export function YouNeonApp() {
 
   return (
     <div className={`min-h-dvh ${activeTab === "discover" || activeTab === "lounge" || activeTab === "messages" || activeTab === "history" ? "bg-[#05050d] text-white" : "bg-yn-bg text-yn-text"}`}>
-      {sessionUnverified && !profileOverlayOpen && (
+      {sessionUnverified && !chromeHidden && (
         <div className="fixed left-0 right-0 top-[calc(var(--yn-topbar-inner)+env(safe-area-inset-top))] z-40 bg-amber-100/95 px-3 py-1 text-center text-[11px] text-amber-950">
           Signed in. Pi account verification is still pending.
         </div>
       )}
-      {!profileOverlayOpen ? (
+      {!chromeHidden ? (
         <TopBar
-          onProfileClick={() => openProfileOverlay(currentUserId)}
+          onProfileClick={openEditor}
           neonBalance={neonBalance}
           onNeonClick={() => setShowNeonShop(true)}
           isPremium={isPremium}
@@ -930,18 +919,13 @@ export function YouNeonApp() {
           />
         )}
       </div>
-      {!profileOverlayOpen ? <BottomNav activeTab={activeTab} onTabChange={setActiveTab} /> : null}
+      {!chromeHidden ? <BottomNav activeTab={activeTab} onTabChange={setActiveTab} /> : null}
       <ProfilePreviewSheet
         open={profileOverlayOpen}
         onClose={() => setProfileOverlayId(null)}
         userId={profileOverlayId || undefined}
         viewerId={currentUserId}
-        seed={ownProfileSeed}
-        isSelf={!!profileOverlayId && profileOverlayId === currentUserId}
-        onEdit={() => {
-          setProfileOverlayId(null);
-          setShowProfileModal(true);
-        }}
+        mode="public"
         onMessage={(user) => {
           setProfileOverlayId(null);
           void handleOpenChat(user);

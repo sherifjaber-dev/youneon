@@ -25,6 +25,24 @@ import { playGiftSound } from "@/lib/gift-sounds";
 import { badgeFromUserDoc, submitUserReport, type ReportReasonId } from "@/lib/safety";
 import { blockUserForMe } from "@/lib/user-settings";
 
+/** Nested editor + public preview both need this class; ref-count so close-preview does not unhide chrome. */
+export function acquireProfileChromeLock() {
+  if (typeof document === "undefined") return () => {};
+  const html = document.documentElement;
+  const n = Number(html.dataset.ynProfileLocks || "0") + 1;
+  html.dataset.ynProfileLocks = String(n);
+  html.classList.add("yn-profile-open");
+  return () => {
+    const left = Math.max(0, Number(html.dataset.ynProfileLocks || "1") - 1);
+    if (left <= 0) {
+      delete html.dataset.ynProfileLocks;
+      html.classList.remove("yn-profile-open");
+    } else {
+      html.dataset.ynProfileLocks = String(left);
+    }
+  };
+}
+
 const NEON_ID_RE = /^YN-[A-Z0-9]{4}(?:-[A-Z0-9]{4})+$/i;
 
 function sanitizeDisplayName(name: string): string {
@@ -221,11 +239,11 @@ export function ProfilePreviewSheet({
   hint,
   dailyName,
   isSelf,
+  mode = "public",
   standalone: _standalone = false,
   onMessage,
   onReport,
   onBlock,
-  onEdit,
 }: {
   open: boolean;
   onClose: () => void;
@@ -235,11 +253,12 @@ export function ProfilePreviewSheet({
   hint?: CallPartnerHint | null;
   dailyName?: string;
   isSelf?: boolean;
+  /** public = other people; selfPreview = how others see me (no Edit / Follow / Message). */
+  mode?: "public" | "selfPreview";
   standalone?: boolean;
   onMessage?: (user: ProfileChatTarget) => void;
   onReport?: () => void;
   onBlock?: () => void;
-  onEdit?: () => void;
 }) {
   const [live, setLive] = useState<UserProfile | null>(null);
   const [online, setOnline] = useState(false);
@@ -253,7 +272,9 @@ export function ProfilePreviewSheet({
   const touchY = useRef<number | null>(null);
 
   const resolvedId = (userId || hint?.userId || seed?.id || seed?.uid || seed?.piUsername || "").trim();
-  const self = isSelf ?? (!!viewerId && !!resolvedId && viewerId === resolvedId);
+  const selfPreview = mode === "selfPreview";
+  const self =
+    selfPreview || (isSelf ?? (!!viewerId && !!resolvedId && viewerId === resolvedId));
 
   const followMe: FollowSnapshot = { id: viewerId || "" };
   const { followingIds, busyId, toggleFollow } = useFollowGraph(viewerId);
@@ -319,12 +340,11 @@ export function ProfilePreviewSheet({
 
   useEffect(() => {
     if (!open) return;
-    const html = document.documentElement;
-    html.classList.add("yn-profile-open");
+    const unlock = acquireProfileChromeLock();
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      html.classList.remove("yn-profile-open");
+      unlock();
       document.body.style.overflow = prevOverflow;
     };
   }, [open]);
@@ -469,6 +489,7 @@ export function ProfilePreviewSheet({
       aria-modal="true"
       aria-labelledby="yn-preview-name"
       data-testid="profile-preview-sheet"
+      data-profile-mode={selfPreview || self ? "selfPreview" : "public"}
     >
       <div className="yn-preview-sheet">
         <div className="yn-preview-scroll">
@@ -619,21 +640,8 @@ export function ProfilePreviewSheet({
               </p>
             ) : null}
 
-            {self ? (
-              <div className="yn-preview-cta">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onEdit) onEdit();
-                    else onClose();
-                  }}
-                  className="yn-preview-btn is-primary is-edit"
-                >
-                  Edit
-                </button>
-              </div>
-            ) : (
-              <div className="yn-preview-cta">
+            {self ? null : (
+              <div className="yn-preview-cta" data-testid="profile-preview-actions">
                 <button
                   type="button"
                   disabled={!viewerId || !resolvedId || busyId === resolvedId}
@@ -758,7 +766,7 @@ export function RemoteProfileModal({
   onBlock,
   onMessage,
   isSelf,
-  onEdit,
+  mode,
 }: {
   open: boolean;
   onClose: () => void;
@@ -771,7 +779,7 @@ export function RemoteProfileModal({
   onBlock?: () => void;
   onMessage?: (user: ProfileChatTarget) => void;
   isSelf?: boolean;
-  onEdit?: () => void;
+  mode?: "public" | "selfPreview";
 }) {
   return (
     <ProfilePreviewSheet
@@ -783,11 +791,11 @@ export function RemoteProfileModal({
       hint={hint}
       dailyName={dailyName}
       isSelf={isSelf}
+      mode={mode}
       standalone={standalone}
       onMessage={onMessage}
       onReport={onReport}
       onBlock={onBlock}
-      onEdit={onEdit}
     />
   );
 }
