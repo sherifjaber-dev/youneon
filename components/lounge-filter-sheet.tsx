@@ -77,18 +77,14 @@ export function LoungeFilterSheet({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end bg-black/55 backdrop-blur-[4px]"
-      onClick={onClose}
-    >
+    <div className="yn-lounge-sheet-overlay fixed inset-0 z-[60] flex items-end" onClick={onClose}>
       <div
-        className="flex max-h-[88dvh] w-full flex-col rounded-t-[28px] border-t border-[#a855f7]/35 px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-2 text-[#f5f0ff] shadow-[0_-16px_40px_rgba(88,28,135,0.4)]"
-        style={{ background: "linear-gradient(180deg, #160c22 0%, #0b0614 100%)" }}
+        className="yn-lounge-sheet flex max-h-[88dvh] w-full flex-col px-5 pb-[calc(18px+env(safe-area-inset-bottom))] pt-2"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Filter"
       >
-        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-[#c084fc]/35" />
+        <div className="yn-lounge-sheet-handle" />
 
         {picker ? (
           <>
@@ -114,7 +110,7 @@ export function LoungeFilterSheet({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search"
-                className="h-11 w-full rounded-full border border-[#a855f7]/28 bg-[#07040f] pl-10 pr-4 text-[14px] text-[#f5f0ff] outline-none placeholder:text-[#8b8098] focus:border-[#c084fc] focus:shadow-[0_0_12px_rgba(168,85,247,0.35)]"
+                className="yn-lounge-sheet-search h-11 w-full rounded-full pl-10 pr-4 text-[14px] outline-none placeholder:text-[#8b8098]"
               />
             </div>
             <div className="mt-2 min-h-0 flex-1 overflow-y-auto pb-2">
@@ -133,7 +129,7 @@ export function LoungeFilterSheet({
                       );
                       setPicker(null);
                     }}
-                    className="flex h-12 w-full items-center justify-between border-b border-[#a855f7]/18 text-left"
+                    className="yn-lounge-sheet-row flex h-12 w-full items-center justify-between text-left"
                   >
                     <span className={`flex min-w-0 items-center text-[15px] ${selected ? "font-semibold text-white" : "text-[#b9a8c9]"}`}>
                       {picker === "country" && value !== "All" ? (
@@ -142,9 +138,7 @@ export function LoungeFilterSheet({
                         value
                       )}
                     </span>
-                    {selected ? (
-                      <span className="h-2.5 w-2.5 rounded-full bg-[#ff4ec8] shadow-[0_0_10px_rgba(255,78,200,0.7)]" />
-                    ) : null}
+                    {selected ? <span className="yn-lounge-sheet-dot" /> : null}
                   </button>
                 );
               })}
@@ -154,9 +148,7 @@ export function LoungeFilterSheet({
           <>
             <h3 className="text-[26px] font-bold tracking-tight text-white">Filter</h3>
 
-            <p className="mt-5 text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#a78bfa]">
-              Preferred Gender
-            </p>
+            <p className="yn-lounge-sheet-kicker mt-5">Preferred Gender</p>
             <div className="mt-2.5 grid grid-cols-3 gap-2.5">
               {(
                 [
@@ -171,10 +163,8 @@ export function LoungeFilterSheet({
                     key={opt.id}
                     type="button"
                     onClick={() => onChange({ ...draft, gender: opt.id })}
-                    className={`flex h-[118px] flex-col items-center justify-center rounded-2xl border transition ${
-                      selected
-                        ? "border-[#c084fc] bg-[#a855f7]/16 text-white shadow-[0_0_16px_rgba(168,85,247,0.28)]"
-                        : "border-[#a855f7]/22 bg-[#0c0616]/85 text-[#b9a8c9]"
+                    className={`yn-lounge-gender flex h-[118px] flex-col items-center justify-center rounded-2xl transition ${
+                      selected ? "is-on" : ""
                     }`}
                   >
                     <GenderArt kind={opt.id} />
@@ -193,7 +183,7 @@ export function LoungeFilterSheet({
             <button
               type="button"
               onClick={() => openPicker("country")}
-              className="mt-2 flex h-14 w-full items-center justify-between border-b border-[#a855f7]/18"
+              className="yn-lounge-sheet-row mt-2 flex h-14 w-full items-center justify-between"
             >
               <span className="text-[15px] text-[#b9a8c9]">Preferred Country</span>
               <span className="flex min-w-0 items-center gap-1 text-[15px] font-semibold text-white">
@@ -209,7 +199,7 @@ export function LoungeFilterSheet({
             <button
               type="button"
               onClick={() => openPicker("language")}
-              className="flex h-14 w-full items-center justify-between border-b border-[#a855f7]/18"
+              className="yn-lounge-sheet-row flex h-14 w-full items-center justify-between"
             >
               <span className="text-[15px] text-[#b9a8c9]">Preferred Language</span>
               <span className="flex items-center gap-1 text-[15px] font-semibold text-white">
@@ -229,10 +219,8 @@ export function LoungeFilterSheet({
                 aria-checked={draft.aroundMyAge}
                 aria-label="Around my age"
                 onClick={() => onChange({ ...draft, aroundMyAge: !draft.aroundMyAge })}
-                className={`relative h-7 w-12 shrink-0 rounded-full transition ${
-                  draft.aroundMyAge
-                    ? "bg-gradient-to-r from-[#7c3aed] to-[#ff2bd6] shadow-[0_0_12px_rgba(255,43,214,0.35)]"
-                    : "bg-white/12"
+                className={`yn-lounge-switch relative h-7 w-12 shrink-0 rounded-full transition ${
+                  draft.aroundMyAge ? "is-on" : ""
                 }`}
               >
                 <span
@@ -246,7 +234,7 @@ export function LoungeFilterSheet({
             <button
               type="button"
               onClick={onSave}
-              className="mt-2 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-r from-[#7c3aed] to-[#ff2bd6] text-[16px] font-bold text-white shadow-[0_8px_24px_rgba(192,38,211,0.32),0_0_18px_rgba(255,78,200,0.28)]"
+              className="yn-lounge-sheet-save mt-2 flex h-12 w-full items-center justify-center rounded-full text-[16px] font-bold text-white"
             >
               Save
             </button>

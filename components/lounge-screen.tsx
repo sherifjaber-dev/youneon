@@ -1,17 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, MessageCircle, MessageSquare, SlidersHorizontal } from "lucide-react";
-import { NeonAvatar, isPhotoSrc } from "@/components/neon-avatar";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, MessageSquare } from "lucide-react";
+import { isPhotoSrc } from "@/components/neon-avatar";
 import { LoungeFilterSheet } from "@/components/lounge-filter-sheet";
-import { CountryLabel } from "@/components/country-flag";
+import { CountryFlag } from "@/components/country-flag";
 import {
   applyLoungeFilters,
   DEFAULT_LOUNGE_FILTERS,
+  isLoungeOnline,
+  LOUNGE_MAX,
+  LOUNGE_PAGE_SIZE,
   readStoredLoungeFilters,
+  sortLoungeFeed,
   startLoungePresenceHeartbeat,
   storeLoungeFilters,
   subscribeToLoungePeople,
+  type LoungeFeedChip,
   type LoungeFilters,
   type LoungeMe,
   type LoungePerson,
@@ -38,33 +43,26 @@ interface LoungeScreenProps {
   onOpenChat?: (user: LoungeChatTarget) => void;
 }
 
-function CardPhoto({ src, name }: { src?: string; name: string }) {
+const CHIPS: { id: LoungeFeedChip; label: string }[] = [
+  { id: "forYou", label: "For you" },
+  { id: "nearby", label: "Nearby" },
+  { id: "popular", label: "Popular" },
+  { id: "new", label: "New" },
+];
+
+function CardPhoto({ src }: { src?: string }) {
   const photo = isPhotoSrc(src);
   if (photo) {
     return <img src={src} alt="" className="h-full w-full object-cover" />;
   }
-  return (
-    <div
-      className="flex h-full w-full items-center justify-center"
-      style={{
-        background:
-          "linear-gradient(160deg, #e879f9 0%, #a855f7 40%, #ec4899 78%, #6d28d9 100%)",
-      }}
-    >
-      <NeonAvatar src="" name={name} size={72} showPhoto={false} />
-    </div>
-  );
+  return <div className="yn-lounge-photo-fallback" />;
 }
 
-function OnlineBadge({ compact = false }: { compact?: boolean }) {
+function PresenceBadge({ online }: { online: boolean }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full bg-[#16a34a] font-semibold text-white shadow-[0_0_10px_rgba(34,197,94,0.55)] ${
-        compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-0.5 text-[10px]"
-      }`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-white" />
-      Online recently
+    <span className={`yn-lounge-pill ${online ? "is-live" : ""}`}>
+      <span className="yn-lounge-pill-dot" />
+      {online ? "Online" : "Online recently"}
     </span>
   );
 }
@@ -94,8 +92,21 @@ export function LoungeScreen({
     age: me.age,
   };
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const pullStartY = useRef(0);
+  const pulling = useRef(false);
+  const pullPxRef = useRef(0);
+
   const [people, setPeople] = useState<LoungePerson[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [pageSize, setPageSize] = useState(LOUNGE_PAGE_SIZE);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [pullPx, setPullPx] = useState(0);
+  const [chip, setChip] = useState<LoungeFeedChip>("forYou");
   const [filterOpen, setFilterOpen] = useState(false);
   const [applied, setApplied] = useState<LoungeFilters>(DEFAULT_LOUNGE_FILTERS);
   const [draft, setDraft] = useState<LoungeFilters>(DEFAULT_LOUNGE_FILTERS);
@@ -103,6 +114,8 @@ export function LoungeScreen({
 
   const { followingIds, busyId, toggleFollow } = useFollowGraph(meId);
   const blockedIds = useBlockedIds(meId);
+  const loadedCountRef = useRef(0);
+  loadedCountRef.current = people.length;
 
   useEffect(() => {
     const stored = readStoredLoungeFilters();
@@ -113,33 +126,138 @@ export function LoungeScreen({
   useEffect(() => {
     if (!meId) {
       setPeople([]);
+      setHasMore(false);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    const firstPage = pageSize <= LOUNGE_PAGE_SIZE;
+    if (firstPage && loadedCountRef.current === 0) setLoading(true);
+    else if (!firstPage) setLoadingMore(true);
     const stopHeartbeat = startLoungePresenceHeartbeat(meId);
-    const unsub = subscribeToLoungePeople(meId, (next) => {
-      setPeople(next);
+    const unsub = subscribeToLoungePeople(
+      meId,
+      (next, meta) => {
+        setPeople(next);
+        setHasMore(!!meta?.hasMore);
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
+      },
+      { pageSize }
+    );
+    const safety = window.setTimeout(() => {
       setLoading(false);
-    });
-    const safety = window.setTimeout(() => setLoading(false), 8000);
+      setLoadingMore(false);
+      setRefreshing(false);
+    }, 8000);
     return () => {
       stopHeartbeat();
       unsub();
       window.clearTimeout(safety);
     };
-  }, [meId]);
+  }, [meId, pageSize, refreshTick]);
 
-  const { all, forYou } = useMemo(() => {
+  const filtered = useMemo(() => {
     const visible = people.filter((p) => !blockedIds.has(p.id));
-    return applyLoungeFilters(visible, applied, me);
+    return applyLoungeFilters(visible, applied, me).all;
   }, [people, applied, me, blockedIds]);
+
+  const feed = useMemo(() => sortLoungeFeed(filtered, chip, me), [filtered, chip, me]);
+  const liveNow = useMemo(
+    () => filtered.filter((p) => isLoungeOnline(p.lastSeenMs)),
+    [filtered]
+  );
+
+  const featured = chip === "forYou" ? feed[0] : undefined;
+  const grid = chip === "forYou" ? feed.slice(1) : feed;
 
   const filtersActive =
     applied.gender !== "all" ||
     applied.country !== "All" ||
     applied.language !== "All" ||
     applied.aroundMyAge;
+
+  const loadMore = useCallback(() => {
+    if (!hasMore || loading || loadingMore || refreshing) return;
+    setPageSize((n) => Math.min(LOUNGE_MAX, n + LOUNGE_PAGE_SIZE));
+  }, [hasMore, loading, loadingMore, refreshing]);
+
+  const refresh = useCallback(() => {
+    if (refreshing || loading) return;
+    setRefreshing(true);
+    setPageSize(LOUNGE_PAGE_SIZE);
+    setRefreshTick((n) => n + 1);
+  }, [refreshing, loading]);
+
+  useEffect(() => {
+    if (!hasMore || loading || loadingMore || refreshing) return;
+    if (grid.length >= 8) return;
+    loadMore();
+  }, [grid.length, hasMore, loading, loadingMore, refreshing, loadMore]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    const root = rootRef.current;
+    if (!node) return;
+    const scroller = (root?.closest(".overflow-y-auto") as HTMLElement | null) || null;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { root: scroller, rootMargin: "160px" }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [loadMore, feed.length, loading]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const scroller =
+      (root.closest(".overflow-y-auto") as HTMLElement | null) ||
+      (root.parentElement as HTMLElement | null) ||
+      root;
+
+    const onStart = (e: TouchEvent) => {
+      if (scroller.scrollTop > 2) {
+        pulling.current = false;
+        return;
+      }
+      pulling.current = true;
+      pullStartY.current = e.touches[0]?.clientY || 0;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!pulling.current) return;
+      const y = e.touches[0]?.clientY || 0;
+      const dy = y - pullStartY.current;
+      if (dy <= 0 || scroller.scrollTop > 2) {
+        pullPxRef.current = 0;
+        setPullPx(0);
+        return;
+      }
+      const next = Math.min(88, dy * 0.42);
+      pullPxRef.current = next;
+      setPullPx(next);
+    };
+    const onEnd = () => {
+      const shouldRefresh = pullPxRef.current > 52;
+      pulling.current = false;
+      pullPxRef.current = 0;
+      setPullPx(0);
+      if (shouldRefresh) refresh();
+    };
+
+    scroller.addEventListener("touchstart", onStart, { passive: true });
+    scroller.addEventListener("touchmove", onMove, { passive: true });
+    scroller.addEventListener("touchend", onEnd);
+    scroller.addEventListener("touchcancel", onEnd);
+    return () => {
+      scroller.removeEventListener("touchstart", onStart);
+      scroller.removeEventListener("touchmove", onMove);
+      scroller.removeEventListener("touchend", onEnd);
+      scroller.removeEventListener("touchcancel", onEnd);
+    };
+  }, [refresh]);
 
   const openChat = (person: LoungePerson) => {
     onOpenChat?.({
@@ -149,7 +267,7 @@ export function LoungeScreen({
       photo: person.photo,
       country: person.country,
       countryFlag: person.country,
-      isOnline: Date.now() - person.lastSeenMs < 90_000,
+      isOnline: isLoungeOnline(person.lastSeenMs),
     });
   };
 
@@ -170,37 +288,51 @@ export function LoungeScreen({
   };
 
   const adult = isAdultAge(me.age);
-  const featured = forYou[0];
-  const mosaicSide = forYou.slice(1, 5);
-  const mosaicRest = forYou.slice(5);
+  const pullOffset = refreshing ? 44 : pullPx;
 
   return (
-    <div
-      className="min-h-full pb-8 text-[#f5f0ff]"
-      style={{
-        background:
-          "radial-gradient(120% 80% at 50% -12%, rgba(124, 58, 237, 0.28), transparent 55%), #07040f",
-      }}
-    >
+    <div ref={rootRef} className="yn-lounge min-h-full pb-8">
+      <div
+        className="yn-lounge-refresh"
+        style={{ height: pullOffset, opacity: pullOffset > 8 || refreshing ? 1 : 0 }}
+        aria-hidden
+      >
+        <span className={`yn-lounge-refresh-dot ${refreshing ? "is-spin" : ""}`} />
+      </div>
+
       <div className="flex items-center justify-between px-4 pt-3">
-        <h1 className="font-serif text-[32px] font-semibold leading-none tracking-tight text-white">
-          Lounge
-        </h1>
+        <h1 className="yn-lounge-title">Lounge</h1>
         <button
           type="button"
           onClick={() => {
             setDraft(applied);
             setFilterOpen(true);
           }}
-          className="relative flex h-11 w-11 items-center justify-center rounded-[12px] border border-[#c084fc] text-white shadow-[0_0_14px_rgba(168,85,247,0.55)] transition active:scale-95"
+          className="yn-lounge-filter-btn"
           aria-label="Filter lounge"
           data-testid="lounge-filter-btn"
         >
-          <SlidersHorizontal size={18} strokeWidth={2} />
-          {filtersActive ? (
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#ff4ec8] shadow-[0_0_8px_#ff4ec8]" />
-          ) : null}
+          <img src="/youneon/lounge-filter.png" alt="" draggable={false} />
+          {filtersActive ? <span className="yn-lounge-filter-dot" /> : null}
         </button>
+      </div>
+
+      <div className="yn-lounge-chips" role="tablist" aria-label="Lounge sorts">
+        {CHIPS.map((row) => {
+          const on = chip === row.id;
+          return (
+            <button
+              key={row.id}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setChip(row.id)}
+              className={`yn-lounge-chip ${on ? "is-on" : ""}`}
+            >
+              {row.label}
+            </button>
+          );
+        })}
       </div>
 
       {!adult ? (
@@ -214,15 +346,15 @@ export function LoungeScreen({
         <LoungeSkeleton />
       ) : people.length === 0 ? (
         <div className="px-6 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#ff4ec8]/12 ring-1 ring-[#c084fc]/40 shadow-[0_0_18px_rgba(255,78,200,0.25)]">
-            <MessageSquare size={26} className="text-[#ff4ec8]" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#FF2EC8]/12 ring-1 ring-[#A855F7]/40 shadow-[0_0_18px_rgba(255,46,200,0.25)]">
+            <MessageSquare size={26} className="text-[#FF2EC8]" />
           </div>
           <p className="text-[16px] font-semibold text-white">No one in the Lounge yet</p>
           <p className="mx-auto mt-1.5 max-w-xs text-sm text-[#b9a8c9]">
             People who were recently online will appear here. Jump into Video Chat to meet someone live.
           </p>
         </div>
-      ) : all.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="px-6 py-16 text-center">
           <p className="text-[16px] font-semibold text-white">No matches for these filters</p>
           <p className="mx-auto mt-1.5 max-w-xs text-sm text-[#b9a8c9]">
@@ -234,83 +366,60 @@ export function LoungeScreen({
               setDraft(applied);
               setFilterOpen(true);
             }}
-            className="mx-auto mt-5 flex h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#7c3aed] to-[#ff2bd6] px-6 text-[14px] font-semibold text-white shadow-[0_8px_24px_rgba(255,43,214,0.32)]"
+            className="yn-lounge-empty-cta"
           >
             Adjust filters
           </button>
         </div>
       ) : (
         <>
-          {forYou.length > 0 ? (
-            <section className="pt-5">
-              <h2 className="px-4 text-[16px] font-semibold tracking-tight text-white">For you</h2>
-              <div className="mt-3 px-3">
-                {mosaicSide.length === 0 && featured ? (
-                  <div className="w-[52%]">
-                    <LoungeCard
-                      person={featured}
-                      variant="featured"
-                      following={followingIds.has(featured.id)}
-                      busy={busyId === featured.id || !meId}
-                      onFollow={() => followPerson(featured)}
-                      onMessage={() => openChat(featured)}
-                      onOpenProfile={() => setPreviewUserId(featured.id)}
-                    />
-                  </div>
-                ) : featured ? (
-                  <div className="grid aspect-[4/3.05] grid-cols-4 grid-rows-2 gap-2">
-                    <LoungeCard
-                      person={featured}
-                      variant="featured"
-                      className="col-span-2 row-span-2"
-                      following={followingIds.has(featured.id)}
-                      busy={busyId === featured.id || !meId}
-                      onFollow={() => followPerson(featured)}
-                      onMessage={() => openChat(featured)}
-                      onOpenProfile={() => setPreviewUserId(featured.id)}
-                    />
-                    {mosaicSide.map((person) => (
-                      <LoungeCard
-                        key={`fy-${person.id}`}
-                        person={person}
-                        variant="tile"
-                        following={followingIds.has(person.id)}
-                        busy={busyId === person.id || !meId}
-                        onFollow={() => followPerson(person)}
-                        onMessage={() => openChat(person)}
-                        onOpenProfile={() => setPreviewUserId(person.id)}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-                {mosaicRest.length > 0 ? (
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {mosaicRest.map((person) => (
-                      <LoungeCard
-                        key={`fy-${person.id}`}
-                        person={person}
-                        variant="all"
-                        following={followingIds.has(person.id)}
-                        busy={busyId === person.id || !meId}
-                        onFollow={() => followPerson(person)}
-                        onMessage={() => openChat(person)}
-                        onOpenProfile={() => setPreviewUserId(person.id)}
-                      />
-                    ))}
-                  </div>
-                ) : null}
+          {liveNow.length > 0 ? (
+            <section className="yn-lounge-live" aria-label="Live now">
+              <h2 className="yn-lounge-live-title">Live now</h2>
+              <div className="yn-lounge-live-row">
+                {liveNow.map((person) => (
+                  <button
+                    key={`live-${person.id}`}
+                    type="button"
+                    className="yn-lounge-live-item"
+                    onClick={() => setPreviewUserId(person.id)}
+                    aria-label={`${person.name} is live`}
+                  >
+                    <span className="yn-lounge-live-ring">
+                      {isPhotoSrc(person.photo) ? (
+                        <img src={person.photo} alt="" />
+                      ) : (
+                        <span className="yn-lounge-photo-fallback is-round" />
+                      )}
+                    </span>
+                    <span className="yn-lounge-live-badge">LIVE</span>
+                  </button>
+                ))}
               </div>
             </section>
           ) : null}
 
-          <section className={forYou.length > 0 ? "mt-6" : "mt-5"}>
-            <h2 className="px-4 text-[16px] font-semibold tracking-tight text-white">All</h2>
-            <div className="mt-3 grid grid-cols-2 gap-2.5 px-3">
-              {all.map((person) => (
+          {featured ? (
+            <div className="px-4">
+              <LoungeCard
+                person={featured}
+                variant="featured"
+                following={followingIds.has(featured.id)}
+                busy={busyId === featured.id || !meId}
+                onFollow={() => followPerson(featured)}
+                onMessage={() => openChat(featured)}
+                onOpenProfile={() => setPreviewUserId(featured.id)}
+              />
+            </div>
+          ) : null}
+
+          {grid.length > 0 ? (
+            <div className="yn-lounge-grid">
+              {grid.map((person) => (
                 <LoungeCard
-                  key={`all-${person.id}`}
+                  key={person.id}
                   person={person}
-                  variant="all"
+                  variant="card"
                   following={followingIds.has(person.id)}
                   busy={busyId === person.id || !meId}
                   onFollow={() => followPerson(person)}
@@ -319,7 +428,10 @@ export function LoungeScreen({
                 />
               ))}
             </div>
-          </section>
+          ) : null}
+
+          <div ref={sentinelRef} className="h-6" />
+          {loadingMore ? <p className="yn-lounge-more">Loading more…</p> : null}
         </>
       )}
 
@@ -355,89 +467,60 @@ function LoungeCard({
   onFollow,
   onMessage,
   onOpenProfile,
-  className = "",
 }: {
   person: LoungePerson;
-  variant: "featured" | "tile" | "all";
+  variant: "featured" | "card";
   following: boolean;
   busy: boolean;
   onFollow: () => void;
   onMessage: () => void;
   onOpenProfile: () => void;
-  className?: string;
 }) {
   const featured = variant === "featured";
-  const compact = variant === "tile";
-  const title = person.age ? `${person.name}, ${person.age}` : person.name;
+  const online = isLoungeOnline(person.lastSeenMs);
+  const title = person.age ? `${person.name} ${person.age}` : person.name;
 
   return (
-    <article
-      className={`relative min-h-0 overflow-hidden rounded-[18px] border border-[#c084fc]/70 bg-[#0b0614] shadow-[0_0_16px_rgba(168,85,247,0.42),0_0_28px_rgba(255,78,200,0.12)] ${
-        variant === "all" || (featured && !className) ? "aspect-[2/3]" : "h-full"
-      } ${className}`}
-    >
+    <article className={`yn-lounge-card ${featured ? "is-featured" : ""}`}>
       <button
         type="button"
-        className="absolute inset-0 z-0"
+        className="yn-lounge-card-photo"
         onClick={onOpenProfile}
         aria-label={`View ${person.name}'s profile`}
       >
-        <CardPhoto src={person.photo} name={person.name} />
+        <CardPhoto src={person.photo} />
       </button>
-      <div className={`pointer-events-none absolute z-10 ${compact ? "left-1.5 top-1.5" : "left-2 top-2"}`}>
-        <OnlineBadge compact={compact} />
+      <div className="yn-lounge-card-top">
+        <PresenceBadge online={online} />
       </div>
-      <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/45 to-transparent ${
-          compact ? "px-1.5 pb-1.5 pt-8" : featured ? "px-3 pb-3 pt-16" : "px-2.5 pb-2.5 pt-10"
-        }`}
-      >
-        <p
-          className={`truncate font-bold text-white ${
-            featured ? "text-[16px]" : compact ? "text-[11px] leading-tight" : "text-[14px]"
-          }`}
-        >
-          {title}
-          {person.youneonBadge ? (
-            <span className="ml-1 align-middle text-[10px] font-bold uppercase tracking-wide text-pink-300">
-              Badge
-            </span>
-          ) : null}
-        </p>
+      <div className="yn-lounge-card-meta">
+        <p className="yn-lounge-card-name">{title}</p>
         {person.country ? (
-          <CountryLabel
-            country={person.country}
-            size={compact ? 11 : 14}
-            className={`text-white/90 ${compact ? "mt-0.5 text-[9px]" : "mt-0.5 text-[11px]"} font-medium`}
-          />
+          <CountryFlag country={person.country} size={featured ? 14 : 12} />
         ) : null}
-        <div className={`pointer-events-auto flex gap-1.5 ${compact ? "mt-1.5" : "mt-2"}`}>
+        <div className="yn-lounge-card-actions">
           <button
             type="button"
             disabled={busy}
             onClick={onFollow}
-            className={`flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full font-semibold transition active:scale-[0.98] disabled:opacity-55 ${
-              compact ? "h-7 text-[10px]" : featured ? "h-10 text-[12px]" : "h-9 text-[12px]"
-            } ${
-              following
-                ? "border border-white/20 bg-black/35 text-white/80"
-                : "bg-gradient-to-r from-[#7c3aed] to-[#ff2bd6] text-white shadow-[0_0_12px_rgba(255,43,214,0.35)]"
-            }`}
+            className={`yn-lounge-follow ${following ? "is-on" : ""}`}
             aria-label={following ? "Following" : "Follow"}
           >
-            {following ? <Check size={compact ? 11 : 13} /> : <span className={compact ? "text-[12px]" : "text-[15px]"}>+</span>}
-            {compact ? null : following ? "Following" : "Follow"}
+            {following ? (
+              <Check size={featured ? 14 : 12} />
+            ) : (
+              <span className="text-[13px] leading-none">+</span>
+            )}
+            {following ? "Following" : "Follow"}
           </button>
           <button
             type="button"
             onClick={onMessage}
-            className={`flex items-center justify-center rounded-full border border-[#c084fc]/80 bg-black/40 text-white backdrop-blur-sm shadow-[0_0_10px_rgba(192,132,252,0.35)] transition active:scale-[0.98] ${
-              compact ? "h-7 w-7" : featured ? "h-10 min-w-0 flex-1 gap-1 text-[12px] font-semibold" : "h-9 w-9"
-            }`}
+            className="yn-lounge-message"
             aria-label="Message"
           >
-            <MessageCircle size={compact ? 12 : 14} />
-            {featured ? "Message" : null}
+            <img src="/youneon/lounge-message.png" alt="" draggable={false} />
+            Message
           </button>
         </div>
       </div>
@@ -447,19 +530,10 @@ function LoungeCard({
 
 function LoungeSkeleton() {
   return (
-    <div className="pt-5">
-      <div className="px-4">
-        <div className="h-4 w-20 rounded bg-white/8" />
-      </div>
-      <div className="mt-3 px-3">
-        <div className="aspect-[4/3.05] animate-pulse rounded-[18px] bg-white/[0.06]" />
-      </div>
-      <div className="mt-6 px-4">
-        <div className="h-4 w-10 rounded bg-white/8" />
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2.5 px-3">
+    <div className="pt-4">
+      <div className="yn-lounge-grid">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="aspect-[2/3] animate-pulse rounded-[18px] bg-white/[0.06]" />
+          <div key={i} className="yn-lounge-skel" />
         ))}
       </div>
     </div>

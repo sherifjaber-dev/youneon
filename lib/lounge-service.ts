@@ -20,8 +20,12 @@ import { isFakeUserRecord, isRealPiUsername } from "./real-pi-user";
 export const LOUNGE_RECENT_MS = 72 * 60 * 60 * 1000;
 export const LOUNGE_AGE_WINDOW = 6;
 export const LOUNGE_FOR_YOU_COUNT = 8;
-const LOUNGE_MAX = 80;
+export const LOUNGE_ONLINE_MS = 90_000;
+export const LOUNGE_PAGE_SIZE = 16;
+export const LOUNGE_MAX = 80;
 const PRESENCE_HEARTBEAT_MS = 25_000;
+
+export type LoungeFeedChip = "forYou" | "nearby" | "popular" | "new";
 
 export const LOUNGE_LANGUAGES = [
   "English",
@@ -73,6 +77,9 @@ export type LoungePerson = {
   languages: string[];
   youneonBadge?: boolean;
   lastSeenMs: number;
+  createdAtMs: number;
+  giftsReceivedCount: number;
+  followersCount: number;
   lat?: number;
   lng?: number;
 };
@@ -210,10 +217,23 @@ function personFromUserDoc(
     languages,
     youneonBadge: badgeFromUserDoc(data),
     lastSeenMs,
+    createdAtMs: toMillis(data.createdAt) || toMillis(data.createdAtMs),
+    giftsReceivedCount: asNum(data.giftsReceivedCount) ?? 0,
+    followersCount:
+      asNum(data.followersCount) ??
+      asNum(data.followerCount) ??
+      asNum(data.followsCount) ??
+      0,
     lat: coords?.lat,
     lng: coords?.lng,
   };
 }
+
+export function isLoungeOnline(lastSeenMs: number, now = Date.now()) {
+  return now - lastSeenMs < LOUNGE_ONLINE_MS;
+}
+
+export type LoungePeopleMeta = { hasMore: boolean };
 
 function isMe(id: string, data: Record<string, unknown>, meId: string) {
   if (!meId) return false;
@@ -271,10 +291,15 @@ export async function touchLoungePresence(userId: string) {
 
 export function subscribeToLoungePeople(
   currentUserId: string,
-  cb: (people: LoungePerson[]) => void
+  cb: (people: LoungePerson[], meta?: LoungePeopleMeta) => void,
+  opts?: { pageSize?: number }
 ): Unsubscribe {
+  const pageSize = Math.min(
+    LOUNGE_MAX,
+    Math.max(1, Math.floor(opts?.pageSize ?? LOUNGE_PAGE_SIZE))
+  );
   if (!isRealPiUsername(currentUserId) || !db) {
-    cb([]);
+    cb([], { hasMore: false });
     return () => {};
   }
 
@@ -283,7 +308,7 @@ export function subscribeToLoungePeople(
     collection(db, "presence"),
     where("lastSeen", ">", cutoff),
     orderBy("lastSeen", "desc"),
-    limit(LOUNGE_MAX)
+    limit(pageSize)
   );
 
   let cancelled = false;
@@ -301,7 +326,8 @@ export function subscribeToLoungePeople(
       })
       .filter((row) => row.id && row.id !== currentUserId && isRealPiUsername(row.id) && now - row.lastSeenMs <= LOUNGE_RECENT_MS);
     const people = await hydratePeople(rows, currentUserId);
-    if (!cancelled) cb(people);
+    const hasMore = docs.length >= pageSize && pageSize < LOUNGE_MAX;
+    if (!cancelled) cb(people, { hasMore });
   };
 
   unsubPresence = onSnapshot(
@@ -310,7 +336,7 @@ export function subscribeToLoungePeople(
       void emitFromPresence(snap.docs.map((d) => ({ id: d.id, data: d.data() as Record<string, unknown> })));
     },
     () => {
-      const fallback = query(collection(db, "presence"), limit(LOUNGE_MAX));
+      const fallback = query(collection(db, "presence"), limit(pageSize));
       unsubPresence?.();
       unsubPresence = onSnapshot(
         fallback,
@@ -323,7 +349,7 @@ export function subscribeToLoungePeople(
           );
         },
         () => {
-          if (!cancelled) cb([]);
+          if (!cancelled) cb([], { hasMore: false });
         }
       );
     }
@@ -360,7 +386,15 @@ export function matchesLoungeFilters(
   return true;
 }
 
-export function pickForYou(people: LoungePerson[], me: LoungeMe): LoungePerson[] {
+function sameCountry(a?: string, b?: string) {
+  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+function popularityScore(person: LoungePerson) {
+  return (person.giftsReceivedCount || 0) + (person.followersCount || 0);
+}
+
+export function rankForYou(people: LoungePerson[], me: LoungeMe): LoungePerson[] {
   const scored = people.map((person) => {
     let score = 0;
     const recency = Math.max(0, LOUNGE_RECENT_MS - (Date.now() - person.lastSeenMs));
@@ -369,18 +403,57 @@ export function pickForYou(people: LoungePerson[], me: LoungeMe): LoungePerson[]
     if (myLangs.length && person.languages.some((l) => myLangs.includes(l.trim().toLowerCase()))) {
       score += 28;
     }
-    if (me.country && person.country && me.country.trim().toLowerCase() === person.country.trim().toLowerCase()) {
+    if (sameCountry(me.country, person.country)) {
       score += 16;
     }
     if (me.age && person.age) {
       const gap = Math.abs(me.age - person.age);
       if (gap <= LOUNGE_AGE_WINDOW) score += 22 - gap;
     }
-    if (Date.now() - person.lastSeenMs < 90_000) score += 8;
+    if (isLoungeOnline(person.lastSeenMs)) score += 8;
     return { person, score };
   });
   scored.sort((a, b) => b.score - a.score || b.person.lastSeenMs - a.person.lastSeenMs);
-  return scored.slice(0, LOUNGE_FOR_YOU_COUNT).map((s) => s.person);
+  return scored.map((s) => s.person);
+}
+
+export function pickForYou(people: LoungePerson[], me: LoungeMe): LoungePerson[] {
+  return rankForYou(people, me).slice(0, LOUNGE_FOR_YOU_COUNT);
+}
+
+export function sortLoungeFeed(
+  people: LoungePerson[],
+  chip: LoungeFeedChip,
+  me: LoungeMe
+): LoungePerson[] {
+  if (chip === "forYou") return rankForYou(people, me);
+  if (chip === "nearby") {
+    const known = !!me.country?.trim();
+    return [...people].sort((a, b) => {
+      if (known) {
+        const aNear = sameCountry(me.country, a.country) ? 1 : 0;
+        const bNear = sameCountry(me.country, b.country) ? 1 : 0;
+        if (aNear !== bNear) return bNear - aNear;
+      }
+      return b.lastSeenMs - a.lastSeenMs;
+    });
+  }
+  if (chip === "popular") {
+    const anyPop = people.some((p) => popularityScore(p) > 0);
+    return [...people].sort((a, b) => {
+      if (anyPop) {
+        const diff = popularityScore(b) - popularityScore(a);
+        if (diff) return diff;
+      }
+      return b.lastSeenMs - a.lastSeenMs;
+    });
+  }
+  return [...people].sort((a, b) => {
+    const aNew = a.createdAtMs || 0;
+    const bNew = b.createdAtMs || 0;
+    if (aNew !== bNew) return bNew - aNew;
+    return b.lastSeenMs - a.lastSeenMs;
+  });
 }
 
 export function applyLoungeFilters(
