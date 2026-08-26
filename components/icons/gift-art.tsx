@@ -1,21 +1,263 @@
+import type { ReactNode } from "react";
 import type { GiftSoundId } from "@/lib/gift-sounds";
 
 export type GiftArtId = GiftSoundId;
 
 export const GIFT_ACCENT: Record<GiftArtId, { a: string; b: string; c: string }> = {
-  rose: { a: "#fb7185", b: "#e879f9", c: "#a855f7" },
-  heart: { a: "#fb7185", b: "#f472b6", c: "#ec4899" },
-  bouquet: { a: "#c084fc", b: "#f472b6", c: "#818cf8" },
-  diamond: { a: "#67e8f9", b: "#c4b5fd", c: "#e0e7ff" },
-  gift: { a: "#f9a8d4", b: "#a855f7", c: "#ec4899" },
-  teddy: { a: "#e9d5ff", b: "#d8b4fe", c: "#f5d0fe" },
-  naughty: { a: "#f43f5e", b: "#e11d48", c: "#a21caf" },
-  funny: { a: "#fbbf24", b: "#f472b6", c: "#a855f7" },
-  beautiful: { a: "#fde68a", b: "#f9a8d4", c: "#c4b5fd" },
-  cool: { a: "#818cf8", b: "#c084fc", c: "#22d3ee" },
-  fire: { a: "#fb923c", b: "#f43f5e", c: "#fbbf24" },
-  rabbit: { a: "#f9a8d4", b: "#e879f9", c: "#c084fc" },
+  gift: { a: "#ff4fd8", b: "#e879f9", c: "#c026d3" },
+  funny: { a: "#ff2ec8", b: "#ff8a00", c: "#ffd600" },
+  bouquet: { a: "#ff2ec8", b: "#22d3ee", c: "#a855f7" },
+  rabbit: { a: "#c084fc", b: "#d946ef", c: "#a855f7" },
+  diamond: { a: "#b026ff", b: "#ffd700", c: "#e879f9" },
+  heart: { a: "#ff2ec8", b: "#ff4fd8", c: "#fb7185" },
+  rose: { a: "#ff1ec8", b: "#5fff3c", c: "#a032ff" },
+  naughty: { a: "#ff2ec8", b: "#ff00ff", c: "#e879f9" },
+  beautiful: { a: "#ffd700", b: "#ff8a00", c: "#ff2ec8" },
+  fire: { a: "#ff007a", b: "#ff8a00", c: "#9d00ff" },
+  teddy: { a: "#ff2ec8", b: "#ff8a00", c: "#ffd600" },
+  cool: { a: "#ff007a", b: "#ff8a00", c: "#9d00ff" },
 };
+
+const VISUAL_ID: Record<GiftArtId, Exclude<GiftArtId, "teddy" | "cool">> = {
+  gift: "gift",
+  funny: "funny",
+  bouquet: "bouquet",
+  rabbit: "rabbit",
+  diamond: "diamond",
+  heart: "heart",
+  rose: "rose",
+  naughty: "naughty",
+  beautiful: "beautiful",
+  fire: "fire",
+  teddy: "funny",
+  cool: "fire",
+};
+
+function NeonLayers({
+  color,
+  glowId,
+  stroke,
+  core,
+  children,
+}: {
+  color: string;
+  glowId: string;
+  stroke: number;
+  core: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <>
+      <g
+        filter={`url(#${glowId})`}
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke * 2.35}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.52}
+      >
+        {children}
+      </g>
+      <g
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {children}
+      </g>
+      {core && (
+        <g
+          fill="none"
+          stroke="#fff"
+          strokeOpacity={0.48}
+          strokeWidth={Math.max(0.5, stroke * 0.34)}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {children}
+        </g>
+      )}
+    </>
+  );
+}
+
+function GiftBoxMarks() {
+  return (
+    <>
+      <path d="M32 16C24.5 6 15 10 20.5 18.5C24 22 29 19.5 32 16C35 19.5 40 22 43.5 18.5C49 10 39.5 6 32 16Z" />
+      <rect x="11" y="21.5" width="42" height="9.5" rx="2.4" />
+      <path d="M13.5 32.5H50.5C52.7 32.5 54.5 34.3 54.5 36.5V50.5C54.5 54.2 51.5 57.2 47.8 57.2H16.2C12.5 57.2 9.5 54.2 9.5 50.5V36.5C9.5 34.3 11.3 32.5 13.5 32.5Z" />
+      <path d="M32 15.5V57" />
+      <path d="M16 34.5L32 47" />
+      <path d="M48 34.5L32 47" />
+    </>
+  );
+}
+
+function LaughMarks() {
+  return (
+    <>
+      <circle cx="32" cy="32" r="20" />
+      <path d="M18.8 26.2C21.2 21.8 26.6 21.8 29 26.2" />
+      <path d="M35 26.2C37.4 21.8 42.8 21.8 45.2 26.2" />
+      <path d="M18.5 37.2C18.5 37.2 22.2 34.4 32 34.4C41.8 34.4 45.5 37.2 45.5 37.2C45.5 37.2 43.6 52.4 32 52.4C20.4 52.4 18.5 37.2 18.5 37.2Z" />
+      <path d="M25.5 47.6C27.8 50.6 36.2 50.6 38.5 47.6" />
+    </>
+  );
+}
+
+function BalloonMarks({
+  cx,
+  cy,
+  stringX,
+}: {
+  cx: number;
+  cy: number;
+  stringX: number;
+}) {
+  const knotY = cy + 12.2;
+  return (
+    <>
+      <ellipse cx={cx} cy={cy} rx="8.2" ry="11.1" />
+      <path d={`M${cx - 3.4} ${cy - 4.6}C${cx - 1.6} ${cy - 7.1} ${cx + 1.1} ${cy - 6.2} ${cx + 1.4} ${cy - 3.8}`} />
+      <path d={`M${cx} ${cy + 11.1}L${cx - 1.7} ${knotY}H${cx + 1.7}Z`} />
+      <path
+        d={`M${cx} ${knotY}C${cx - 3.2} ${knotY + 6} ${stringX + 3} ${knotY + 10} ${stringX} ${knotY + 16}C${stringX - 2.4} ${knotY + 21} ${stringX + 2} ${knotY + 24} ${stringX} 58`}
+      />
+    </>
+  );
+}
+
+function RabbitMarks() {
+  return (
+    <>
+      <path d="M19.2 28.5C17.2 12.4 19.6 5.2 24.4 5.2C28.2 5.2 29.6 11.2 29.2 22" />
+      <path d="M42.8 28.5C44.8 12.4 42.4 5.2 37.6 5.2C33.8 5.2 32.4 11.2 32.8 22" />
+      <path d="M21.6 16.5C20.6 10.4 23.8 7.6 26.4 11.8" />
+      <path d="M40.4 16.5C41.4 10.4 38.2 7.6 35.6 11.8" />
+      <ellipse cx="31" cy="40.2" rx="14.6" ry="13.6" />
+      <path d="M23.4 36.2C24.8 33.6 28.2 33.6 29.4 36.2" />
+      <path d="M32.8 36.2C34.2 33.6 37.6 33.6 38.8 36.2" />
+      <path d="M24.2 32.4C25.2 30.8 27.6 30.8 28.6 32.4" />
+      <path d="M33.6 32.4C34.6 30.8 37 30.8 38 32.4" />
+      <path d="M31 41.2L29.2 44.2H32.8Z" />
+      <ellipse cx="31" cy="46.8" rx="1.7" ry="2.3" />
+      <path d="M20.4 42.6H25.2" />
+      <path d="M20.8 45.4H25.4" />
+      <path d="M36.8 42.6H41.6" />
+      <path d="M36.6 45.4H41.2" />
+      <path d="M52 14L54.1 20.2L60.4 22.2L54.1 24.2L52 30.4L49.9 24.2L43.6 22.2L49.9 20.2Z" />
+      <circle cx="47.4" cy="16.6" r="0.7" />
+      <circle cx="56.8" cy="16.8" r="0.7" />
+      <circle cx="56.8" cy="27.6" r="0.7" />
+      <circle cx="47.4" cy="27.4" r="0.7" />
+    </>
+  );
+}
+
+function DiamondOutline() {
+  return (
+    <>
+      <path d="M21.5 12H42.5L53.5 28L32 58L10.5 28Z" />
+      <path d="M21.5 12L32 28L42.5 12" />
+      <path d="M21.5 12L10.5 28H53.5L42.5 12" />
+    </>
+  );
+}
+
+function DiamondGold() {
+  return (
+    <>
+      <path d="M10.5 28H53.5" />
+      <path d="M32 28V58" />
+      <path d="M10.5 28L32 42L53.5 28" />
+      <path d="M21.5 28L32 58" />
+      <path d="M42.5 28L32 58" />
+    </>
+  );
+}
+
+function HeartMarks() {
+  return (
+    <path d="M32 54C32 54 10 37.6 10 22.6C10 14.2 16.8 9.4 24.6 12.8C28.4 14.5 32 20.2 32 20.2C32 20.2 35.6 14.5 39.4 12.8C47.2 9.4 54 14.2 54 22.6C54 37.6 32 54 32 54Z" />
+  );
+}
+
+function RoseBloom() {
+  return (
+    <>
+      <path d="M32 28.5C24 28.5 18.5 22.5 20.5 16C23 18.5 27 22 32 22C37 22 41 18.5 43.5 16C45.5 22.5 40 28.5 32 28.5Z" />
+      <path d="M22 20C16 16 16.5 8.5 23 8C23.5 13 27 17.5 32 18" />
+      <path d="M42 20C48 16 47.5 8.5 41 8C40.5 13 37 17.5 32 18" />
+      <path d="M32 8.5C28.5 12.5 28 17.5 32 21.5C36 17.5 35.5 12.5 32 8.5Z" />
+      <path d="M27.5 24.5C29.5 21.5 34.5 21.5 36.5 24.5" />
+    </>
+  );
+}
+
+function RoseStem() {
+  return (
+    <>
+      <path d="M32 28.5C33.2 38 30.8 48 32.2 58" />
+      <path d="M32 41C23 36.5 16.5 40.5 18.5 47.5C22.5 47 28 45.5 32 43" />
+      <path d="M32 45C41 40.5 47.5 44.5 45.5 51.5C41.5 51 36 49.5 32 47" />
+    </>
+  );
+}
+
+function RoseVeins() {
+  return (
+    <>
+      <path d="M22 41.5C24.5 43.5 28 44.8 31.2 44" />
+      <path d="M42 45.5C39.5 47.5 36 48.8 32.8 48" />
+    </>
+  );
+}
+
+function NaughtyMarks() {
+  return (
+    <>
+      <path d="M16.5 8.5C13.5 4 21 2.2 23.8 11.5C25.2 16 23.2 19 20.8 20" />
+      <path d="M47.5 8.5C50.5 4 43 2.2 40.2 11.5C38.8 16 40.8 19 43.2 20" />
+      <path d="M20.5 21C14.8 26.5 14.2 42 32 52.5C49.8 42 49.2 26.5 43.5 21C38 16.5 26 16.5 20.5 21Z" />
+      <path d="M22.5 31.5L28.5 28.2L27.2 36.2Z" />
+      <path d="M36.2 32.4C38.4 30.6 43.6 30.8 45.6 33.2" />
+      <path d="M24.5 42C29 47.2 38.5 46.6 42.5 41.2" />
+      <path d="M40.8 42.4C44.6 44.8 45.8 49.2 41.6 50.6" />
+    </>
+  );
+}
+
+function Sparkle({ cx, cy, s }: { cx: number; cy: number; s: number }) {
+  const k = s * 0.2;
+  return (
+    <path
+      d={`M${cx} ${cy - s}C${cx + k} ${cy - k} ${cx + k} ${cy - k} ${cx + s} ${cy}C${cx + k} ${cy + k} ${cx + k} ${cy + k} ${cx} ${cy + s}C${cx - k} ${cy + k} ${cx - k} ${cy + k} ${cx - s} ${cy}C${cx - k} ${cy - k} ${cx - k} ${cy - k} ${cx} ${cy - s}Z`}
+    />
+  );
+}
+
+function BeautifulMarks() {
+  return (
+    <>
+      <Sparkle cx="30" cy="33" s="20" />
+      <Sparkle cx="50" cy="14.5" s="7.2" />
+      <Sparkle cx="51.5" cy="48" s="6.2" />
+    </>
+  );
+}
+
+function FireMarks() {
+  return (
+    <>
+      <path d="M22.5 52.5C13.5 44 12.5 28.5 21 16C25.5 22.5 30 24.5 35 21C38.5 10.5 45.5 7 51 9.5C53.5 22 54 38 42.5 51C37.5 55 30.5 56 22.5 52.5" />
+      <path d="M28 48.5C22.5 42 22 32.5 27.5 24C30 28 33.5 28.5 36 25C38.5 19 43 18.5 45.5 22C46.2 31 44.5 40.5 37.5 47.5C35 49.5 31.5 50 28 48.5" />
+    </>
+  );
+}
 
 export function GiftArt({
   id,
@@ -30,191 +272,133 @@ export function GiftArt({
   instance?: string;
   className?: string;
 }) {
-  const uid = `yn-ga-${id}-${variant}-${size}-${instance}`;
+  const visual = VISUAL_ID[id] || "gift";
+  const uid = `yn-ga-${visual}-${variant}-${size}-${instance}`;
   const g = `${uid}-g`;
   const glow = `${uid}-glow`;
-  const accent = GIFT_ACCENT[id];
-  const withGlow = variant === "burst";
-  const stroke = variant === "pick" ? 1.85 : 1.55;
+  const accent = GIFT_ACCENT[visual];
+  const core = variant === "burst";
+  const stroke = variant === "pick" ? 1.9 : variant === "rain" ? 1.45 : 1.7;
 
   return (
-    <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true" className={className ? `yn-gift-art ${className}` : "yn-gift-art"}>
+    <svg
+      viewBox="0 0 64 64"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      overflow="visible"
+      className={className ? `yn-gift-art ${className}` : "yn-gift-art"}
+    >
       <defs>
-        <linearGradient id={g} x1="12" y1="6" x2="54" y2="58">
+        <linearGradient id={g} x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
           <stop stopColor={accent.a} />
           <stop offset="0.5" stopColor={accent.b} />
           <stop offset="1" stopColor={accent.c} />
         </linearGradient>
-        <radialGradient id={`${g}-fill`} cx="38%" cy="28%" r="70%">
-          <stop stopColor="#fff" stopOpacity="0.62" />
-          <stop offset="0.28" stopColor={accent.a} stopOpacity="0.98" />
-          <stop offset="1" stopColor={accent.c} />
-        </radialGradient>
-        {withGlow && (
-          <filter id={glow} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="1.15" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        )}
+        <linearGradient id={`${g}-lr`} x1="12" y1="32" x2="52" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ff2ec8" />
+          <stop offset="0.45" stopColor="#ff8a00" />
+          <stop offset="1" stopColor="#ffd600" />
+        </linearGradient>
+        <linearGradient id={`${g}-fire`} x1="16" y1="56" x2="52" y2="8" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ff007a" />
+          <stop offset="0.32" stopColor="#ff8a00" />
+          <stop offset="0.58" stopColor="#ffd600" />
+          <stop offset="1" stopColor="#9d00ff" />
+        </linearGradient>
+        <linearGradient id={`${g}-spark`} x1="14" y1="12" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ffd700" />
+          <stop offset="0.42" stopColor="#ff8a00" />
+          <stop offset="1" stopColor="#ff2ec8" />
+        </linearGradient>
+        <filter id={glow} x="-55%" y="-55%" width="210%" height="210%">
+          <feGaussianBlur stdDeviation={core ? 1.55 : 0.95} result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
 
-      {id === "rose" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M32 58c0-8 .4-16 .6-22" />
-          <path d="M32 44c-7-1.5-11-7-6.5-9.5 2.2 2.4 5 5.2 6.5 9.5z" fill={`url(#${g}-fill)`} stroke="none" />
-          <path d="M32 44c7-1.5 11-7 6.5-9.5-2.2 2.4-5 5.2-6.5 9.5z" fill={`url(#${g}-fill)`} stroke="none" />
-          <path d="M32 36c-8.5-1-13.5-9-8-14 4 2 7.2 7 8 14z" fill={`url(#${g}-fill)`} />
-          <path d="M32 36c8.5-1 13.5-9 8-14-4 2-7.2 7-8 14z" fill={`url(#${g}-fill)`} />
-          <ellipse cx="32" cy="20" rx="9.5" ry="11" fill={`url(#${g}-fill)`} />
-          <path d="M32 12c-3.2 4-3.4 8.5 0 12 3.2-4 3.4-8.5 0-12z" fill="#fff" fillOpacity="0.32" stroke="none" />
-          <circle cx="32" cy="21" r="2.2" fill="#fff" fillOpacity="0.5" stroke="none" />
-        </g>
+      {visual === "gift" && (
+        <NeonLayers color={`url(#${g})`} glowId={glow} stroke={stroke} core={core}>
+          <GiftBoxMarks />
+        </NeonLayers>
       )}
 
-      {id === "heart" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined}>
-          <path
-            d="M32 54C32 54 8.5 37.2 8.5 22.4 8.5 13.6 16.2 9 24.6 12.8 28.4 14.6 32 20.2 32 20.2s3.6-5.6 7.4-7.4C47.8 9 55.5 13.6 55.5 22.4 55.5 37.2 32 54 32 54z"
-            fill={`url(#${g}-fill)`}
-            stroke={`url(#${g})`}
-            strokeWidth={stroke}
-          />
-          <path d="M22 22c2.5-6 8-7 10-2" fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="1.8" strokeLinecap="round" />
-        </g>
+      {visual === "funny" && (
+        <NeonLayers color={`url(#${g}-lr)`} glowId={glow} stroke={stroke} core={core}>
+          <LaughMarks />
+        </NeonLayers>
       )}
 
-      {id === "bouquet" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 38c-6.2-1.2-10-8.2-7.4-14.4C17.2 17.4 24 16 26.8 21.6 29 26.4 26.6 34.2 22 38z" fill={`url(#${g}-fill)`} />
-          <path d="M32 14c-6.4 0-10.6 7.6-7.2 14.2C28.2 35 36 36.2 39 30.2 41.6 24.8 38.4 14 32 14z" fill={`url(#${g}-fill)`} />
-          <path d="M44 38c6.2-1.2 10-8.2 7.4-14.4C48.8 17.4 42 16 39.2 21.6 37 26.4 39.4 34.2 44 38z" fill={`url(#${g}-fill)`} />
-          <path d="M22 38c2.4 6 6.6 12.5 10 18" />
-          <path d="M32 28.5V56" />
-          <path d="M44 38c-2.4 6-6.6 12.5-10 18" />
-          <circle cx="24" cy="24" r="1.5" fill="#fff" fillOpacity="0.55" stroke="none" />
-          <circle cx="30" cy="18" r="1.7" fill="#fff" fillOpacity="0.62" stroke="none" />
-          <circle cx="42" cy="24" r="1.5" fill="#fff" fillOpacity="0.55" stroke="none" />
-        </g>
+      {visual === "bouquet" && (
+        <>
+          <NeonLayers color="#ff2ec8" glowId={glow} stroke={stroke * 0.92} core={core}>
+            <BalloonMarks cx={16.5} cy={24} stringX={18} />
+          </NeonLayers>
+          <NeonLayers color="#22d3ee" glowId={glow} stroke={stroke * 0.92} core={core}>
+            <BalloonMarks cx={32} cy={17.5} stringX={32} />
+          </NeonLayers>
+          <NeonLayers color="#a855f7" glowId={glow} stroke={stroke * 0.92} core={core}>
+            <BalloonMarks cx={47.5} cy={25.5} stringX={46} />
+          </NeonLayers>
+        </>
       )}
 
-      {id === "diamond" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined} stroke={`url(#${g})`} strokeWidth={stroke} strokeLinejoin="round">
-          <polygon points="32,6 54,24 32,58 10,24" fill={`url(#${g}-fill)`} />
-          <polygon points="10,24 22,10 32,6 42,10 54,24 32,24" fill="#fff" fillOpacity="0.28" />
-          <polyline points="10,24 32,24 54,24" fill="none" />
-          <polyline points="22,10 32,24 42,10" fill="none" />
-          <polyline points="32,24 32,58" fill="none" />
-          <path d="M18 20l6-10M46 20l-6-10" stroke="#fff" strokeOpacity="0.62" strokeWidth="1.2" />
-        </g>
+      {visual === "rabbit" && (
+        <NeonLayers color={`url(#${g})`} glowId={glow} stroke={stroke} core={core}>
+          <RabbitMarks />
+        </NeonLayers>
       )}
 
-      {id === "gift" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined}>
-          <rect x="12" y="28" width="40" height="26" rx="4" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth={stroke} />
-          <rect x="10" y="20" width="44" height="10" rx="3" fill={`url(#${g})`} />
-          <rect x="29" y="20" width="6" height="34" fill="#fff" fillOpacity="0.34" />
-          <path d="M32 20c-5.5-8-13-7-13-2 0 4 7 6 13 8 6-2 13-4 13-8 0-5-7.5-6-13 2z" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.35" />
-          <circle cx="32" cy="20" r="2.4" fill="#fff" fillOpacity="0.78" />
-        </g>
+      {visual === "diamond" && (
+        <>
+          <NeonLayers color="#b026ff" glowId={glow} stroke={stroke} core={core}>
+            <DiamondOutline />
+          </NeonLayers>
+          <NeonLayers color="#ffd700" glowId={glow} stroke={stroke * 0.92} core={core}>
+            <DiamondGold />
+          </NeonLayers>
+        </>
       )}
 
-      {id === "teddy" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined} fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth={stroke}>
-          <circle cx="18" cy="18" r="8" />
-          <circle cx="46" cy="18" r="8" />
-          <circle cx="18" cy="18" r="4.2" fill="#fff" fillOpacity="0.28" stroke="none" />
-          <circle cx="46" cy="18" r="4.2" fill="#fff" fillOpacity="0.28" stroke="none" />
-          <circle cx="32" cy="28" r="14.5" />
-          <ellipse cx="32" cy="48" rx="13" ry="10" />
-          <ellipse cx="32" cy="32" rx="7" ry="5.5" fill="#fff" fillOpacity="0.28" stroke="none" />
-          <circle cx="26.5" cy="26" r="1.85" fill="#2e1064" stroke="none" />
-          <circle cx="37.5" cy="26" r="1.85" fill="#2e1064" stroke="none" />
-          <ellipse cx="32" cy="31.5" rx="2.2" ry="1.6" fill="#2e1064" stroke="none" />
-        </g>
+      {visual === "heart" && (
+        <NeonLayers color={`url(#${g})`} glowId={glow} stroke={stroke} core={core}>
+          <HeartMarks />
+        </NeonLayers>
       )}
 
-      {id === "naughty" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined}>
-          <path d="M18 22c-1.5-11 8.5-15 13-7" fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" />
-          <path d="M46 22c1.5-11-8.5-15-13-7" fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" />
-          <path d="M20 16c-1-6 4-9 7-4M44 16c1-6-4-9-7-4" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth="1.3" />
-          <circle cx="32" cy="36" r="16.5" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth={stroke} />
-          <path d="M22.5 33c2.6 1.2 5.4 1.1 7.2-1.2" fill="none" stroke="#2e1064" strokeWidth="1.7" strokeLinecap="round" />
-          <circle cx="40.2" cy="32.4" r="2.05" fill="#2e1064" />
-          <circle cx="40.8" cy="31.7" r="0.7" fill="#fff" />
-          <path d="M24.5 42.5c3.6 4.6 11.4 4.8 15.2.4" fill="none" stroke="#2e1064" strokeWidth="1.8" strokeLinecap="round" />
-          <circle cx="44.5" cy="40.5" r="2.1" fill="#fb7185" opacity="0.85" />
-        </g>
+      {visual === "rose" && (
+        <>
+          <NeonLayers color="#ff1ec8" glowId={glow} stroke={stroke} core={core}>
+            <RoseBloom />
+          </NeonLayers>
+          <NeonLayers color="#5fff3c" glowId={glow} stroke={stroke} core={core}>
+            <RoseStem />
+          </NeonLayers>
+          <NeonLayers color="#a032ff" glowId={glow} stroke={stroke * 0.9} core={core}>
+            <RoseVeins />
+          </NeonLayers>
+        </>
       )}
 
-      {id === "funny" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined}>
-          <circle cx="32" cy="32" r="20" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth={stroke} />
-          <path d="M21 28c2.2-3.4 6-3.6 8.2 0" fill="none" stroke="#2e1064" strokeWidth="2" strokeLinecap="round" />
-          <path d="M35 28c2.2-3.4 6-3.6 8.2 0" fill="none" stroke="#2e1064" strokeWidth="2" strokeLinecap="round" />
-          <path d="M20 36.5c4.8 9.5 19.2 9.5 24 0" fill="#2e1064" />
-          <path d="M22.5 36.8c4 6.6 15 6.6 19 0" fill="#fff" fillOpacity="0.88" />
-          <circle cx="47.5" cy="38" r="3.1" fill={`url(#${g})`} opacity="0.9" />
-          <circle cx="47.5" cy="38" r="1.5" fill="#fff" fillOpacity="0.55" />
-        </g>
+      {visual === "naughty" && (
+        <NeonLayers color="#ff2ec8" glowId={glow} stroke={stroke} core={core}>
+          <NaughtyMarks />
+        </NeonLayers>
       )}
 
-      {id === "beautiful" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined}>
-          <path
-            d="M32 8l3.2 12.2L48 18l-9.4 8.2 8.2 9.4-12.2-3.2L32 56l-2.6-13.6L17.2 45.6l8.2-9.4L16 18l12.8 2.2z"
-            fill={`url(#${g}-fill)`}
-            stroke={`url(#${g})`}
-            strokeWidth={stroke}
-            strokeLinejoin="round"
-          />
-          <circle cx="32" cy="32" r="7.2" fill={`url(#${g})`} />
-          <circle cx="32" cy="32" r="3.1" fill="#fff" fillOpacity="0.72" />
-          <path d="M32 10v6M32 48v6M12 32h6M46 32h6" stroke="#fff" strokeOpacity="0.55" strokeWidth="1.4" strokeLinecap="round" />
-        </g>
+      {visual === "beautiful" && (
+        <NeonLayers color={`url(#${g}-spark)`} glowId={glow} stroke={stroke} core={core}>
+          <BeautifulMarks />
+        </NeonLayers>
       )}
 
-      {id === "cool" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined}>
-          <circle cx="32" cy="33" r="19" fill={`url(#${g}-fill)`} stroke={`url(#${g})`} strokeWidth={stroke} />
-          <path d="M14 30.5h36" stroke={`url(#${g})`} strokeWidth="2.4" strokeLinecap="round" />
-          <rect x="16.5" y="26.5" width="13.5" height="9.5" rx="4.2" fill="#2e1064" />
-          <rect x="34" y="26.5" width="13.5" height="9.5" rx="4.2" fill="#2e1064" />
-          <path d="M30 31h4" stroke="#2e1064" strokeWidth="2.2" strokeLinecap="round" />
-          <path d="M19.2 29.4h8.2" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.4" strokeLinecap="round" />
-          <path d="M36.6 29.4h8.2" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.4" strokeLinecap="round" />
-          <path d="M24 42.5c3.4 3.2 12.6 3.2 16 0" fill="none" stroke="#2e1064" strokeWidth="1.8" strokeLinecap="round" />
-        </g>
-      )}
-
-      {id === "fire" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
-          <path
-            d="M32 58c-11.4 0-18.6-9.2-18.6-20.2 0-7.6 4.2-13.6 8.8-19.4 1.6 5.2 4.6 8.4 8.2 9.2-1.2-7.8 1.4-14.6 7.6-19.6 1.8 6.4 5.8 10.6 10.8 12.2 2.8 5.6 3.8 11.2 3.8 17.6C52.6 48.4 45.2 58 32 58z"
-            fill={`url(#${g}-fill)`}
-          />
-          <path d="M32 50c-6.2 0-10-5-10-11.2 0-4.2 2.2-7.6 4.8-10.8 1 3 2.8 4.8 5.2 5.2-.4-4.4 1.4-8.2 5.2-11 1.2 3.6 3.4 6 6.2 7 1.4 3.2 2 6.2 2 9.6 0 6.4-4.2 11.2-13.4 11.2z" fill="#fff" fillOpacity="0.22" />
-          <path d="M32 44c-3.4 0-5.6-2.8-5.6-6.2 0-2.4 1.2-4.4 2.6-6.2.6 1.8 1.6 2.8 3 3-.2-2.6 1-4.8 3.2-6.4.8 2.2 2.2 3.6 3.8 4.2.8 1.8 1.2 3.4 1.2 5.2 0 3.6-2.4 6.4-8.2 6.4z" fill="#fff" fillOpacity="0.4" stroke="none" />
-        </g>
-      )}
-
-      {id === "rabbit" && (
-        <g filter={withGlow ? `url(#${glow})` : undefined} fill="none" stroke={`url(#${g})`} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 28c-2.4-14 2.2-22.5 7.2-22.5 3.2 0 5.2 4.8 4.4 14.2" />
-          <path d="M46 28c2.4-14-2.2-22.5-7.2-22.5-3.2 0-5.2 4.8-4.4 14.2" />
-          <path d="M20.4 16c-1.2-6.5 2.6-10 5-6.2M43.6 16c1.2-6.5-2.6-10-5-6.2" fill={`url(#${g}-fill)`} />
-          <circle cx="32" cy="36" r="16" fill={`url(#${g}-fill)`} />
-          <circle cx="25.6" cy="33.4" r="2.1" fill="#2e1064" stroke="none" />
-          <circle cx="38.4" cy="33.4" r="2.1" fill="#2e1064" stroke="none" />
-          <circle cx="26.2" cy="32.7" r="0.7" fill="#fff" stroke="none" />
-          <circle cx="39" cy="32.7" r="0.7" fill="#fff" stroke="none" />
-          <ellipse cx="32" cy="38.4" rx="2.4" ry="1.7" fill="#2e1064" stroke="none" />
-          <path d="M27.2 43.2c1.8 2.4 7.8 2.4 9.6 0" stroke="#2e1064" strokeWidth="1.6" />
-          <path d="M48 22.5l4.2-4.2M50.6 24.8l3.4.2M50.2 20.2l1.8-3" strokeWidth="1.5" />
-        </g>
+      {visual === "fire" && (
+        <NeonLayers color={`url(#${g}-fire)`} glowId={glow} stroke={stroke} core={core}>
+          <FireMarks />
+        </NeonLayers>
       )}
     </svg>
   );

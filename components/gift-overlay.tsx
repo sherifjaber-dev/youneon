@@ -14,16 +14,16 @@ export interface CallGift {
 }
 
 export const CALL_GIFTS: CallGift[] = [
-  { id: "gift", emoji: "🎁", label: "Awesome", tagline: "Wrapped in neon" },
-  { id: "funny", emoji: "😂", label: "Funny", tagline: "Can't stop laughing" },
-  { id: "bouquet", emoji: "🎈", label: "Friendly", tagline: "A bunch of balloons" },
-  { id: "rabbit", emoji: "🐰", label: "Magic Rabbit", tagline: "A little magic" },
-  { id: "diamond", emoji: "💎", label: "WOW", tagline: "Cut to catch light" },
-  { id: "heart", emoji: "❤️", label: "Charming", tagline: "A quiet spark" },
-  { id: "rose", emoji: "🌹", label: "Rose", tagline: "A velvet bloom" },
-  { id: "naughty", emoji: "😈", label: "Naughty", tagline: "A little devil" },
-  { id: "beautiful", emoji: "✨", label: "Beautiful", tagline: "Catch the sparkle" },
-  { id: "fire", emoji: "🔥", label: "Fire", tagline: "Too hot" },
+  { id: "gift", emoji: "🎁", label: "Awesome", tagline: "Share the vibe" },
+  { id: "funny", emoji: "😂", label: "Funny", tagline: "Light up the chat" },
+  { id: "bouquet", emoji: "🎈", label: "Friendly", tagline: "Keep it cool" },
+  { id: "rabbit", emoji: "🐰", label: "Magic Rabbit", tagline: "Spark some wonder" },
+  { id: "diamond", emoji: "💎", label: "WOW", tagline: "Pure reaction" },
+  { id: "heart", emoji: "❤️", label: "Charming", tagline: "Win the moment" },
+  { id: "rose", emoji: "🌹", label: "Rose", tagline: "Classic & sweet" },
+  { id: "naughty", emoji: "😈", label: "Naughty", tagline: "A little trouble" },
+  { id: "beautiful", emoji: "✨", label: "Beautiful", tagline: "For the glow" },
+  { id: "fire", emoji: "🔥", label: "Fire", tagline: "Turn it up" },
 ];
 
 const LEGACY_GIFT_IDS: Record<string, GiftId> = {
@@ -160,13 +160,11 @@ export function GiftPickerPanel({
       style={{ bottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}
     >
       <div className="yn-gift-panel-head">
-        <div>
-          <p className="yn-gift-panel-title">Send a gift</p>
-          <p className="yn-gift-panel-sub">A neon gesture for this moment</p>
-        </div>
+        <p className="yn-gift-panel-title">Send a gift</p>
+        <p className="yn-gift-panel-sub">A neon gesture for this moment.</p>
         <button type="button" className="yn-gift-close" onClick={onClose} aria-label="Close gift picker">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" />
           </svg>
         </button>
       </div>
@@ -181,7 +179,7 @@ export function GiftPickerPanel({
             aria-label={`Send ${g.label}`}
           >
             <span className="yn-gift-tile-art">
-              <GiftArt id={g.id} size={36} variant="pick" />
+              <GiftArt id={g.id} size={38} variant="pick" instance={`pick-${g.id}`} />
             </span>
             <span className="yn-gift-tile-label">{g.label}</span>
             <span className="yn-gift-tile-tag">{g.tagline}</span>
