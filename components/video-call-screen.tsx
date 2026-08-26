@@ -1128,7 +1128,7 @@ function VideoCallScreen({
       )}
 
       {callStatus === "waiting" && (
-        <div className="yn-wait-screen">
+        <div className={`yn-wait-screen${showGiftPicker ? " is-gift-hidden" : ""}`}>
           <WaitingMatchPanel
             title="Waiting for match…"
             subtitle={isPremium ? "You are in the priority queue." : "Stay on this screen — the next person joins the same room."}
@@ -1230,9 +1230,10 @@ function VideoCallScreen({
           <button
             type="button"
             onClick={() => { setShowGiftPicker((v) => !v); setShowChatInput(false); setShowHistory(false); }}
-            className="yn-call-btn is-gift"
+            className={`yn-call-btn${showGiftPicker ? " is-gift-open" : ""}`}
             data-testid="gift-btn"
             aria-label="Send gift"
+            aria-pressed={showGiftPicker}
           >
             <span className="yn-call-btn-ring">
               <CallIcon name="gift" tone="plain" />

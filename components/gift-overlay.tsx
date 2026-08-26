@@ -153,40 +153,48 @@ export function GiftPickerPanel({
   onClose: () => void;
 }) {
   return (
-    <div
-      className="yn-gift-panel"
-      role="dialog"
-      aria-label="Send a gift"
-      style={{ bottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}
-    >
-      <div className="yn-gift-panel-head">
-        <p className="yn-gift-panel-title">Send a gift</p>
-        <p className="yn-gift-panel-sub">A neon gesture for this moment.</p>
-        <button type="button" className="yn-gift-close" onClick={onClose} aria-label="Close gift picker">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-      <div className="yn-gift-grid">
-        {CALL_GIFTS.map((g) => (
-          <button
-            key={g.id}
-            type="button"
-            onClick={() => onSelect(g)}
-            className="yn-gift-tile"
-            data-testid={`gift-${g.id}`}
-            aria-label={`Send ${g.label}`}
-          >
-            <span className="yn-gift-tile-art">
-              <GiftArt id={g.id} size={38} variant="pick" instance={`pick-${g.id}`} />
-            </span>
-            <span className="yn-gift-tile-label">{g.label}</span>
-            <span className="yn-gift-tile-tag">{g.tagline}</span>
+    <>
+      <button
+        type="button"
+        className="yn-gift-scrim"
+        aria-label="Close gift picker"
+        onClick={onClose}
+      />
+      <div
+        className="yn-gift-panel"
+        role="dialog"
+        aria-label="Send a gift"
+        style={{ bottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}
+      >
+        <div className="yn-gift-panel-head">
+          <p className="yn-gift-panel-title">Send a gift</p>
+          <p className="yn-gift-panel-sub">A neon gesture for this moment.</p>
+          <button type="button" className="yn-gift-close" onClick={onClose} aria-label="Close gift picker">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" />
+            </svg>
           </button>
-        ))}
+        </div>
+        <div className="yn-gift-grid">
+          {CALL_GIFTS.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => onSelect(g)}
+              className={`yn-gift-tile${g.id === "rabbit" ? " is-name-wrap" : ""}`}
+              data-testid={`gift-${g.id}`}
+              aria-label={`Send ${g.label}`}
+            >
+              <span className="yn-gift-tile-art">
+                <GiftArt id={g.id} size={34} variant="pick" instance={`pick-${g.id}`} />
+              </span>
+              <span className="yn-gift-tile-label">{g.label}</span>
+              <span className="yn-gift-tile-tag">{g.tagline}</span>
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
