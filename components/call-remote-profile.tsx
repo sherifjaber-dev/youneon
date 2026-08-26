@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Ban, Globe, MapPin, MessageCircle, MoreHorizontal, Plus, Share, Sparkles, Star, User, X } from "lucide-react";
+import { Ban, Globe, MapPin, MessageCircle, MoreHorizontal, Share, Sparkles, Star, User, X } from "lucide-react";
 import { CallReportSheet } from "@/components/call-report-sheet";
 import { GiftArt } from "@/components/icons/gift-art";
 import { InterestIcon } from "@/components/icons/interest-icons";
@@ -635,8 +635,7 @@ export function ProfilePreviewSheet({
                   onClick={handleFollow}
                   className={`yn-preview-btn ${following ? "is-ghost" : "is-primary"}`}
                 >
-                  {following ? null : <Plus size={18} strokeWidth={2.6} />}
-                  {following ? "Following" : "Follow"}
+                  {following ? "Following" : "+ Follow"}
                 </button>
                 <button type="button" onClick={handleMessage} className="yn-preview-btn is-message">
                   <MessageCircle size={18} strokeWidth={2.2} />

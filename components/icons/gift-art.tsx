@@ -7,7 +7,7 @@ export const GIFT_ACCENT: Record<GiftArtId, { a: string; b: string; c: string }>
   gift: { a: "#ff4fd8", b: "#e879f9", c: "#c026d3" },
   funny: { a: "#ff2ec8", b: "#ff8a00", c: "#ffd600" },
   bouquet: { a: "#ff2ec8", b: "#22d3ee", c: "#a855f7" },
-  rabbit: { a: "#c084fc", b: "#d946ef", c: "#a855f7" },
+  rabbit: { a: "#bf40ff", b: "#c084fc", c: "#a855f7" },
   diamond: { a: "#b026ff", b: "#ffd700", c: "#e879f9" },
   heart: { a: "#ff2ec8", b: "#ff4fd8", c: "#fb7185" },
   rose: { a: "#ff1ec8", b: "#5fff3c", c: "#a032ff" },
@@ -135,28 +135,30 @@ function BalloonMarks({
   );
 }
 
-/** Magic Rabbit — purple face, ears, whiskers, and a four-point sparkle. */
+/** Magic Rabbit — purple neon head, inner-fold ears, W mouth, whiskers, sparkle. */
 function RabbitMarks() {
   return (
     <>
-      <path d="M20.4 27.6C18.2 11.8 20.8 5.4 25.6 5.4C29.2 5.4 30.4 11.2 30 21.6" />
-      <path d="M43.2 27.6C45.4 11.8 42.8 5.4 38 5.4C34.4 5.4 33.2 11.2 33.6 21.6" />
-      <path d="M22.8 16.2C21.8 10.4 25 7.8 27.4 11.8" />
-      <path d="M40.8 16.2C41.8 10.4 38.6 7.8 36.2 11.8" />
-      <ellipse cx="31.8" cy="40.4" rx="14.2" ry="13.2" />
-      <path d="M24.4 36.4C25.8 33.8 29 33.8 30.2 36.4" />
-      <path d="M33.6 36.4C35 33.8 38.2 33.8 39.4 36.4" />
-      <path d="M31.8 41.2L30.2 44H33.4Z" />
-      <ellipse cx="31.8" cy="46.8" rx="1.65" ry="2.2" />
-      <path d="M21.2 42.4H25.8" />
-      <path d="M21.6 45.2H26" />
-      <path d="M37.6 42.4H42.2" />
-      <path d="M37.4 45.2H41.8" />
-      <path d="M51.2 13.6L53.1 19.4L59 21.2L53.1 23L51.2 28.8L49.3 23L43.4 21.2L49.3 19.4Z" />
-      <circle cx="46.8" cy="15.8" r="0.7" />
-      <circle cx="55.8" cy="16" r="0.7" />
-      <circle cx="55.8" cy="26.4" r="0.7" />
-      <circle cx="46.8" cy="26.2" r="0.7" />
+      <path d="M19.8 5.2C14.8 5.2 12.6 10.2 13.1 19.6C13.6 29.4 17.2 34.2 21.6 34.2C25.8 34.2 27.8 29.2 27.3 19.4C26.8 9.8 24.6 5.2 19.8 5.2Z" />
+      <path d="M37.4 5.2C32.6 5.2 30.4 9.8 29.9 19.4C29.4 29.2 31.4 34.2 35.6 34.2C40 34.2 43.6 29.4 44.1 19.6C44.6 10.2 42.4 5.2 37.4 5.2Z" />
+      <path d="M19.9 12.2C16.8 13.6 16.4 20.2 16.8 26.6C17.1 30.4 18.8 32.2 20.8 32" />
+      <path d="M37.3 12.2C40.4 13.6 40.8 20.2 40.4 26.6C40.1 30.4 38.4 32.2 36.4 32" />
+      <ellipse cx="28.6" cy="43.2" rx="16.2" ry="14.4" />
+      <path d="M21.6 46.4C23.6 51 26.6 51.2 28.6 47.2L28.6 44.2L28.6 47.2C30.6 51.2 33.6 51 35.6 46.4" />
+      <path d="M7.4 41.6L15.2 43.2" />
+      <path d="M7.8 47.2L15.4 47.6" />
+      <path d="M42 43.2L49.8 41.6" />
+      <path d="M41.8 47.6L49.4 47.2" />
+      <path d="M50.8 7.2C51.15 12.6 53.9 14.35 56.6 14.8C53.9 15.25 51.15 17 50.8 22.4C50.45 17 47.7 15.25 45 14.8C47.7 14.35 50.45 12.6 50.8 7.2Z" />
+    </>
+  );
+}
+
+function RabbitEyes() {
+  return (
+    <>
+      <circle cx="22.4" cy="41.2" r="1.55" />
+      <circle cx="34.8" cy="41.2" r="1.55" />
     </>
   );
 }
@@ -343,9 +345,17 @@ export function GiftArt({
       )}
 
       {visual === "rabbit" && (
-        <NeonLayers color={`url(#${g})`} glowId={glow} stroke={stroke} core={core}>
-          <RabbitMarks />
-        </NeonLayers>
+        <>
+          <NeonLayers color="#bf40ff" glowId={glow} stroke={stroke} core={core}>
+            <RabbitMarks />
+          </NeonLayers>
+          <g filter={`url(#${glow})`} fill="#f3e8ff">
+            <RabbitEyes />
+          </g>
+          <g fill="#bf40ff">
+            <RabbitEyes />
+          </g>
+        </>
       )}
 
       {visual === "diamond" && (

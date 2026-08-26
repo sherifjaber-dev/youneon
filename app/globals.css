@@ -1195,6 +1195,10 @@ html.youneon-signed-in select {
   color: #ffffff;
 }
 
+html.youneon-signed-in .yn-preview-name {
+  color: #ffffff;
+}
+
 .yn-preview-name-cluster {
   display: inline;
   min-width: 0;
@@ -1212,7 +1216,13 @@ html.youneon-signed-in select {
   font-weight: 800;
   letter-spacing: -0.03em;
   color: #ff2ec8;
+  opacity: 1;
   text-shadow: 0 0 12px rgba(255, 46, 200, 0.45);
+}
+
+html.youneon-signed-in .yn-preview-age {
+  color: #ff2ec8;
+  opacity: 1;
 }
 
 .yn-preview-flag {
@@ -1254,23 +1264,37 @@ html.youneon-signed-in select {
 
 .yn-preview-cta {
   display: flex;
+  flex-direction: row;
+  align-items: stretch;
   gap: 10px;
   margin: 12px 0 4px;
+  width: 100%;
 }
 
 .yn-preview-section {
   margin-top: 16px;
 }
 
-.yn-preview-section h3 {
+.yn-preview-section h3,
+html.youneon-signed-in .yn-preview-section h3 {
   margin: 0 0 10px;
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
   color: #ff2ec8;
-  text-shadow: 0 0 10px rgba(255, 46, 200, 0.35);
+  opacity: 1;
+  text-shadow: 0 0 10px rgba(255, 46, 200, 0.4);
+}
+
+.yn-preview-section h3 svg,
+html.youneon-signed-in .yn-preview-section h3 svg {
+  color: #ff2ec8;
+  opacity: 1;
+  flex-shrink: 0;
 }
 
 .yn-preview-tags {
@@ -1350,25 +1374,41 @@ html.youneon-signed-in select {
   font-size: 13px;
   font-weight: 600;
   line-height: 1;
-  color: #fff;
+  color: #f2eef7;
   cursor: pointer;
+}
+
+.yn-preview-rx > span {
+  color: #f2eef7;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 1;
 }
 
 .yn-preview-rx:disabled {
   opacity: 0.55;
 }
 
-.yn-preview-btn {
-  flex: 1;
+.yn-preview-btn,
+html.youneon-signed-in .yn-preview-btn {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  width: 50%;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 48px;
+  height: 46px;
+  min-height: 46px;
+  max-height: 46px;
+  padding: 0 12px;
   border: 0;
   border-radius: 16px;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
+  line-height: 1;
   color: #fff;
   cursor: pointer;
 }
@@ -1384,11 +1424,12 @@ html.youneon-signed-in select {
 
 .yn-preview-btn.is-edit {
   flex: 1 1 100%;
+  width: 100%;
 }
 
 .yn-preview-btn.is-message {
-  background: rgba(18, 10, 28, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(12, 6, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: #fff;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
