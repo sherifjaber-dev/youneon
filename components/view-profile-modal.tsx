@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import { X } from "lucide-react";
 import { CountryLabel } from "@/components/country-flag";
+import { UserPhoto } from "@/components/neon-avatar";
 
 interface UserProfile {
   id: string;
@@ -36,13 +38,13 @@ export function ViewProfileModal({ isOpen, user, onClose, onMessage, onAddFriend
       {/* Photo Carousel */}
       <div className="relative h-96 bg-black">
         {user.photos?.length > 0 ? (
-          <img
+          <UserPhoto
             src={user.photos[currentPhoto]}
             alt={user.name}
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-8xl">👤</div>
+          <UserPhoto alt={user.name} className="w-full h-full object-cover" />
         )}
 
         {user.photos?.length > 1 && (

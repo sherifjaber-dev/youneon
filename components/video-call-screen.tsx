@@ -1156,7 +1156,6 @@ function VideoCallScreen({
         <RemoteProfileAvatar
           photo={remotePreview.heroPhoto}
           name={remotePreview.name}
-          initials={remotePreview.initials}
           onOpen={openProfile}
         />
       )}

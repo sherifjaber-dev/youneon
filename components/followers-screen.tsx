@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowLeft, MessageCircle, UserPlus, Users } from "lucide-react";
-import { isPhotoSrc, neonInitial } from "@/components/neon-avatar";
+import { UserPhoto } from "@/components/neon-avatar";
 import { CountryLabel } from "@/components/country-flag";
 import type { FollowPerson } from "@/lib/follow-service";
 
@@ -141,21 +141,12 @@ export function FollowersScreen({
                   onClick={() => onOpenProfile?.(person.id)}
                   aria-label={`View ${person.name}'s profile`}
                 >
-                  {hasOwnPhoto && isPhotoSrc(person.photo) ? (
-                    <img src={person.photo} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <div
-                      className="flex h-full w-full items-center justify-center"
-                      style={{
-                        background:
-                          "linear-gradient(160deg, #e879f9 0%, #a855f7 40%, #ec4899 78%, #6d28d9 100%)",
-                      }}
-                    >
-                      <span className="text-[42px] font-bold tracking-wide text-white drop-shadow-[0_2px_12px_rgba(88,28,135,0.55)]">
-                        {neonInitial(person.name)}
-                      </span>
-                    </div>
-                  )}
+                  <UserPhoto
+                    src={person.photo}
+                    alt=""
+                    showPhoto={hasOwnPhoto}
+                    className="h-full w-full object-cover"
+                  />
                   {online[person.id] ? (
                     <span className="absolute bottom-2 right-2 h-3.5 w-3.5 rounded-full bg-emerald-400 shadow-[0_0_0_3px_var(--yn-card)]" />
                   ) : null}

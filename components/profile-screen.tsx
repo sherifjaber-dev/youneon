@@ -8,6 +8,7 @@ import { NeonShopModal } from "@/components/neon-shop-modal";   // ← NY IMPORT
 import { CountryLabel } from "@/components/country-flag";
 import { useLanguage, type Language } from "@/contexts/language-context";
 import { piAuthService } from "@/lib/pi-auth-service";
+import { UserPhoto } from "@/components/neon-avatar";
 
 interface UserProfile {
   fullName: string;
@@ -109,12 +110,8 @@ export function ProfileScreen() {
         <button onClick={() => setShowSettings(true)} className="absolute top-6 right-4 p-2 hover:bg-white rounded-lg transition">
           <Settings size={24} className="text-purple-600" />
         </button>
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 mx-auto mb-4 flex items-center justify-center text-5xl shadow-lg shadow-purple-400/40 overflow-hidden">
-          {profile.profilePicture ? (
-            <img src={profile.profilePicture} alt={profile.fullName} className="w-full h-full object-cover" />
-          ) : (
-            <span>👤</span>
-          )}
+        <div className="w-24 h-24 rounded-full bg-[#080412] mx-auto mb-4 flex items-center justify-center shadow-lg shadow-purple-400/40 overflow-hidden">
+          <UserPhoto src={profile.profilePicture} alt={profile.fullName} className="w-full h-full object-cover" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-1">{profile.fullName}</h1>
         <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-gray-600">

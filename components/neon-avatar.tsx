@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
+export const DEFAULT_AVATAR_SRC = "/default-avatar.png";
+
 export function isPhotoSrc(value?: string | null): boolean {
   if (!value || typeof value !== "string") return false;
   const v = value.trim();
+  if (!v || v === DEFAULT_AVATAR_SRC) return false;
   return (
     v.startsWith("data:image") ||
     v.startsWith("https://") ||
@@ -15,17 +18,41 @@ export function isPhotoSrc(value?: string | null): boolean {
   );
 }
 
-export function neonInitial(name?: string | null): string {
-  if (!name) return "Y";
-  const cleaned = name
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .trim();
-  if (!cleaned) return "Y";
-  const parts = cleaned.split(/\s+/).filter(Boolean);
-  const a = parts[0]?.[0] || "";
-  const b = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  const letters = `${a}${parts.length > 1 ? b : ""}`.toUpperCase();
-  return letters || "Y";
+export function resolvePhotoSrc(src?: string | null, showPhoto = true): string {
+  if (showPhoto && isPhotoSrc(src)) return src!.trim();
+  return DEFAULT_AVATAR_SRC;
+}
+
+/** Shared fallback: empty, invalid, or broken photo URLs use the neon default artwork. */
+export function UserPhoto({
+  src,
+  alt = "",
+  className,
+  showPhoto = true,
+}: {
+  src?: string | null;
+  alt?: string;
+  className?: string;
+  showPhoto?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  const resolved = resolvePhotoSrc(failed ? null : src, showPhoto);
+
+  return (
+    <img
+      src={resolved}
+      alt={alt}
+      className={className}
+      onError={() => {
+        if (resolved !== DEFAULT_AVATAR_SRC) setFailed(true);
+      }}
+    />
+  );
 }
 
 interface NeonAvatarProps {
@@ -47,14 +74,7 @@ export function NeonAvatar({
   className,
   alt,
 }: NeonAvatarProps) {
-  const [imgFailed, setImgFailed] = useState(false);
-  const photo = showPhoto && isPhotoSrc(src) && !imgFailed;
-  const initial = neonInitial(name);
   const ring = Math.max(2, Math.round(size * 0.045));
-
-  useEffect(() => {
-    setImgFailed(false);
-  }, [src]);
 
   return (
     <div
@@ -62,33 +82,18 @@ export function NeonAvatar({
       style={{ width: size, height: size }}
     >
       <div
-        className="flex h-full w-full items-center justify-center overflow-hidden rounded-full"
+        className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#080412]"
         style={{
-          background:
-            "linear-gradient(145deg, #e879f9 0%, #a855f7 42%, #ec4899 78%, #7c3aed 100%)",
-          boxShadow: `0 0 ${Math.round(size * 0.28)}px rgba(168, 85, 247, 0.45), inset 0 1px 0 rgba(255,255,255,0.28)`,
+          boxShadow: `0 0 ${Math.round(size * 0.28)}px rgba(168, 85, 247, 0.45)`,
         }}
         aria-hidden={!alt}
       >
-        {photo ? (
-          <img
-            src={src!}
-            alt={alt || name || ""}
-            className="h-full w-full object-cover"
-            onError={() => setImgFailed(true)}
-          />
-        ) : (
-          <span
-            className="select-none font-bold leading-none text-white"
-            style={{
-              fontSize: size >= 72 ? Math.round(size * 0.34) : Math.round(size * 0.38),
-              textShadow: "0 1px 8px rgba(88, 28, 135, 0.55)",
-              letterSpacing: size >= 64 ? "0.04em" : 0,
-            }}
-          >
-            {initial}
-          </span>
-        )}
+        <UserPhoto
+          src={src}
+          showPhoto={showPhoto}
+          alt={alt || name || ""}
+          className="h-full w-full object-cover"
+        />
       </div>
       {online && (
         <span

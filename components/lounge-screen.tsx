@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, MessageSquare } from "lucide-react";
-import { isPhotoSrc, NeonAvatar } from "@/components/neon-avatar";
+import { UserPhoto } from "@/components/neon-avatar";
 import { YouNeonLoungeFilterIcon } from "@/components/icons/youneon-nav-icons";
 import { LoungeFilterSheet } from "@/components/lounge-filter-sheet";
 import { CountryFlag } from "@/components/country-flag";
@@ -54,42 +54,11 @@ const CHIPS: { id: LoungeFeedChip; label: string }[] = [
 ];
 
 function CardPhoto({ src, name }: { src?: string; name?: string }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
-  const photo = isPhotoSrc(src) && !failed;
-  if (photo) {
-    return (
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full object-cover"
-        onError={() => setFailed(true)}
-      />
-    );
-  }
-  return (
-    <div className="yn-lounge-photo-fallback">
-      <NeonAvatar src={src} name={name} size={64} showPhoto={false} />
-    </div>
-  );
+  return <UserPhoto src={src} alt={name || ""} className="h-full w-full object-cover" />;
 }
 
 function LiveAvatar({ src, name }: { src?: string; name?: string }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
-  const photo = isPhotoSrc(src) && !failed;
-  if (photo) {
-    return <img src={src} alt="" onError={() => setFailed(true)} />;
-  }
-  return (
-    <span className="yn-lounge-live-fallback">
-      <NeonAvatar src={src} name={name} size={58} showPhoto={false} />
-    </span>
-  );
+  return <UserPhoto src={src} alt={name || ""} />;
 }
 
 function PresenceBadge({ online }: { online: boolean }) {

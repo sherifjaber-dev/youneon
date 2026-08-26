@@ -20,6 +20,7 @@ import {
   type NotificationAction,
 } from "@/lib/notifications";
 import { SUBSCRIPTION_PLAN } from "@/lib/product-config";
+import { UserPhoto } from "@/components/neon-avatar";
 
 const FILTERS: { id: InboxFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -40,12 +41,6 @@ type NotificationsScreenProps = {
   onOpenChat?: (user: { id: string; name: string; avatar: string; photo?: string }) => void;
   onOpenMessages?: () => void;
 };
-
-function isPhotoSrc(value?: string) {
-  if (!value) return false;
-  const v = value.trim();
-  return v.startsWith("data:image") || v.startsWith("https://") || v.startsWith("http://") || v.startsWith("blob:");
-}
 
 function ItemIcon({ item }: { item: InboxItem }) {
   const wrap =
@@ -90,13 +85,11 @@ function FeedAvatar({ item }: { item: InboxItem }) {
   if (!item.actorName && !item.actorPhoto) return null;
   return (
     <div className="mt-3">
-      {isPhotoSrc(item.actorPhoto) ? (
-        <img src={item.actorPhoto} alt="" className="h-10 w-10 rounded-full object-cover ring-2 ring-white/15" />
-      ) : (
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-purple-600 text-[12px] font-bold text-white ring-2 ring-white/15">
-          {(item.actorName || "Y").trim().charAt(0).toUpperCase()}
-        </span>
-      )}
+      <UserPhoto
+        src={item.actorPhoto}
+        alt=""
+        className="h-10 w-10 rounded-full object-cover ring-2 ring-white/15"
+      />
     </div>
   );
 }

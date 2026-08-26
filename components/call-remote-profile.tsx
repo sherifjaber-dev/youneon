@@ -6,7 +6,7 @@ import { Ban, Globe, MapPin, MessageCircle, MoreHorizontal, Plus, Share, Sparkle
 import { CallReportSheet } from "@/components/call-report-sheet";
 import { GiftArt } from "@/components/icons/gift-art";
 import { InterestIcon } from "@/components/icons/interest-icons";
-import { NeonAvatar, isPhotoSrc, neonInitial } from "@/components/neon-avatar";
+import { UserPhoto, isPhotoSrc } from "@/components/neon-avatar";
 import { CountryFlag } from "@/components/country-flag";
 import { countryLabel, countryToIso } from "@/lib/countries";
 import { incrementGiftsReceived, subscribeToUserProfile, type UserProfile } from "@/lib/firestore-service";
@@ -85,10 +85,6 @@ export type ProfileChatTarget = {
   country?: string;
   isOnline?: boolean;
 };
-
-function initialsFrom(name: string): string {
-  return neonInitial(name);
-}
 
 function collectPhotos(firestoreUser: UserProfile | null, hint: CallPartnerHint | null): string[] {
   const out: string[] = [];
@@ -185,7 +181,6 @@ export function mergeRemoteProfile(
     photos,
     heroPhoto: photos[0] || "",
     giftsReceived: gifts,
-    initials: initialsFrom(name || ""),
     interests: firestoreUser?.interests?.length ? firestoreUser.interests : hint?.interests || [],
     languages: Array.isArray(firestoreUser?.languages) ? firestoreUser!.languages.filter(Boolean) : [],
     youneonBadge: badgeFromUserDoc(firestoreUser as unknown as Record<string, unknown>),
@@ -199,21 +194,12 @@ export function mergeRemoteProfile(
 export function RemoteProfileAvatar({
   photo,
   name,
-  initials,
   onOpen,
 }: {
   photo?: string;
   name: string;
-  initials: string;
   onOpen: () => void;
 }) {
-  const [imgFailed, setImgFailed] = useState(false);
-  const showPhoto = isPhotoSrc(photo) && !imgFailed;
-
-  useEffect(() => {
-    setImgFailed(false);
-  }, [photo]);
-
   return (
     <button
       type="button"
@@ -222,11 +208,7 @@ export function RemoteProfileAvatar({
       data-testid="remote-profile-avatar"
       aria-label={`View ${name ? `${name}'s` : "their"} profile`}
     >
-      {showPhoto ? (
-        <img src={photo} alt="" onError={() => setImgFailed(true)} />
-      ) : (
-        <span className="yn-remote-avatar-fallback">{initials}</span>
-      )}
+      <UserPhoto src={photo} alt="" />
     </button>
   );
 }
@@ -620,13 +602,7 @@ export function ProfilePreviewSheet({
                 Online
               </span>
             ) : null}
-            {isPhotoSrc(current) ? (
-              <img src={current} alt="" />
-            ) : (
-              <div className="yn-preview-photo-fallback">
-                <NeonAvatar src="" name={profile.name} size={96} showPhoto={false} />
-              </div>
-            )}
+            <UserPhoto src={current} alt="" />
           </div>
 
           <div className="yn-preview-body">

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, X } from "lucide-react";
 import { CountryLabel } from "@/components/country-flag";
 import { useFriendsMessaging } from "@/hooks/use-friends-messaging";
+import { UserPhoto } from "@/components/neon-avatar";
 import type { Friend } from "@/hooks/use-friends-messaging";
 
 interface AddFriendModalProps {
@@ -25,7 +26,7 @@ export function AddFriendModal({ matchedUser, onClose, onContinue }: AddFriendMo
     const newFriend: Friend = {
       id: Math.random().toString(36),
       name: matchedUser.nickname,
-      avatar: "👤",
+      avatar: "",
       status: "pending",
       hasReplied: false,
     };
@@ -42,8 +43,8 @@ export function AddFriendModal({ matchedUser, onClose, onContinue }: AddFriendMo
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="yn-card rounded-3xl p-8 max-w-sm w-full">
         <div className="text-center">
-          <div className="w-20 h-20 neon-gradient-bg rounded-full mx-auto mb-6 flex items-center justify-center text-4xl shadow-lg shadow-fuchsia-500/25">
-            👤
+          <div className="w-20 h-20 rounded-full mx-auto mb-6 overflow-hidden bg-[#080412] shadow-lg shadow-fuchsia-500/25">
+            <UserPhoto alt={matchedUser.nickname} className="h-full w-full object-cover" />
           </div>
 
           <h2 className="text-2xl font-bold neon-gradient-text mb-2">
