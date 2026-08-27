@@ -6,16 +6,10 @@
     try { return JSON.stringify(e); } catch (x) { return String(e); }
   }
 
-  // Sign-In OAuth client_id from layout (NEXT_PUBLIC_PI_CLIENT_ID). Keep sandbox: true.
-  // Redirect URIs must be set in Pi Develop (e.g. pinet.com + vercel.app). No custom OAuth SPA.
-  // Testnet Pi.init may reject unknown clientId — retry without it (Studio still works).
-  function piInitOptions(withId) {
-    var opts = { version: "2.0", sandbox: true };
-    if (withId === false) return opts;
-    var id = "";
-    try { id = window.__YOUNEON_PI_CLIENT_ID__ || ""; } catch (cid) {}
-    if (id) opts.clientId = id;
-    return opts;
+  // Official Pi.init only. Never pass clientId — unofficial and breaks Pi Browser.
+  // sandbox: true is required for Testnet. Mainnet Pi Browser + sandbox:true hangs auth.
+  function piInitOptions() {
+    return { version: "2.0", sandbox: true };
   }
 
   function safePiInit(P, onOk) {
@@ -28,29 +22,18 @@
       console.log("[Pi] init success");
       if (onOk) onOk();
     }
-    function attempt(opts, retried) {
-      try {
-        var r = P.init(opts);
-        if (r && typeof r.then === "function") {
-          r.then(ok, function (e) {
-            console.log("[Pi] error: " + errMsg(e));
-            if (!retried && opts.clientId) {
-              console.log("[Pi] init retry without clientId");
-              attempt(piInitOptions(false), true);
-            }
-          });
-        } else {
-          ok();
-        }
-      } catch (e) {
-        console.log("[Pi] error: " + errMsg(e));
-        if (!retried && opts.clientId) {
-          console.log("[Pi] init retry without clientId");
-          attempt(piInitOptions(false), true);
-        }
+    try {
+      var r = P.init(piInitOptions());
+      if (r && typeof r.then === "function") {
+        r.then(ok, function (e) {
+          console.log("[Pi] error: " + errMsg(e));
+        });
+      } else {
+        ok();
       }
+    } catch (e) {
+      console.log("[Pi] error: " + errMsg(e));
     }
-    attempt(piInitOptions(true), false);
   }
 
   function findPi() {
@@ -240,6 +223,9 @@
       console.log("[Pi] error: no window.Pi");
       return;
     }
+    if (window.__YOUNEON_PI_AUTH_LOCK__) return window.__YOUNEON_PI_AUTH_PROMISE__;
+    window.__YOUNEON_PI_AUTH_LOCK__ = true;
+    try { setTimeout(function () { window.__YOUNEON_PI_AUTH_LOCK__ = false; }, 2500); } catch (st) {}
     console.log("[Pi] authenticate start");
     setLast("Last: authenticate called");
     var promise = null;
@@ -250,13 +236,15 @@
       console.log("[Pi] error: " + errMsg(classicErr));
       setLast("Last: " + errMsg(classicErr));
     }
-    try {
-      var objectResult = P.authenticate({ scopes: ["username", "payments"] });
-      wireAuth(objectResult);
-      if (!promise) promise = objectResult;
-    } catch (objectErr) {
-      console.log("[Pi] error: " + errMsg(objectErr));
+    if (!promise) {
+      try {
+        promise = P.authenticate({ scopes: ["username", "payments"] });
+        wireAuth(promise);
+      } catch (objectErr) {
+        console.log("[Pi] error: " + errMsg(objectErr));
+      }
     }
+    window.__YOUNEON_PI_AUTH_PROMISE__ = promise;
     return promise;
   }
 
@@ -272,28 +260,15 @@
       return;
     }
     try {
-      if (P.init) {
-        var ir = P.init(piInitOptions(true));
-        if (ir && typeof ir.then === "function") {
-          ir.then(function () {}, function (e) {
-            console.log("[Pi] error: " + errMsg(e));
-            try { P.init(piInitOptions(false)); } catch (ie2) { console.log("[Pi] error: " + errMsg(ie2)); }
-          });
-        }
-      }
+      if (P.init) P.init(piInitOptions());
     } catch (ie) {
       console.log("[Pi] error: " + errMsg(ie));
-      try {
-        if (P.init) P.init(piInitOptions(false));
-      } catch (ie2) {
-        console.log("[Pi] error: " + errMsg(ie2));
-      }
     }
     return callAuthenticate();
   };
 
   var AUTH_JS =
-    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{wireAuth(P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}}));}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{wireAuth(P.authenticate({scopes:['username','payments']}));}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
+    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{if(P.init){try{P.init({version:'2.0',sandbox:true});}catch(ie){console.log('[Pi] error: '+ie);}}if(!window.__YOUNEON_PI_AUTH_LOCK__){window.__YOUNEON_PI_AUTH_LOCK__=true;try{setTimeout(function(){window.__YOUNEON_PI_AUTH_LOCK__=false;},2500);}catch(st){}console.log('[Pi] authenticate start');last='Last: authenticate called';var pr=null;try{pr=P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}});wireAuth(pr);}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}if(!pr){try{pr=P.authenticate({scopes:['username','payments']});wireAuth(pr);}catch(o){console.log('[Pi] error: '+o);}}}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
   var LOGIN_V = "login-footer-flow-1";
   var NONE =
     "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:default";
@@ -518,21 +493,27 @@
   function loadOfficialSdkIfMissing() {
     if (findPi()) return;
     if (document.querySelector("script[data-youneon-pi-sdk]")) return;
-    var preserved = null;
-    try { preserved = findPi(); } catch (pe) { console.log("[Pi] error: " + errMsg(pe)); }
-    if (preserved) return;
+    var nativePi = null;
+    try { nativePi = findPi(); } catch (pe) { console.log("[Pi] error: " + errMsg(pe)); }
+    if (nativePi) return;
+    var watch = setInterval(function () {
+      try { if (window.Pi && !nativePi) nativePi = window.Pi; } catch (we) {}
+    }, 40);
     var s = document.createElement("script");
     s.src = "https://sdk.minepi.com/pi-sdk.js";
     s.async = true;
     s.setAttribute("data-youneon-pi-sdk", "1");
     s.onload = function () {
-      if (preserved) {
-        try { window.Pi = preserved; } catch (re) { console.log("[Pi] error: " + errMsg(re)); }
+      try { clearInterval(watch); } catch (cw) {}
+      if (nativePi) {
+        try { window.Pi = nativePi; } catch (re) { console.log("[Pi] error: " + errMsg(re)); }
       }
       logSdkLoaded();
       renderStatus();
+      if (findPi()) runInitThenAuth();
     };
     s.onerror = function () {
+      try { clearInterval(watch); } catch (cw) {}
       console.log("[Pi] error: failed to load sdk.minepi.com");
       setLast("Last: SDK script failed");
     };
@@ -574,6 +555,6 @@
         return;
       }
       loadOfficialSdkIfMissing();
-    }, 500);
+    }, 800);
   }
 })();

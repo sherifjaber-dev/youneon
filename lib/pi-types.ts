@@ -89,6 +89,7 @@ declare global {
     __YOUNEON_PI_SDK_LOGGED__?: boolean;
     __YOUNEON_PI_AUTH_PENDING__?: boolean;
     __YOUNEON_PI_AUTO_AUTH_STARTED__?: boolean;
+    __YOUNEON_PI_AUTH_LOCK__?: boolean;
     __YOUNEON_PI_LAST__?: string;
     __YOUNEON_PI_CLIENT_ID__?: string;
     __YOUNEON_PI_SDK_LOAD_SCHEDULED__?: boolean;

@@ -15,7 +15,7 @@ import type {
 export const PI_SDK_UNAVAILABLE = "PI_SDK_UNAVAILABLE";
 /** App Studio + U2A payments: username identity and payments scope together. */
 export const PI_AUTH_SCOPES: PiScope[] = ["username", "payments"];
-export const PI_SDK_WAIT_MS = 2000;
+export const PI_SDK_WAIT_MS = 4000;
 
 let initPromise: Promise<void> | null = null;
 let initSucceeded = false;
@@ -94,15 +94,35 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
   }
 
   const started = Date.now();
+  let requestedSdk = false;
   while (Date.now() - started < timeoutMs) {
     await new Promise((resolve) => setTimeout(resolve, 200));
     if (resolvePiSdk()) {
       logSdkLoaded();
       return true;
     }
+    if (!requestedSdk && Date.now() - started >= 800) {
+      requestedSdk = true;
+      loadOfficialSdkIfMissing();
+    }
   }
 
   return !!resolvePiSdk();
+}
+
+/** Load sdk.minepi.com only if Pi is still missing. Never replace an existing window.Pi. */
+function loadOfficialSdkIfMissing(): void {
+  if (typeof document === "undefined") return;
+  if (resolvePiSdk()) return;
+  if (document.querySelector("script[data-youneon-pi-sdk]")) return;
+  const s = document.createElement("script");
+  s.src = "https://sdk.minepi.com/pi-sdk.js";
+  s.async = true;
+  s.setAttribute("data-youneon-pi-sdk", "1");
+  s.onerror = () => {
+    console.log("[Pi] error: failed to load sdk.minepi.com");
+  };
+  (document.head || document.documentElement).appendChild(s);
 }
 
 export function resetPiSdkInit(): void {
@@ -142,18 +162,7 @@ export async function initPiSdk(): Promise<void> {
 
       logSdkLoaded();
       console.log("[Pi] init start");
-      const withClientId = getPiInitOptions(true);
-      try {
-        await Promise.resolve(Pi.init(withClientId));
-      } catch (error) {
-        logError(error);
-        if (withClientId.clientId) {
-          console.log("[Pi] init retry without clientId");
-          await Promise.resolve(Pi.init(getPiInitOptions(false)));
-        } else {
-          throw error;
-        }
-      }
+      await Promise.resolve(Pi.init(getPiInitOptions()));
       initSucceeded = true;
       console.log("[Pi] init success");
     })().catch((error) => {
@@ -208,51 +217,33 @@ function callWindowPiAuthenticate(
   console.log("[Pi] authenticate start");
   setPiStatusLast("Last: authenticate called", true);
 
-  let classicResult: Promise<PiAuthResult> | PiAuthResult | undefined;
+  let result: Promise<PiAuthResult> | PiAuthResult | undefined;
   try {
-    classicResult = Pi.authenticate(scopes, incomplete);
+    result = Pi.authenticate(scopes, incomplete);
   } catch (classicErr) {
     logError(classicErr);
     setPiStatusLast("Last: " + errorMessage(classicErr), true);
   }
 
-  if (classicResult != null) {
-    void Promise.resolve(classicResult)
-      .then((authResult) => {
-        console.log("[Pi] authenticate success");
-        if (
-          identityFromAuthResult(authResult) ||
-          (authResult && (authResult as PiAuthResult).accessToken)
-        ) {
-          markPiAuthOk(authResult);
-        }
-        return authResult;
-      })
-      .catch(logError);
+  if (result == null) {
+    try {
+      result = Pi.authenticate({ scopes });
+    } catch (objectErr) {
+      logError(objectErr);
+      throw objectErr;
+    }
   }
 
-  try {
-    const objectResult = Pi.authenticate({ scopes });
-    return Promise.resolve(objectResult).then((authResult) => {
-      console.log("[Pi] authenticate success");
-      if (identityFromAuthResult(authResult) || (authResult && (authResult as PiAuthResult).accessToken)) {
-        markPiAuthOk(authResult);
-      }
-      return authResult;
-    });
-  } catch (objectErr) {
-    logError(objectErr);
-    if (classicResult != null) {
-      return Promise.resolve(classicResult).then((authResult) => {
-        console.log("[Pi] authenticate success");
-        if (identityFromAuthResult(authResult) || (authResult && (authResult as PiAuthResult).accessToken)) {
-          markPiAuthOk(authResult);
-        }
-        return authResult;
-      });
+  return Promise.resolve(result).then((authResult) => {
+    console.log("[Pi] authenticate success");
+    if (
+      identityFromAuthResult(authResult) ||
+      (authResult && (authResult as PiAuthResult).accessToken)
+    ) {
+      markPiAuthOk(authResult);
     }
-    throw objectErr;
-  }
+    return authResult;
+  });
 }
 
 /** Synchronous tap path — classic authenticate in the same user-gesture turn. */
