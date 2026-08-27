@@ -39,6 +39,8 @@ const CRITICAL_CSS =
  * and never on pinet.com (that URL hangs the ecosystem iframe). Remote SDK load is
  * timed out at 3s. Pi.init is official only: { version: "2.0", sandbox: true }.
  * Classic Pi.authenticate(scopesArray, cb) runs FIRST so Studio can hook it.
+ * Authenticate is raced against 12s so a hanging stub Pi on pinet.com Chrome
+ * cannot leave Sign in stuck on Signing in... If auth later succeeds, hide overlay.
  */
 const PI_BOOT_SCRIPT =
   "(function youneonPiEarly() {" +
@@ -55,6 +57,7 @@ const PI_BOOT_SCRIPT =
   "return { version: '2.0', sandbox: true };" +
   "}" +
   "var PI_WAIT_MS = 3000;" +
+  "var PI_AUTH_HANG_MS = 12000;" +
   "function onPinetHost() {" +
   "try { var h = String((location && location.hostname) || ''); return h.indexOf('pinet.com') !== -1; } catch (e) { return false; }" +
   "}" +
@@ -95,7 +98,7 @@ const PI_BOOT_SCRIPT =
   "function failAuthText(e) {" +
   "var s = errMsg(e);" +
   "if (/cancel/i.test(s)) return 'Sign-in was cancelled. Tap Sign in with Pi to try again.';" +
-  "if (/no window\\.Pi|missing|unavailable|PI_SDK/i.test(s)) return 'Open this app in Pi Browser to sign in';" +
+  "if (/no window\\.Pi|missing|unavailable|PI_SDK|timed out|timeout/i.test(s)) return 'Open this app in Pi Browser to sign in';" +
   "return s || 'Could not sign in with Pi. Please try again.';" +
   "}" +
   "function setSigninBusy(busy) {" +
@@ -157,7 +160,10 @@ const PI_BOOT_SCRIPT =
   "showOverlays();" +
   "try { window.dispatchEvent(new CustomEvent('youneon:pi-auth-logout')); } catch (ev) { try { window.dispatchEvent(new Event('youneon:pi-auth-logout')); } catch (ev2) {} }" +
   "}" +
-  "function wireAuth(p) { try { if (p && typeof p.then === 'function') p.then(function (r) { setSigninBusy(false); markOk(r); }, function (e) { setSigninBusy(false); console.log('[Pi] error: ' + errMsg(e)); setLast('Last: ' + errMsg(e)); showAuthMsg(failAuthText(e)); }); else if (!p) setSigninBusy(false); } catch (w) { setSigninBusy(false); console.log('[Pi] error: ' + errMsg(w)); showAuthMsg(failAuthText(w)); } }" +
+  "function hangMsg() { return 'Open this app in Pi Browser to sign in'; }" +
+  "function unlockAuth() { try { window.__YOUNEON_PI_AUTH_LOCK__ = false; } catch (u) {} }" +
+  "function resetAuthHang() { unlockAuth(); setSigninBusy(false); showAuthMsg(hangMsg()); setLast('Last: authenticate timed out'); console.log('[Pi] error: authenticate timed out'); }" +
+  "function wireAuth(p) { try { if (p && typeof p.then === 'function') { var done = false; p.then(function (r) { done = true; unlockAuth(); setSigninBusy(false); markOk(r); }, function (e) { done = true; unlockAuth(); setSigninBusy(false); console.log('[Pi] error: ' + errMsg(e)); setLast('Last: ' + errMsg(e)); showAuthMsg(failAuthText(e)); }); try { if (typeof Promise !== 'undefined' && typeof Promise.race === 'function') { Promise.race([p, new Promise(function (res, rej) { setTimeout(function () { rej({ message: 'authenticate timed out' }); }, PI_AUTH_HANG_MS); })]).then(function () {}, function () { if (!done && !window.__PI_AUTH_OK) resetAuthHang(); }); } else { setTimeout(function () { if (!done && !window.__PI_AUTH_OK) resetAuthHang(); }, PI_AUTH_HANG_MS); } } catch (tm) { try { setTimeout(function () { if (!done && !window.__PI_AUTH_OK) resetAuthHang(); }, PI_AUTH_HANG_MS); } catch (t2) {} } } else if (!p) setSigninBusy(false); } catch (w) { setSigninBusy(false); console.log('[Pi] error: ' + errMsg(w)); showAuthMsg(failAuthText(w)); } }" +
   "window.__youneonMarkPiAuthOk = markOk;" +
   "window.__youneonClearPiAuth = clearAuth;" +
   "if (isPublicLegalPath()) { window.__YOUNEON_PUBLIC_PAGE__ = true; hideOverlays(); }" +
@@ -385,7 +391,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=signin-auth-2"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=signin-auth-3"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"

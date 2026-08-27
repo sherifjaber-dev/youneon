@@ -139,7 +139,7 @@ export function piWelcomeOverlayHtml(opts: {
   return (
     '<div class="youneon-static-login"' +
     idAttr +
-    ' aria-label="YouNeon" data-youneon-login-v="login-signin-auth-2" style="' +
+    ' aria-label="YouNeon" data-youneon-login-v="login-signin-auth-3" style="' +
     PI_WELCOME_OVERLAY_STYLE +
     '">' +
     piWelcomeInnerHtml(opts.buttonId, prefix) +
