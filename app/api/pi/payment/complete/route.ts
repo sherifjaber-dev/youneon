@@ -20,13 +20,19 @@ export async function POST(request: Request) {
     );
     if (!result.ok) {
       return NextResponse.json(
-        { error: result.error || "Complete failed", payment: result.payment },
+        {
+          ok: false,
+          error: result.error || "Complete failed",
+          payment: result.payment,
+          piStatus: result.piStatus || result.status,
+        },
         { status: result.status }
       );
     }
     return NextResponse.json({
       ok: true,
       payment: result.payment,
+      piStatus: result.piStatus || 200,
       premiumUntil: result.grant?.premiumUntil || null,
       alreadyGranted: result.grant?.alreadyGranted || false,
       granted: result.grant?.granted || false,
@@ -37,6 +43,9 @@ export async function POST(request: Request) {
     const message = error instanceof Error ? error.message : "Could not complete payment";
     const status = error instanceof PiPlatformError ? error.status : 502;
     console.warn("[Pi] complete route error", message);
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json(
+      { ok: false, error: message, piStatus: status },
+      { status }
+    );
   }
 }

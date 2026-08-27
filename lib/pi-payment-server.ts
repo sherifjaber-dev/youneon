@@ -16,6 +16,7 @@ import {
   completePiPayment,
   describePiApiFailure,
   getPiPayment,
+  isAlreadyCompletedPayload,
   parsePaymentId,
   parseTxid,
 } from "@/lib/pi-platform";
@@ -30,6 +31,7 @@ export type PaymentActionResult = {
   approved?: boolean;
   cancelled?: boolean;
   waiting?: boolean;
+  piStatus?: number;
 };
 
 async function sessionUsername(): Promise<string | null> {
@@ -87,17 +89,18 @@ export async function approvePaymentById(paymentIdRaw: unknown): Promise<Payment
   if (!approved.ok) {
     const already = await getPiPayment(paymentId);
     if (already.ok && already.data?.status?.developer_approved) {
-      return { ok: true, status: 200, payment: already.data, approved: true };
+      return { ok: true, status: 200, payment: already.data, approved: true, piStatus: approved.status };
     }
     return {
       ok: false,
       status: approved.status || 502,
       payment: approved.data,
+      piStatus: approved.status,
       error: describePiApiFailure("approve", approved.status || 502, approved.data),
     };
   }
 
-  return { ok: true, status: 200, payment: approved.data, approved: true };
+  return { ok: true, status: 200, payment: approved.data, approved: true, piStatus: approved.status };
 }
 
 export async function completePaymentById(
@@ -115,35 +118,59 @@ export async function completePaymentById(
   }
 
   const current = await getPiPayment(paymentId);
-  if (current.ok && current.data?.status?.developer_completed) {
-    const grant = await grantFromPayment(current.data, usernameHint);
-    return { ok: true, status: 200, payment: current.data, grant };
-  }
 
+  // Official order: approve (no txid), then complete with txid.
   if (!current.data?.status?.developer_approved) {
     const approved = await approvePiPayment(paymentId);
     if (!approved.ok && !current.data?.status?.developer_approved) {
-      console.warn("[Pi] complete: approve before complete failed", paymentId);
+      console.warn("[Pi] complete: approve before complete failed", {
+        paymentId,
+        status: approved.status,
+      });
     }
   }
 
+  // Always POST /complete with { txid } — even if Neon was already granted.
   const completed = await completePiPayment(paymentId, txid);
-  if (!completed.ok) {
-    const again = await getPiPayment(paymentId);
-    if (again.ok && again.data?.status?.developer_completed) {
-      const grant = await grantFromPayment(again.data, usernameHint);
-      return { ok: true, status: 200, payment: again.data, grant };
-    }
+  const alreadyDone =
+    completed.status === 200 ||
+    isAlreadyCompletedPayload(completed.data) ||
+    completed.data?.status?.developer_completed === true;
+
+  if (completed.status === 200) {
+    const grant = await grantFromPayment(completed.data, usernameHint);
     return {
-      ok: false,
-      status: completed.status || 502,
+      ok: true,
+      status: 200,
+      piStatus: 200,
       payment: completed.data,
-      error: describePiApiFailure("complete", completed.status || 502, completed.data),
+      grant,
     };
   }
 
-  const grant = await grantFromPayment(completed.data, usernameHint);
-  return { ok: true, status: 200, payment: completed.data, grant };
+  if (alreadyDone) {
+    const payment =
+      completed.data ||
+      (await getPiPayment(paymentId)).data ||
+      current.data ||
+      null;
+    const grant = await grantFromPayment(payment, usernameHint);
+    return {
+      ok: true,
+      status: 200,
+      piStatus: completed.status,
+      payment,
+      grant,
+    };
+  }
+
+  return {
+    ok: false,
+    status: completed.status || 502,
+    piStatus: completed.status,
+    payment: completed.data,
+    error: describePiApiFailure("complete", completed.status || 502, completed.data),
+  };
 }
 
 export async function cancelPaymentById(paymentIdRaw: unknown): Promise<PaymentActionResult> {
@@ -202,18 +229,19 @@ export async function resolveIncompletePayment(
     return { ok: true, status: 200, payment, cancelled: true };
   }
 
-  if (payment?.status?.developer_completed) {
-    const grant = await grantFromPayment(payment, extra?.username);
-    return { ok: true, status: 200, payment, grant };
-  }
-
   const txid =
     parseTxid(extra?.txid) ||
     parseTxid(payment?.transaction?.txid) ||
     parseTxid(extra?.payment?.transaction?.txid);
 
+  // Always complete when a real txid exists — even if the item was already delivered.
   if (txid) {
     return completePaymentById(paymentId, txid, extra?.username);
+  }
+
+  if (payment?.status?.developer_completed) {
+    const grant = await grantFromPayment(payment, extra?.username);
+    return { ok: true, status: 200, payment, grant };
   }
 
   const cancelled = await cancelPaymentById(paymentId);

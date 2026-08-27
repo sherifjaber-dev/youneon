@@ -1,6 +1,7 @@
 "use client";
 
 import { getNeonPackPaymentData, getSubscriptionPaymentData } from "@/lib/product-config";
+import { emitPurchaseFeedback } from "@/lib/purchase-feedback";
 import { getPiInitOptions } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk, readLiteSession } from "@/lib/pi-client-session";
 import type {
@@ -17,6 +18,8 @@ export const PI_SDK_UNAVAILABLE = "PI_SDK_UNAVAILABLE";
 export const PI_AUTH_SCOPES: PiScope[] = ["username", "payments"];
 export const PI_SDK_WAIT_MS = 3000;
 export const PI_INIT_TIMEOUT_MS = 3000;
+/** Canonical server complete URL. Alias: /api/pi/complete */
+export const PI_COMPLETE_API_PATH = "/api/pi/payment/complete";
 
 let initPromise: Promise<void> | null = null;
 let initSucceeded = false;
@@ -224,17 +227,19 @@ export async function initPiSdk(): Promise<void> {
 }
 
 export async function handleIncompletePayment(payment: PiPaymentDTO): Promise<void> {
-  const paymentId = payment?.identifier;
-  const txid = payment?.transaction?.txid;
+  const paymentId = typeof payment?.identifier === "string" ? payment.identifier : "";
+  const txid =
+    typeof payment?.transaction?.txid === "string" ? payment.transaction.txid.trim() : "";
   const lite = readLiteSession();
+  const path = txid ? PI_COMPLETE_API_PATH : "/api/pi/payment/incomplete";
   try {
-    const res = await fetch("/api/pi/payment/incomplete", {
+    const res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
         paymentId,
-        txid,
+        txid: txid || undefined,
         payment,
         username: lite?.username || undefined,
         uid: lite?.uid || undefined,
@@ -246,6 +251,7 @@ export async function handleIncompletePayment(payment: PiPaymentDTO): Promise<vo
         (typeof data.error === "string" && data.error) ||
         `Incomplete payment failed (${res.status})`;
       logError(message);
+      emitPurchaseFeedback({ type: "error", message: `Pi complete failed: ${message}` });
     }
   } catch (error) {
     logError(error);
@@ -371,7 +377,30 @@ export type CreatePiPaymentResult = {
   granted?: boolean;
   neonGranted?: number;
   skipped?: string | null;
+  piStatus?: number;
 };
+
+function readPaymentIdAndTxid(
+  paymentIdOrPayment: unknown,
+  txidMaybe: unknown
+): { paymentId: string; txid: string } {
+  let paymentId = "";
+  let txid = "";
+  if (typeof paymentIdOrPayment === "string") {
+    paymentId = paymentIdOrPayment.trim();
+  } else if (paymentIdOrPayment && typeof paymentIdOrPayment === "object") {
+    const payment = paymentIdOrPayment as PiPaymentDTO;
+    if (typeof payment.identifier === "string") paymentId = payment.identifier.trim();
+    if (typeof payment.transaction?.txid === "string") txid = payment.transaction.txid.trim();
+  }
+  if (typeof txidMaybe === "string") {
+    txid = txidMaybe.trim() || txid;
+  } else if (txidMaybe && typeof txidMaybe === "object") {
+    const rec = txidMaybe as { txid?: unknown };
+    if (typeof rec.txid === "string") txid = rec.txid.trim() || txid;
+  }
+  return { paymentId, txid };
+}
 
 async function postPaymentAction(
   path: string,
@@ -392,6 +421,24 @@ async function postPaymentAction(
   return { ok: res.ok, status: res.status, data };
 }
 
+function resultFromComplete(
+  paymentId: string,
+  txid: string,
+  data: Record<string, unknown>
+): CreatePiPaymentResult {
+  return {
+    paymentId,
+    txid,
+    payment: (data.payment as PiPaymentDTO) || null,
+    premiumUntil: typeof data.premiumUntil === "string" ? data.premiumUntil : null,
+    alreadyGranted: data.alreadyGranted === true,
+    granted: data.granted === true,
+    neonGranted: typeof data.neonGranted === "number" ? data.neonGranted : 0,
+    skipped: typeof data.skipped === "string" ? data.skipped : null,
+    piStatus: typeof data.piStatus === "number" ? data.piStatus : undefined,
+  };
+}
+
 /**
  * U2A payment via window.Pi.createPayment. Always awaits Pi.init first.
  * Resolves after server-side complete; rejects on cancel or error.
@@ -408,79 +455,144 @@ export async function createPiPayment(
 
   return new Promise((resolve, reject) => {
     let settled = false;
+    let lastPaymentId = "";
+    let lastTxid = "";
     const finish = (fn: () => void) => {
       if (settled) return;
       settled = true;
       fn();
     };
 
+    const completeOnServer = async (
+      paymentId: string,
+      txid: string
+    ): Promise<CreatePiPaymentResult> => {
+      console.log("[Pi] complete request", {
+        paymentId,
+        txidLength: txid.length,
+      });
+      const result = await postPaymentAction(PI_COMPLETE_API_PATH, {
+        paymentId,
+        txid,
+      });
+      const piStatus =
+        typeof result.data.piStatus === "number" ? result.data.piStatus : result.status;
+      console.log("[Pi] complete response", { paymentId, txidLength: txid.length, status: result.status, piStatus });
+      if (!result.ok || result.status !== 200) {
+        const error = new Error(
+          (typeof result.data.error === "string" && result.data.error) ||
+            `Pi complete failed: ${result.status}`
+        );
+        emitPurchaseFeedback({ type: "error", message: error.message });
+        throw error;
+      }
+      return resultFromComplete(paymentId, txid, result.data);
+    };
+
+    const retryCompleteIfPending = () => {
+      if (settled || !lastPaymentId || !lastTxid) return;
+      void completeOnServer(lastPaymentId, lastTxid)
+        .then((payload) => {
+          emitPurchaseFeedback({ type: "success" });
+          finishWith(() => resolve(payload));
+        })
+        .catch((error) => {
+          logError(error);
+        });
+    };
+
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      retryCompleteIfPending();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", onVisible);
+      window.addEventListener("pageshow", onVisible);
+      document.addEventListener("visibilitychange", onVisible);
+    }
+
+    const cleanup = () => {
+      if (typeof window === "undefined") return;
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+
+    const finishWith = (fn: () => void) => {
+      cleanup();
+      finish(fn);
+    };
+
     Pi.createPayment(paymentData, {
       onReadyForServerApproval: async (paymentId) => {
         extraCallbacks?.onReadyForServerApproval?.(paymentId);
+        const id = typeof paymentId === "string" ? paymentId.trim() : readPaymentIdAndTxid(paymentId, "").paymentId;
+        if (id) lastPaymentId = id;
+        emitPurchaseFeedback({ type: "waiting", message: "Waiting for Pi payment…" });
         try {
-          const result = await postPaymentAction("/api/pi/payment/approve", { paymentId });
+          const result = await postPaymentAction("/api/pi/payment/approve", { paymentId: id || paymentId });
+          console.log("[Pi] approve response", {
+            paymentId: id || paymentId,
+            status: result.status,
+          });
           if (!result.ok) {
             const error = new Error(
               (typeof result.data.error === "string" && result.data.error) ||
                 `Payment approval failed (${result.status})`
             );
             logError(error);
-            finish(() => reject(error));
+            emitPurchaseFeedback({ type: "error", message: error.message });
+            finishWith(() => reject(error));
             throw error;
           }
         } catch (error) {
           const err = error instanceof Error ? error : new Error(errorMessage(error));
           logError(err);
-          finish(() => reject(err));
+          emitPurchaseFeedback({ type: "error", message: err.message });
+          finishWith(() => reject(err));
           throw err;
         }
       },
-      onReadyForServerCompletion: async (paymentId, txid) => {
-        extraCallbacks?.onReadyForServerCompletion?.(paymentId, txid);
-        try {
-          const result = await postPaymentAction("/api/pi/payment/complete", {
-            paymentId,
-            txid,
+      onReadyForServerCompletion: async (paymentIdArg, txidArg) => {
+        extraCallbacks?.onReadyForServerCompletion?.(
+          typeof paymentIdArg === "string" ? paymentIdArg : lastPaymentId,
+          typeof txidArg === "string" ? txidArg : ""
+        );
+        const { paymentId, txid } = readPaymentIdAndTxid(paymentIdArg, txidArg);
+        if (paymentId) lastPaymentId = paymentId;
+        if (txid) lastTxid = txid;
+        if (!paymentId || !txid) {
+          console.warn("[Pi] complete waiting for txid", {
+            paymentId: paymentId || lastPaymentId,
+            txidLength: txid.length,
           });
-          if (!result.ok) {
-            const error = new Error(
-              (typeof result.data.error === "string" && result.data.error) ||
-                `Payment completion failed (${result.status})`
-            );
-            logError(error);
-            finish(() => reject(error));
-            throw error;
-          }
-          finish(() =>
-            resolve({
-              paymentId,
-              txid,
-              payment: (result.data.payment as PiPaymentDTO) || null,
-              premiumUntil:
-                typeof result.data.premiumUntil === "string" ? result.data.premiumUntil : null,
-              alreadyGranted: result.data.alreadyGranted === true,
-              granted: result.data.granted === true,
-              neonGranted:
-                typeof result.data.neonGranted === "number" ? result.data.neonGranted : 0,
-              skipped: typeof result.data.skipped === "string" ? result.data.skipped : null,
-            })
-          );
+          emitPurchaseFeedback({
+            type: "waiting",
+            message: "Waiting for Pi transaction id…",
+          });
+          return;
+        }
+        try {
+          const payload = await completeOnServer(paymentId, txid);
+          emitPurchaseFeedback({ type: "success" });
+          finishWith(() => resolve(payload));
         } catch (error) {
           const err = error instanceof Error ? error : new Error(errorMessage(error));
           logError(err);
-          finish(() => reject(err));
+          emitPurchaseFeedback({ type: "error", message: err.message });
           throw err;
         }
       },
       onCancel: async (paymentId) => {
         extraCallbacks?.onCancel?.(paymentId);
         await postPaymentAction("/api/pi/payment/cancel", { paymentId }).catch(logError);
-        finish(() => reject(new Error("Payment cancelled")));
+        finishWith(() => reject(new Error("Payment cancelled")));
       },
       onError: (error, payment) => {
         extraCallbacks?.onError?.(error, payment);
         logError(error);
-        finish(() =>
+        finishWith(() =>
           reject(error instanceof Error ? error : new Error(errorMessage(error)))
         );
       },

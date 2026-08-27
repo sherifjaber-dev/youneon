@@ -50,18 +50,62 @@ export function hasPiServerApiKey(): boolean {
   return getPiServerApiKey().length > 0;
 }
 
+function unwrapId(value: unknown, keys: string[]): unknown {
+  if (value && typeof value === "object") {
+    const rec = value as Record<string, unknown>;
+    for (const key of keys) {
+      if (typeof rec[key] === "string") return rec[key];
+    }
+  }
+  return value;
+}
+
 export function parsePaymentId(value: unknown): string {
-  const id = typeof value === "string" ? value.trim() : "";
-  if (!id || id.length > 128 || !/^[\w-]+$/.test(id)) {
+  const raw = unwrapId(value, ["identifier", "paymentId", "payment_id"]);
+  const id = typeof raw === "string" ? raw.trim() : "";
+  if (!id || id === "undefined" || id === "null" || id.length > 256 || !/^[\w-]+$/.test(id)) {
     return "";
   }
   return id;
 }
 
 export function parseTxid(value: unknown): string {
-  const id = typeof value === "string" ? value.trim() : "";
-  if (!id || id.length > 256) return "";
+  const raw = unwrapId(value, ["txid", "txId", "tx_id"]);
+  const id = typeof raw === "string" ? raw.trim() : "";
+  if (!id || id === "undefined" || id === "null" || id.length > 256) return "";
   return id;
+}
+
+/** Log payment actions without ever printing the API key. */
+export function logPiPaymentAction(
+  action: "approve" | "complete" | "cancel" | "get",
+  info: { paymentId: string; txidLength?: number; status: number }
+): void {
+  const keyLen = getPiServerApiKey().length;
+  console.info("[Pi]", action, {
+    paymentId: info.paymentId,
+    txidLength: info.txidLength ?? 0,
+    status: info.status,
+    apiKeyPresent: keyLen > 0,
+    apiKeyLength: keyLen,
+    host: getPiPlatformBase(),
+    sandbox: isPiSandbox(),
+  });
+}
+
+export function isAlreadyCompletedPayload(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const rec = data as Record<string, unknown>;
+  const err = typeof rec.error === "string" ? rec.error : "";
+  if (/already[_ ]?completed/i.test(err)) return true;
+  const status = rec.status as { developer_completed?: boolean } | undefined;
+  if (status?.developer_completed) return true;
+  const nested = rec.payment;
+  if (nested && typeof nested === "object") {
+    const paymentStatus = (nested as { status?: { developer_completed?: boolean } }).status;
+    if (paymentStatus?.developer_completed) return true;
+  }
+  return false;
 }
 
 export function describePiApiFailure(action: string, status: number, data: unknown): string {
@@ -122,22 +166,32 @@ export async function getPiPayment(paymentId: string) {
 }
 
 export async function approvePiPayment(paymentId: string) {
-  return piApi<PiPaymentDTO>(`/payments/${paymentId}/approve`, {
+  const result = await piApi<PiPaymentDTO>(`/payments/${paymentId}/approve`, {
     method: "POST",
     body: {},
   });
+  logPiPaymentAction("approve", { paymentId, status: result.status });
+  return result;
 }
 
 export async function completePiPayment(paymentId: string, txid: string) {
-  return piApi<PiPaymentDTO>(`/payments/${paymentId}/complete`, {
+  const result = await piApi<PiPaymentDTO>(`/payments/${paymentId}/complete`, {
     method: "POST",
     body: { txid },
   });
+  logPiPaymentAction("complete", {
+    paymentId,
+    txidLength: txid.length,
+    status: result.status,
+  });
+  return { ...result, ok: result.status === 200 };
 }
 
 export async function cancelPiPayment(paymentId: string) {
-  return piApi<PiPaymentDTO>(`/payments/${paymentId}/cancel`, {
+  const result = await piApi<PiPaymentDTO>(`/payments/${paymentId}/cancel`, {
     method: "POST",
     body: {},
   });
+  logPiPaymentAction("cancel", { paymentId, status: result.status });
+  return result;
 }

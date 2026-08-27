@@ -12,6 +12,7 @@ import { NEON_PACKAGES } from "@/lib/product-config";
 import { hideStaticLoginOverlays } from "@/lib/pi-client-session";
 import { emitPremiumGranted } from "@/lib/premium";
 import { PI_SDK_UNAVAILABLE, purchaseNeonPackWithPi } from "@/lib/pi-sdk";
+import { KOB_GENNEMFORT, PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
 import { X, Zap, Star } from "lucide-react";
 
 interface NeonShopModalProps {
@@ -38,6 +39,25 @@ export function NeonShopModal({
     if (isOpen) hideStaticLoginOverlays();
   }, [isOpen]);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const onFeedback = (event: Event) => {
+      const detail = (event as CustomEvent<PurchaseFeedback>).detail;
+      if (!detail?.type) return;
+      if (detail.type === "success") {
+        setMessage({ type: "success", text: KOB_GENNEMFORT });
+        return;
+      }
+      if (detail.type === "error") {
+        setMessage({ type: "error", text: detail.message });
+        return;
+      }
+      setMessage({ type: "info", text: detail.message || "Waiting for Pi payment…" });
+    };
+    window.addEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
+    return () => window.removeEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
+  }, [isOpen]);
+
   const handlePurchase = async (event: React.MouseEvent, packageId: string) => {
     event.preventDefault();
     event.stopPropagation();
@@ -51,15 +71,6 @@ export function NeonShopModal({
 
     try {
       const result = await purchaseNeonPackWithPi(packageId);
-      if (!result.alreadyGranted && result.granted !== true) {
-        setMessage({
-          type: "error",
-          text: result.skipped
-            ? `Payment reached Pi, but Neon was not added (${result.skipped}). Try again.`
-            : "Payment reached Pi, but Neon was not added. Try again or check PI_API_KEY on Vercel.",
-        });
-        return;
-      }
       const neonGranted =
         result.alreadyGranted
           ? 0
@@ -78,8 +89,10 @@ export function NeonShopModal({
       setMessage({
         type: "success",
         text: result.alreadyGranted
-          ? "This pack was already granted."
-          : `+${neonGranted.toLocaleString()} Neon added!`,
+          ? `${KOB_GENNEMFORT}. This pack was already granted.`
+          : neonGranted > 0
+            ? `${KOB_GENNEMFORT}. +${neonGranted.toLocaleString()} Neon added!`
+            : KOB_GENNEMFORT,
       });
     } catch (error) {
       const raw = error instanceof Error ? error.message : String(error ?? "");

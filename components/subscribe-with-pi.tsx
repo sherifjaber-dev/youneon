@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PI_SDK_UNAVAILABLE, subscribeWithPi } from "@/lib/pi-sdk";
 import { PREMIUM_BENEFITS, PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
 import { emitPremiumGranted, isPremiumActive } from "@/lib/premium";
+import { KOB_GENNEMFORT, PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
 
 function formatUntil(iso: string): string {
   const date = new Date(iso);
@@ -31,28 +32,43 @@ export function SubscribeWithPi({
   const [status, setStatus] = React.useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = React.useState("");
   const [premiumUntil, setPremiumUntil] = React.useState<string | null>(premiumUntilProp);
+  const inFlightRef = React.useRef(false);
 
   React.useEffect(() => {
     setPremiumUntil(premiumUntilProp);
   }, [premiumUntilProp]);
+
+  React.useEffect(() => {
+    const onFeedback = (event: Event) => {
+      if (!inFlightRef.current) return;
+      const detail = (event as CustomEvent<PurchaseFeedback>).detail;
+      if (!detail?.type) return;
+      if (detail.type === "success") {
+        setStatus("success");
+        setMessage(KOB_GENNEMFORT);
+        return;
+      }
+      if (detail.type === "error") {
+        setStatus("error");
+        setMessage(detail.message);
+        return;
+      }
+      setStatus("loading");
+      setMessage(detail.message || "Waiting for Pi payment…");
+    };
+    window.addEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
+    return () => window.removeEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
+  }, []);
 
   const active = isPremium || isPremiumActive(premiumUntil);
 
   const handleSubscribe = async () => {
     setStatus("loading");
     setMessage("Opening Pi payment...");
+    inFlightRef.current = true;
 
     try {
       const result = await subscribeWithPi();
-      if (!result.alreadyGranted && result.granted !== true) {
-        setStatus("error");
-        setMessage(
-          result.skipped
-            ? `Payment reached Pi, but Premium was not added (${result.skipped}). Try again.`
-            : "Payment reached Pi, but Premium was not added. Try again or check PI_API_KEY on Vercel."
-        );
-        return;
-      }
       const until = result.premiumUntil || null;
       const neonGranted =
         result.alreadyGranted
@@ -71,8 +87,8 @@ export function SubscribeWithPi({
       setStatus("success");
       setMessage(
         until
-          ? `YouNeon Premium is active until ${formatUntil(until)}.${neonGranted > 0 ? ` +${neonGranted} Neon added.` : ""}`
-          : "Payment complete. YouNeon Premium is now active."
+          ? `${KOB_GENNEMFORT}. YouNeon Premium is active until ${formatUntil(until)}.${neonGranted > 0 ? ` +${neonGranted} Neon added.` : ""}`
+          : KOB_GENNEMFORT
       );
     } catch (error) {
       const raw = error instanceof Error ? error.message : String(error ?? "");
@@ -84,6 +100,8 @@ export function SubscribeWithPi({
       } else {
         setMessage(raw || "Subscription failed. Please try again.");
       }
+    } finally {
+      inFlightRef.current = false;
     }
   };
 

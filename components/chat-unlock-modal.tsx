@@ -15,6 +15,7 @@ import { CHAT_UNLOCK_NEON, NEON_PACKAGES } from "@/lib/product-config";
 import { hideStaticLoginOverlays } from "@/lib/pi-client-session";
 import { emitPremiumGranted } from "@/lib/premium";
 import { PI_SDK_UNAVAILABLE, purchaseNeonPackWithPi } from "@/lib/pi-sdk";
+import { KOB_GENNEMFORT, PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
 
 export type ChatUnlockTarget = {
   id: string;
@@ -67,6 +68,25 @@ export function ChatUnlockModal({
     }
   }, [open]);
 
+  React.useEffect(() => {
+    if (!open) return;
+    const onFeedback = (event: Event) => {
+      const detail = (event as CustomEvent<PurchaseFeedback>).detail;
+      if (!detail?.type) return;
+      if (detail.type === "success") {
+        setMessage({ type: "success", text: KOB_GENNEMFORT });
+        return;
+      }
+      if (detail.type === "error") {
+        setMessage({ type: "error", text: detail.message });
+        return;
+      }
+      setMessage({ type: "info", text: detail.message || "Waiting for Pi payment…" });
+    };
+    window.addEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
+    return () => window.removeEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
+  }, [open]);
+
   const handlePurchase = async (event: React.MouseEvent, packageId: string) => {
     event.preventDefault();
     event.stopPropagation();
@@ -79,15 +99,6 @@ export function ChatUnlockModal({
 
     try {
       const result = await purchaseNeonPackWithPi(packageId);
-      if (!result.alreadyGranted && result.granted !== true) {
-        setMessage({
-          type: "error",
-          text: result.skipped
-            ? `Payment reached Pi, but Neon was not added (${result.skipped}). Try again.`
-            : "Payment reached Pi, but Neon was not added. Try again or check PI_API_KEY on Vercel.",
-        });
-        return;
-      }
       const neonGranted =
         result.alreadyGranted
           ? 0
@@ -106,8 +117,10 @@ export function ChatUnlockModal({
       setMessage({
         type: "success",
         text: result.alreadyGranted
-          ? "This pack was already granted."
-          : `+${neonGranted.toLocaleString()} Neon added.`,
+          ? `${KOB_GENNEMFORT}. This pack was already granted.`
+          : neonGranted > 0
+            ? `${KOB_GENNEMFORT}. +${neonGranted.toLocaleString()} Neon added.`
+            : KOB_GENNEMFORT,
       });
       if (!result.alreadyGranted) {
         onUnlockedByPurchase?.();
