@@ -149,7 +149,7 @@ export function AdminPanel({
   const runCleanup = async () => {
     if (cleanupBusy) return;
     const confirmed = window.confirm(
-      "Delete only docs marked isTest / isDemo / seed, or reserved fake ids (guest_demo, pi_user, anon, test_*, demo_*). Real Pi users are kept."
+      "Delete seeded Lucas/Marcus/Sofia rows, demo/guest/test flags, and launch-test History/Messages threads. Sherifjaber and other real Pi accounts are kept."
     );
     if (!confirmed) return;
     setCleanupBusy(true);
@@ -445,9 +445,8 @@ export function AdminPanel({
         <section className="rounded-2xl border border-black/6 bg-white p-4 shadow-sm">
           <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-yn-text">Remove test / demo data</h2>
           <p className="mt-2 text-[14px] leading-6 text-yn-muted">
-            One-shot cleanup. Deletes only documents marked <code>isTest</code>, <code>isDemo</code>, or <code>seed</code>,
-            or reserved fake ids such as <code>guest_demo</code>, <code>pi_user</code>, <code>anon</code>, and <code>test_*</code>.
-            Real Pi accounts are not mass-deleted.
+            One-shot cleanup. Deletes seeded Lucas/Marcus/Sofia docs, demo/guest/test flags,
+            and launch-test History/Messages/follows. <strong>Sherifjaber</strong> is never deleted.
           </p>
           <p className="mt-3 text-[13px] leading-6 text-yn-muted">
             Needs Firebase Admin credentials on the host (FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY).

@@ -5,7 +5,12 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { GIFT_TO_REACTION } from "@/lib/profile-catalog";
-import { isFakeDisplayName, isFakeUserRecord, isRealPiUsername } from "@/lib/real-pi-user";
+import {
+  isFakeDisplayName,
+  isFakeUserRecord,
+  isHiddenSocialPeer,
+  isRealPiUsername,
+} from "@/lib/real-pi-user";
 import { readSpokenLanguages, readStringList } from "@/lib/profile-fields";
 
 export interface UserProfile {
@@ -297,7 +302,7 @@ export const getOrCreateConversation = async (
   me: { id: string; name: string; avatar: string; flag?: string; photo?: string },
   other: { id: string; name: string; avatar: string; flag?: string; photo?: string }
 ) => {
-  if (!isRealPiUsername(me.id) || !isRealPiUsername(other.id)) {
+  if (!isRealPiUsername(me.id) || !isRealPiUsername(other.id) || isHiddenSocialPeer(other.id, other.name)) {
     throw new Error("Chat is only available between real Pi accounts.");
   }
   const cid = getConversationId(me.id, other.id);
@@ -470,7 +475,8 @@ export const subscribeToConversations = (userId: string, cb: (convs: any[]) => v
         const otherId = participants.find((p: string) => p !== userId);
         if (!isRealPiUsername(otherId)) return false;
         const names = (conv.participantNames || {}) as Record<string, string>;
-        if (isFakeDisplayName(names[otherId])) return false;
+        if (isHiddenSocialPeer(otherId, names[otherId])) return false;
+        if (participants.some((p: string) => isHiddenSocialPeer(p, names[p]))) return false;
         return true;
       });
     convs.sort((a: any, b: any) => (b.lastMessageTime?.toMillis?.() || 0) - (a.lastMessageTime?.toMillis?.() || 0));
@@ -502,7 +508,7 @@ export const addToHistory = async (
   }
 ) => {
   if (!isRealPiUsername(currentUserId) || !isRealPiUsername(match.id)) return;
-  if (isFakeDisplayName(match.name)) return;
+  if (isHiddenSocialPeer(match.id, match.name) || isFakeDisplayName(match.name)) return;
   const durationSeconds =
     typeof match.durationSeconds === "number" && Number.isFinite(match.durationSeconds)
       ? Math.max(0, Math.floor(match.durationSeconds))
@@ -544,7 +550,7 @@ export const subscribeToHistory = (userId: string, cb: (items: any[]) => void) =
         .filter((item: any) => {
           const matchId = String(item.matchId || item.id || "");
           if (!isRealPiUsername(matchId)) return false;
-          if (isFakeDisplayName(item.name)) return false;
+          if (isHiddenSocialPeer(matchId, item.name)) return false;
           return !isFakeUserRecord(matchId, item);
         })
     )

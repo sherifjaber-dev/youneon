@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { isHiddenSocialPeer } from "@/lib/real-pi-user";
+import { clearSeededLocalCaches } from "@/lib/purge-seeded-social";
 
 export interface Friend {
   id: string;
@@ -28,24 +30,49 @@ export function useFriendsMessaging() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [conversations, setConversations] = useState<Record<string, Conversation>>({});
 
-  // Load friends and conversations from localStorage
-  useEffect(() => {
-    const savedFriends = localStorage.getItem("youneon_friends");
-    const savedConversations = localStorage.getItem("youneon_conversations");
+  // Drop leftover local seeds so Messages never rehydrates Lucas/Marcus threads.
+  const [hydrated, setHydrated] = useState(false);
 
-    if (savedFriends) setFriends(JSON.parse(savedFriends));
-    if (savedConversations) setConversations(JSON.parse(savedConversations));
+  useEffect(() => {
+    clearSeededLocalCaches();
+    try {
+      const savedFriends = localStorage.getItem("youneon_friends");
+      const savedConversations = localStorage.getItem("youneon_conversations");
+      if (savedFriends) {
+        const parsed = JSON.parse(savedFriends) as Friend[];
+        setFriends(parsed.filter((f) => f?.id && !isHiddenSocialPeer(f.id, f.name)));
+      } else {
+        setFriends([]);
+      }
+      if (savedConversations) {
+        const parsed = JSON.parse(savedConversations) as Record<string, Conversation>;
+        const next: Record<string, Conversation> = {};
+        Object.entries(parsed || {}).forEach(([id, conv]) => {
+          if (!isHiddenSocialPeer(id, conv?.friendName)) next[id] = conv;
+        });
+        setConversations(next);
+      } else {
+        setConversations({});
+      }
+    } catch {
+      setFriends([]);
+      setConversations({});
+    }
+    setHydrated(true);
   }, []);
 
-  // Save friends to localStorage
   useEffect(() => {
-    localStorage.setItem("youneon_friends", JSON.stringify(friends));
-  }, [friends]);
+    if (!hydrated) return;
+    localStorage.setItem(
+      "youneon_friends",
+      JSON.stringify(friends.filter((f) => !isHiddenSocialPeer(f.id, f.name)))
+    );
+  }, [friends, hydrated]);
 
-  // Save conversations to localStorage
   useEffect(() => {
+    if (!hydrated) return;
     localStorage.setItem("youneon_conversations", JSON.stringify(conversations));
-  }, [conversations]);
+  }, [conversations, hydrated]);
 
   // Add or request a friend
   const addFriend = (friend: Friend) => {

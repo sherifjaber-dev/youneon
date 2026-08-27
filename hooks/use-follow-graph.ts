@@ -12,7 +12,7 @@ import {
   type FollowSnapshot,
 } from "@/lib/follow-service";
 import { getUserProfile } from "@/lib/firestore-service";
-import { isFakeDisplayName, isRealPiUsername } from "@/lib/real-pi-user";
+import { isHiddenSocialPeer } from "@/lib/real-pi-user";
 
 function mergeLive(person: FollowPerson, live: FollowPerson | undefined): FollowPerson {
   if (!live) return person;
@@ -73,14 +73,14 @@ export function useFollowGraph(userId?: string) {
     const unsubFollow = subscribeToFollowing(userId, (rows) => {
       const people = rows
         .map((r) => personFromFollow(r, userId))
-        .filter((p) => p.id && p.id !== userId && isRealPiUsername(p.id) && !isFakeDisplayName(p.name));
+        .filter((p) => p.id && p.id !== userId && !isHiddenSocialPeer(p.id, p.name));
       setFollowingRows(applyOverlay(people, pendingAddRef.current, pendingRemoveRef.current));
       setReady(true);
     });
     const unsubFollowers = subscribeToFollowers(userId, (rows) => {
       const people = rows
         .map((r) => personFromFollow(r, userId))
-        .filter((p) => p.id && p.id !== userId && isRealPiUsername(p.id) && !isFakeDisplayName(p.name));
+        .filter((p) => p.id && p.id !== userId && !isHiddenSocialPeer(p.id, p.name));
       setFollowerRows(people);
     });
     return () => {

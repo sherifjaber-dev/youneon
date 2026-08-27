@@ -10,6 +10,7 @@ import { useBlockedIds } from "@/hooks/use-user-settings";
 import { CountryFlag } from "@/components/country-flag";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import type { FollowSnapshot } from "@/lib/follow-service";
+import { isHiddenSocialPeer } from "@/lib/real-pi-user";
 
 interface MessagesScreenProps {
   currentUserId?: string;
@@ -91,6 +92,16 @@ export function MessagesScreen({
     });
     return map;
   }, [following, followers]);
+
+  const visibleConversations = useMemo(() => {
+    return conversations.filter((conv) => {
+      const otherId = conv.participants?.find((p: string) => p !== currentUserId);
+      if (!otherId || blockedIds.has(otherId)) return false;
+      const known = peopleById[otherId];
+      const name = conv.participantNames?.[otherId] || known?.name || "";
+      return !isHiddenSocialPeer(otherId, name);
+    });
+  }, [conversations, currentUserId, blockedIds, peopleById]);
 
   const openProfile = (id: string) => {
     if (onOpenProfile) {
@@ -281,7 +292,7 @@ export function MessagesScreen({
           )}
         </button>
 
-        {conversations.length === 0 ? (
+        {visibleConversations.length === 0 ? (
           <div className="yn-messages-empty">
             <div className="yn-messages-empty-icon">
               <MessageCircle size={26} />
@@ -293,11 +304,12 @@ export function MessagesScreen({
           </div>
         ) : (
           <div className="yn-messages-list">
-            {conversations.map((conv) => {
+            {visibleConversations.map((conv) => {
               const otherId = conv.participants?.find((p: string) => p !== currentUserId);
               if (!otherId || blockedIds.has(otherId)) return null;
               const known = peopleById[otherId];
               const name = conv.participantNames?.[otherId] || known?.name || "User";
+              if (isHiddenSocialPeer(otherId, name)) return null;
               const photo = conv.participantPhotos?.[otherId] || known?.photo || "";
               const country = conv.participantFlags?.[otherId] || known?.country || "";
               const unread = conv.unreadCount?.[currentUserId || ""] || 0;

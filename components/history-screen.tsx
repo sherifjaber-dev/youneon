@@ -18,6 +18,7 @@ import {
   toMillis,
   type GenderFilter,
 } from "@/lib/history-utils";
+import { isHiddenSocialPeer } from "@/lib/real-pi-user";
 
 interface HistoryScreenProps {
   currentUserId?: string;
@@ -341,10 +342,12 @@ export function HistoryScreen({
     if (!currentUserId) return;
     const unsub = subscribeToHistory(currentUserId, (items) => {
       setHistory(
-        (items as HistoryRow[]).map((item) => ({
-          ...item,
-          matchId: item.matchId || item.id,
-        }))
+        (items as HistoryRow[])
+          .map((item) => ({
+            ...item,
+            matchId: item.matchId || item.id,
+          }))
+          .filter((item) => !isHiddenSocialPeer(item.matchId, item.name))
       );
     });
     return () => unsub();
@@ -419,8 +422,18 @@ export function HistoryScreen({
     return people;
   }, [enriched, liveById]);
 
+  const visibleViews = useMemo(
+    () => views.filter((view) => !isHiddenSocialPeer(view.viewerId, view.name)),
+    [views]
+  );
+
   const filteredList = useMemo(() => {
-    let rows = enriched.filter((r) => !blockedIds.has(r.matchId) && !blockedIds.has(r.id));
+    let rows = enriched.filter(
+      (r) =>
+        !blockedIds.has(r.matchId) &&
+        !blockedIds.has(r.id) &&
+        !isHiddenSocialPeer(r.matchId, r.name)
+    );
     if (updatedFocus !== "all") {
       rows = rows.filter((r) => r.matchId === updatedFocus);
     }
@@ -678,7 +691,7 @@ export function HistoryScreen({
         </div>
       ) : (
         <div>
-          {views.length === 0 ? (
+          {visibleViews.length === 0 ? (
             <div className="yn-history-empty">
               <p className="yn-history-empty-title">No profile views yet</p>
               <p className="yn-history-empty-sub">
@@ -686,7 +699,7 @@ export function HistoryScreen({
               </p>
             </div>
           ) : (
-            views.map((view) => {
+            visibleViews.map((view) => {
               const live = liveById[view.viewerId];
               const name = live?.name || view.name || view.viewerId;
               const photo = live?.photo || view.photo;

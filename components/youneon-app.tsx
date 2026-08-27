@@ -68,6 +68,7 @@ import {
 import { CHAT_UNLOCK_NEON } from "@/lib/product-config";
 import { ChatUnlockModal, type ChatUnlockTarget } from "@/components/chat-unlock-modal";
 import { isRealPiUsername } from "@/lib/real-pi-user";
+import { clearSeededLocalCaches, purgeSeededSocialForUser } from "@/lib/purge-seeded-social";
 import { isDemoLunaId } from "@/lib/demo-luna-profile";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 
@@ -272,6 +273,7 @@ export function YouNeonApp() {
     setNeonBalance(readStoredNeonBalance(0));
     const storedUntil = readStoredPremiumUntil();
     if (storedUntil) setPremiumUntil(storedUntil);
+    clearSeededLocalCaches();
   }, []);
 
   useEffect(() => {
@@ -317,6 +319,7 @@ export function YouNeonApp() {
     let cancelled = false;
 
     setCurrentUser((prev) => prev || stubUser(uid, piUsername));
+    void purgeSeededSocialForUser(piUsername);
 
     (async () => {
       const fetchStartedAt = Date.now();

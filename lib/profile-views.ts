@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { getUserProfile } from "./firestore-service";
+import { isHiddenSocialPeer, isRealPiUsername } from "./real-pi-user";
 import { readSpokenLanguages } from "./profile-fields";
 import { toMillis } from "./history-utils";
 
@@ -35,7 +36,8 @@ export async function recordProfileView(opts: {
   const viewedUserId = (opts.viewedUserId || "").trim();
   if (!viewerId || !viewedUserId) return;
   if (viewerId === viewedUserId) return;
-  if (viewerId === "anon" || viewedUserId === "anon") return;
+  if (!isRealPiUsername(viewerId) || !isRealPiUsername(viewedUserId)) return;
+  if (isHiddenSocialPeer(viewerId, opts.viewerName) || isHiddenSocialPeer(viewedUserId)) return;
 
   let name = opts.viewerName || "";
   let photo = opts.viewerPhoto || "";
@@ -102,6 +104,7 @@ export function subscribeToProfileViews(
             at: data.at,
           };
         })
+        .filter((row) => !isHiddenSocialPeer(row.viewerId, row.name))
         .filter((row) => toMillis(row.at) >= cutoff || !row.at)
         .sort((a, b) => toMillis(b.at) - toMillis(a.at));
       cb(rows);

@@ -13,6 +13,7 @@ import {
 import { db } from "@/lib/firebase";
 import type { Announcement } from "@/lib/announcements";
 import { readAnnouncementIds } from "@/lib/announcements";
+import { isHiddenSocialPeer } from "@/lib/real-pi-user";
 
 export type SocialNotificationType = "follow" | "message" | "gift" | "warning";
 export type InboxFilter = "all" | "notifications" | "events" | "updates";
@@ -248,7 +249,8 @@ export function subscribeToUserNotifications(
     (snap) => {
       const items = snap.docs
         .map((d) => recordFromSnap(d.id, d.data() as Record<string, unknown>))
-        .filter((row): row is UserNotification => !!row);
+        .filter((row): row is UserNotification => !!row)
+        .filter((row) => !isHiddenSocialPeer(row.actorId, row.actorName));
       items.sort((a, b) => b.createdAtMs - a.createdAtMs);
       cb(items);
     },
@@ -269,7 +271,8 @@ export function subscribeToFollowInbox(
     q,
     (snap) => {
       const read = new Set(readNotificationIds());
-      const items: InboxItem[] = snap.docs.map((d) => {
+      const items: InboxItem[] = snap.docs
+        .map((d) => {
         const data = d.data() as Record<string, unknown>;
         const actorId = String(data.followerId || "");
         const actorName = String(data.followerName || actorId || "Someone");
@@ -278,8 +281,8 @@ export function subscribeToFollowInbox(
         const id = `follow-live-${d.id}`;
         return {
           id,
-          filter: "notifications",
-          kind: "follow",
+          filter: "notifications" as const,
+          kind: "follow" as const,
           title: "You have a new follower!",
           body: `${actorName} is following you now.`,
           createdAtMs: ms,
@@ -289,7 +292,8 @@ export function subscribeToFollowInbox(
           unread: !read.has(id) && !read.has(`follow__${actorId}__${userId}`),
           dedupeKey: `follow:${actorId}`,
         };
-      });
+      })
+        .filter((item) => !isHiddenSocialPeer(item.actorId, item.actorName));
       items.sort((a, b) => b.createdAtMs - a.createdAtMs);
       cb(items);
     },

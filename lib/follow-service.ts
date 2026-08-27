@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { getUserProfile, type UserProfile } from "./firestore-service";
+import { isHiddenSocialPeer } from "./real-pi-user";
 
 export interface FollowSnapshot {
   id: string;
@@ -235,6 +236,7 @@ async function writeBestEffort(writes: Array<Promise<unknown>>) {
 
 export async function followUser(me: FollowSnapshot, other: FollowSnapshot) {
   if (!me.id || !other.id || me.id === other.id) return;
+  if (isHiddenSocialPeer(other.id, other.name)) return;
   const [meProfile, otherProfile] = await Promise.all([
     getUserProfile(me.id).catch(() => null),
     getUserProfile(other.id).catch(() => null),
