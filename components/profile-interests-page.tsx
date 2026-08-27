@@ -41,7 +41,7 @@ export function ProfileInterestsPage({
   };
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-yn-bg text-yn-text">
+    <div className="yn-pe-interests absolute inset-0 z-20 flex flex-col">
       <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-black/6 px-2 pt-[env(safe-area-inset-top)]">
         <button
           type="button"

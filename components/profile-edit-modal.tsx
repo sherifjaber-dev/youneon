@@ -2,20 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Cake,
   ChevronRight,
-  Eye,
-  Info,
+  Crown,
   MapPin,
+  MessageCircle,
   Pencil,
   Plus,
   Settings,
   User,
-  Languages as LanguagesIcon,
   X,
 } from "lucide-react";
 import { InterestIcon } from "@/components/icons/interest-icons";
 import { ReactionIcon } from "@/components/icons/reaction-icons";
-import { PremiumBadge } from "@/components/premium-badge";
 import { ProfileInterestsPage } from "@/components/profile-interests-page";
 import { ProfileSettingsSheet } from "@/components/profile-settings-sheet";
 import { acquireProfileChromeLock, ProfilePreviewSheet } from "@/components/call-remote-profile";
@@ -29,6 +28,7 @@ import {
   AGE_MAX,
   AGE_MIN,
   BIO_MAX,
+  INTEREST_CATEGORIES,
   MAX_LANGUAGES,
   MAX_PHOTOS,
   NAME_MAX,
@@ -43,6 +43,68 @@ import {
   totalReactions,
   REACTION_TYPES,
 } from "@/lib/profile-catalog";
+
+const NEON_TONES = ["pink", "cyan", "purple"] as const;
+type NeonTone = (typeof NEON_TONES)[number];
+
+const BADGE_NEXT_LABEL: Record<string, string> = {
+  photo: "Photo",
+  name: "Name",
+  age: "Age",
+  bio: "About me",
+  country: "Location",
+  languages: "Languages",
+  interests: "Interests",
+};
+
+function interestTone(tag: string, index: number): NeonTone {
+  const cat = INTEREST_CATEGORIES.find((c) => c.tags.includes(tag))?.id;
+  if (cat === "relationships") return "pink";
+  if (cat === "sports") return "cyan";
+  if (cat === "fashion") return "purple";
+  return NEON_TONES[index % NEON_TONES.length];
+}
+
+function GenderMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden>
+      <circle cx="10" cy="14" r="5.1" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M14.2 9.8 20 4M16.2 4H20v3.8"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BadgeShield() {
+  return (
+    <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden className="yn-pe-badge-mark">
+      <path
+        d="M20 4.2 7.6 9.2v10.2c0 7.6 5.1 14.4 12.4 16 7.3-1.6 12.4-8.4 12.4-16V9.2L20 4.2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M14.4 16.2h11.2l-1.3 2.1v3.4c0 3.2-2.2 5.6-4.3 6.4-2.1-.8-4.3-3.2-4.3-6.4v-3.4z"
+        fill="currentColor"
+        opacity="0.92"
+      />
+      <path
+        d="M16.6 16.2 20 13.4l3.4 2.8"
+        fill="none"
+        stroke="#070010"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export const GENDER_OPTIONS = ["Man", "Woman", "Prefer not to say"] as const;
 export type ProfileGender = (typeof GENDER_OPTIONS)[number];
@@ -105,7 +167,7 @@ interface ProfileEditModalProps {
 type SheetId = "name" | "about" | "languages" | "location" | "age" | "gender" | "badge" | null;
 
 const APPLY =
-  "flex h-12 w-full items-center justify-center rounded-[14px] bg-[var(--pink)] text-[15px] font-semibold text-white shadow-[0_4px_16px_var(--pink-soft)] transition-transform active:scale-[0.985] active:bg-[var(--pink-pressed)] disabled:bg-yn-bg disabled:text-yn-muted disabled:shadow-none";
+  "flex h-12 w-full items-center justify-center rounded-[14px] bg-[var(--pink)] text-[15px] font-semibold text-white shadow-[0_4px_16px_var(--pink-soft)] transition-transform active:scale-[0.985] active:bg-[var(--pink-pressed)] disabled:bg-white/10 disabled:text-[#6b6274] disabled:shadow-none";
 
 function isProfileGender(value: string): value is ProfileGender {
   return (GENDER_OPTIONS as readonly string[]).includes(value);
@@ -215,10 +277,10 @@ function BottomSheet({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-md rounded-t-3xl border border-black/8 bg-yn-card px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-2 shadow-2xl">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-black/15" />
-        <h3 className="text-[18px] font-semibold text-yn-text">{title}</h3>
-        {subtitle && <p className="mt-1.5 text-[13px] leading-relaxed text-yn-muted">{subtitle}</p>}
+      <div className="yn-pe-sheet relative w-full max-w-md rounded-t-3xl border px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-2 shadow-2xl">
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" />
+        <h3 className="text-[18px] font-semibold">{title}</h3>
+        {subtitle && <p className="mt-1.5 text-[13px] leading-relaxed">{subtitle}</p>}
         <div className="mt-4">{children}</div>
         {footer && <div className="mt-4">{footer}</div>}
       </div>
@@ -228,26 +290,42 @@ function BottomSheet({
 
 function Row({
   icon,
+  label,
   value,
   placeholder,
   onClick,
+  tone = "pink",
+  valueNode,
+  accentValue,
 }: {
   icon: React.ReactNode;
+  label: string;
   value?: string;
   placeholder: string;
-  onClick: () => void;
+  onClick?: () => void;
+  tone?: NeonTone;
+  valueNode?: React.ReactNode;
+  accentValue?: boolean;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-yn-bg px-3.5 text-left"
-    >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center text-yn-muted">{icon}</span>
-      <span className={`min-w-0 flex-1 truncate text-[14px] ${value ? "text-yn-text" : "text-yn-muted"}`}>
-        {value || placeholder}
+  const filled = Boolean(value || valueNode);
+  const inner = (
+    <>
+      <span className={`yn-pe-row-icon yn-pe-row-icon--${tone}`}>{icon}</span>
+      <span className="yn-pe-row-label">{label}</span>
+      <span
+        className={`yn-pe-row-value${filled ? "" : " is-empty"}${accentValue ? ` yn-pe-rx-value--${tone}` : ""}`}
+      >
+        {valueNode || value || placeholder}
       </span>
-      <ChevronRight size={18} className="shrink-0 text-yn-muted" />
+      <ChevronRight size={16} className="yn-pe-chevron" />
+    </>
+  );
+  if (!onClick) {
+    return <div className="yn-pe-row">{inner}</div>;
+  }
+  return (
+    <button type="button" onClick={onClick} className="yn-pe-row">
+      {inner}
     </button>
   );
 }
@@ -383,6 +461,14 @@ export function ProfileEditModal({
   const changesLeft = nameChangesLeft(formData.nameChangeMonth, formData.nameChangeCount);
   const badgeEarned = completeness.percent >= 100 || isPremium;
   const badgeProgress = isPremium ? 100 : completeness.percent;
+  const badgeDone = completeness.checks.filter((c) => c.ok).length;
+  const badgeTotal = completeness.checks.length;
+  const badgeNext = completeness.checks.find((c) => !c.ok);
+  const badgeNextLabel = badgeEarned
+    ? currentUser?.youneonBadge
+      ? "Earned"
+      : "Complete"
+    : `Next: ${BADGE_NEXT_LABEL[badgeNext?.key || ""] || "Profile"}`;
 
   const openSheet = (id: SheetId) => {
     setError("");
@@ -565,82 +651,55 @@ export function ProfileEditModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center bg-yn-bg" data-testid="profile-editor">
+    <div className="yn-profile-editor fixed inset-0 z-[100] flex justify-center" data-testid="profile-editor">
       <div className="relative flex h-full w-full max-w-md flex-col">
-        <header className="flex min-h-12 shrink-0 items-center gap-1 border-b border-black/6 px-2 pt-[env(safe-area-inset-top)]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-yn-text hover:bg-yn-bg"
-            aria-label="Close"
-          >
+        <header className="yn-pe-header">
+          <button type="button" onClick={onClose} className="yn-pe-icon-btn" aria-label="Close">
             <X size={22} />
           </button>
-          <h1 className="flex-1 text-center text-[17px] font-semibold text-yn-text">Profile</h1>
-          <button
-            type="button"
-            onClick={() => setShowPreview(true)}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-yn-bg px-3 text-[13px] font-medium text-yn-text"
-          >
-            <Eye size={15} />
+          <h1 className="yn-pe-title">Profile</h1>
+          <button type="button" onClick={() => setShowPreview(true)} className="yn-pe-preview">
             Preview
           </button>
-          <button
-            type="button"
-            onClick={() => setShowSettings(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-yn-text hover:bg-yn-bg"
-            aria-label="Settings"
-          >
+          <button type="button" onClick={() => setShowSettings(true)} className="yn-pe-icon-btn" aria-label="Settings">
             <Settings size={20} />
           </button>
         </header>
+        {isPremium && (
+          <div className="flex justify-center">
+            <span className="yn-pe-premium">
+              <Crown size={12} />
+              PREMIUM
+            </span>
+          </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-8">
-          {isPremium && (
-            <div className="mb-3 flex justify-center">
-              <PremiumBadge size="sm" />
-            </div>
-          )}
+        <div className="yn-pe-scroll">
 
-          <section className="mb-6">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-[16px] font-semibold text-yn-text">Complete your profile</h2>
-                <Info size={14} className="text-yn-muted" />
-              </div>
-              <span className="text-[14px] font-semibold text-yn-accent">{completeness.percent}%</span>
+          <section className="yn-pe-section">
+            <div className="yn-pe-complete-row">
+              <h2>Complete your profile</h2>
+              <span className="yn-pe-complete-pct">{completeness.percent}%</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-yn-bg">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
-                style={{ width: `${completeness.percent}%` }}
-              />
+            <div className="yn-pe-bar">
+              <span style={{ width: `${completeness.percent}%` }} />
             </div>
             {photoMissing && (
-              <div className="mt-3 rounded-2xl bg-yn-bg p-3.5">
-                <p className="text-[13px] leading-relaxed text-yn-muted">
-                  Show yourself with photos. Profiles with photos get more video chats.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => pickPhoto(null)}
-                  disabled={uploading}
-                  className="mt-3 flex h-11 w-full items-center justify-center rounded-xl bg-white text-[14px] font-semibold text-[#1a0a24]"
-                >
+              <div className="yn-pe-hint">
+                <p>Show yourself with photos. Profiles with photos get more video chats.</p>
+                <button type="button" onClick={() => pickPhoto(null)} disabled={uploading} className="yn-pe-hint-btn">
                   {uploading ? "Processing…" : "Add Photo"}
                 </button>
               </div>
             )}
           </section>
 
-          <section className="mb-6">
-            <div className="mb-1 flex items-center justify-between">
-              <h2 className="text-[16px] font-semibold text-yn-text">Photos & Videos</h2>
-              {photoBoost > 0 && (
-                <span className="text-[13px] font-semibold text-yn-accent">+{photoBoost}%</span>
-              )}
+          <section className="yn-pe-section">
+            <div className="flex items-center justify-between">
+              <h2 className="yn-pe-kicker">Photos</h2>
+              {photoBoost > 0 && <span className="yn-pe-boost">+{photoBoost}%</span>}
             </div>
-            <p className="mb-3 text-[12px] text-yn-muted">
+            <p className="yn-pe-muted">
               {photoCount >= MAX_PHOTOS
                 ? "Photos are stored on your profile. Videos are not available yet."
                 : photoCount === 0
@@ -656,40 +715,36 @@ export function ProfileEditModal({
               onChange={handlePhotoUpload}
               className="hidden"
             />
-            <div className="grid grid-cols-3 gap-2">
+            <div className="yn-pe-photos">
               {photoSlots.map((slot) =>
                 slot.src ? (
-                  <div key={`p-${slot.index}`} className="relative aspect-square overflow-hidden rounded-xl bg-yn-bg">
+                  <div key={`p-${slot.index}`} className={`yn-pe-photo yn-pe-photo--${slot.index % 3}`}>
                     <button
                       type="button"
                       className="h-full w-full"
                       onClick={() => setAsMain(slot.index)}
                       aria-label={slot.index === 0 ? "Main photo" : "Set as main photo"}
                     >
-                      <img src={slot.src} alt="" className="h-full w-full object-cover" />
+                      <img src={slot.src} alt="" />
                     </button>
-                    {slot.index === 0 && (
-                      <span className="absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                        Main
-                      </span>
-                    )}
+                    {slot.index === 0 && <span className="yn-pe-main">MAIN</span>}
                     {slot.index === 0 ? (
                       <button
                         type="button"
                         onClick={() => pickPhoto(0)}
-                        className="absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white"
+                        className="yn-pe-photo-tool"
                         aria-label="Replace main photo"
                       >
-                        <Pencil size={13} />
+                        <Pencil size={12} />
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={() => deletePhoto(slot.index)}
-                        className="absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white"
+                        className="yn-pe-photo-tool"
                         aria-label="Delete photo"
                       >
-                        <X size={14} />
+                        <X size={13} />
                       </button>
                     )}
                   </div>
@@ -699,179 +754,145 @@ export function ProfileEditModal({
                     type="button"
                     onClick={() => pickPhoto(null)}
                     disabled={uploading}
-                    className="flex aspect-square items-center justify-center rounded-xl bg-yn-bg text-yn-muted"
+                    className="yn-pe-photo yn-pe-photo--empty"
                     aria-label="Add photo"
                   >
-                    <Plus size={28} />
+                    <Plus size={26} />
                   </button>
                 )
               )}
             </div>
-            <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-yn-muted">
-              <span className="mt-0.5">!</span>
+            <p className="yn-pe-muted" style={{ marginTop: 8 }}>
               Don’t share inappropriate content or personal information. Uploads may be reviewed.
             </p>
           </section>
 
-          <section className="mb-6">
-            <div className="mb-2 flex items-center gap-1.5">
-              <h2 className="text-[16px] font-semibold text-yn-text">Interests</h2>
-              <Info size={14} className="text-yn-muted" />
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowInterests(true)}
-              className="flex min-h-12 w-full items-center justify-between rounded-2xl bg-yn-bg px-3.5 text-left"
-            >
-              <span className="text-[14px] text-yn-muted">Tell us, what&apos;s your current obsession?</span>
-              <ChevronRight size={18} className="text-yn-muted" />
-            </button>
-            {formData.interests.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {formData.interests.map((tag) => (
+          <section className="yn-pe-section">
+            <h2 className="yn-pe-kicker">Interests</h2>
+            <div className="yn-pe-chips">
+              {formData.interests.length > 0 ? (
+                formData.interests.map((tag, i) => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => setShowInterests(true)}
-                    className="yn-interest-chip inline-flex h-9 items-center gap-1.5 rounded-full border border-black/10 bg-yn-card px-3 text-[12px] font-medium text-yn-text"
+                    className={`yn-interest-chip yn-pe-chip yn-pe-chip--${interestTone(tag, i)}`}
                   >
                     <InterestIcon tag={tag} size={14} />
                     {tag}
                   </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Name</h2>
-            <Row
-              icon={<User size={18} />}
-              value={formData.fullName}
-              placeholder="Add your name"
-              onClick={() => openSheet("name")}
-            />
-          </section>
-
-          <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Age</h2>
-            <Row
-              icon={<span className="text-[15px]">🎂</span>}
-              value={formData.age ? String(formData.age) : ""}
-              placeholder="Add your age"
-              onClick={() => openSheet("age")}
-            />
-          </section>
-
-          <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Gender</h2>
-            <Row
-              icon={<span className="text-[15px]">◎</span>}
-              value={formData.gender}
-              placeholder="Select gender"
-              onClick={() => openSheet("gender")}
-            />
-          </section>
-
-          <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Languages</h2>
-            <Row
-              icon={<LanguagesIcon size={18} />}
-              value={formData.languages.map(languageLabel).join(", ")}
-              placeholder="Add languages"
-              onClick={() => openSheet("languages")}
-            />
-          </section>
-
-          <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">About me</h2>
-            <button
-              type="button"
-              onClick={() => openSheet("about")}
-              className="flex min-h-12 w-full items-start gap-3 rounded-2xl bg-yn-bg px-3.5 py-3 text-left"
-            >
-              <span className="mt-0.5 text-yn-muted">
-                <Pencil size={16} />
-              </span>
-              <span className={`min-w-0 flex-1 text-[14px] leading-relaxed ${formData.bio ? "text-yn-text" : "text-yn-muted"}`}>
-                {formData.bio || "How would you describe your vibe?"}
-              </span>
-              <ChevronRight size={18} className="mt-0.5 shrink-0 text-yn-muted" />
-            </button>
-          </section>
-
-          <section className="mb-5">
-            <h2 className="mb-2 text-[16px] font-semibold text-yn-text">Location</h2>
-            <button
-              type="button"
-              onClick={() => openSheet("location")}
-              className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-yn-bg px-3.5 text-left"
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center text-yn-muted">
-                <MapPin size={18} />
-              </span>
-              <span className={`min-w-0 flex-1 truncate text-[14px] ${formData.country ? "text-yn-text" : "text-yn-muted"}`}>
-                {formData.country ? <CountryLabel country={formData.country} size={18} /> : "Select country"}
-              </span>
-              <ChevronRight size={18} className="shrink-0 text-yn-muted" />
-            </button>
-          </section>
-
-          <section className="mb-5">
-            <div className="mb-1 flex items-center gap-1.5">
-              <h2 className="text-[16px] font-semibold text-yn-text">YouNeon Badge</h2>
-              <button type="button" onClick={() => openSheet("badge")} aria-label="Badge info">
-                <Info size={14} className="text-yn-muted" />
-              </button>
-            </div>
-            <p className="mb-3 text-[12px] text-yn-muted">Track your progress towards YouNeon Badge</p>
-            <div className="rounded-2xl bg-yn-bg px-4 py-5">
-              <div className="relative mb-2 h-8">
-                {badgeEarned && (
-                  <span className="absolute right-0 top-0 rounded-full bg-black/80 px-2.5 py-1 text-[11px] font-semibold text-white">
-                    ✓ You got it!
-                  </span>
-                )}
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-yn-bg">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
-                  style={{ width: `${badgeProgress}%` }}
-                />
-              </div>
-              <div className="mt-1.5 flex justify-end text-[11px] text-yn-muted">Goal</div>
-            </div>
-          </section>
-
-          <section className="mb-4">
-            <h2 className="mb-3 text-[16px] font-semibold text-yn-text">Reactions Received</h2>
-            <div className="rounded-2xl bg-yn-bg p-4">
-              <p className="mb-3 text-[14px] font-semibold text-yn-text">
-                {reactionTotal > 0
-                  ? `${reactionTotal} video chat reactions earned!`
-                  : "No reactions yet"}
-              </p>
-              {reactionTotal === 0 && (
-                <p className="mb-3 text-[12px] leading-relaxed text-yn-muted">
-                  Gifts you receive in video chat (rose, heart, and others) count here. Counts stay at 0 until someone actually sends one.
-                </p>
+                ))
+              ) : (
+                <button type="button" onClick={() => setShowInterests(true)} className="yn-pe-chip yn-pe-chip--empty">
+                  <Plus size={14} />
+                  Add interests
+                </button>
               )}
-              <ul className="space-y-2.5">
-                {REACTION_TYPES.map((r) => (
-                  <li key={r.id} className="flex h-10 items-center gap-3 text-[14px] text-yn-text">
-                    <span className="flex w-8 items-center justify-center">
-                      <ReactionIcon id={r.id} size={22} />
-                    </span>
-                    <span className="flex-1">{r.id}</span>
-                    <span className="tabular-nums text-yn-muted">{reactionCount(reactionsMap, r.id)}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
           </section>
 
-          {error && <p className="mb-2 text-center text-[13px] text-yn-accent">{error}</p>}
-          {saving && <p className="text-center text-[12px] text-yn-muted">Saving…</p>}
+          <section className="yn-pe-section">
+            <div className="yn-pe-rows">
+              <Row
+                icon={<User size={18} />}
+                label="Name"
+                value={formData.fullName}
+                placeholder="Add your name"
+                onClick={() => openSheet("name")}
+                tone="pink"
+              />
+              <Row
+                icon={<Cake size={18} />}
+                label="Age"
+                value={formData.age ? String(formData.age) : ""}
+                placeholder="Add your age"
+                onClick={() => openSheet("age")}
+                tone="pink"
+              />
+              <Row
+                icon={<GenderMark />}
+                label="Gender"
+                value={formData.gender}
+                placeholder="Select gender"
+                onClick={() => openSheet("gender")}
+                tone="pink"
+              />
+              <Row
+                icon={<MessageCircle size={18} />}
+                label="Languages"
+                value={formData.languages.map(languageLabel).join(", ")}
+                placeholder="Add languages"
+                onClick={() => openSheet("languages")}
+                tone="cyan"
+              />
+              <Row
+                icon={<Pencil size={16} />}
+                label="About me"
+                value={formData.bio}
+                placeholder="How would you describe your vibe?"
+                onClick={() => openSheet("about")}
+                tone="purple"
+              />
+              <Row
+                icon={<MapPin size={18} />}
+                label="Location"
+                value={formData.country}
+                placeholder="Select country"
+                onClick={() => openSheet("location")}
+                tone="purple"
+                valueNode={
+                  formData.country ? <CountryLabel country={formData.country} size={16} /> : undefined
+                }
+              />
+            </div>
+          </section>
+
+          <section className="yn-pe-section">
+            <button type="button" className="yn-pe-badge" onClick={() => openSheet("badge")} aria-label="YouNeon Badge">
+              <BadgeShield />
+              <div className="yn-pe-badge-body">
+                <p className="yn-pe-badge-title">YouNeon Badge</p>
+                <p className="yn-pe-badge-sub">progress</p>
+                <div className="yn-pe-badge-bar">
+                  <span style={{ width: `${badgeProgress}%` }} />
+                </div>
+                <div className="yn-pe-badge-meta">
+                  <span>
+                    {isPremium ? badgeTotal : badgeDone} / {badgeTotal}
+                  </span>
+                  <span>{badgeNextLabel}</span>
+                </div>
+              </div>
+            </button>
+          </section>
+
+          <section className="yn-pe-section">
+            <h2 className="yn-pe-kicker">Reactions received</h2>
+            <p className="yn-pe-muted">
+              {reactionTotal > 0
+                ? `${reactionTotal} video chat reactions earned!`
+                : "Gifts you receive in video chat (rose, heart, and others) count here. Counts stay at 0 until someone actually sends one."}
+            </p>
+            <div className="yn-pe-rows">
+              {REACTION_TYPES.map((r, i) => {
+                const tone = NEON_TONES[i % NEON_TONES.length];
+                return (
+                  <Row
+                    key={r.id}
+                    icon={<ReactionIcon id={r.id} size={20} />}
+                    label={r.id}
+                    value={String(reactionCount(reactionsMap, r.id))}
+                    placeholder="0"
+                    tone={tone}
+                    accentValue
+                  />
+                );
+              })}
+            </div>
+          </section>
+
+          {error && <p className="yn-pe-status is-error">{error}</p>}
+          {saving && <p className="yn-pe-status is-saving">Saving…</p>}
         </div>
 
         {sheet === "name" && (
@@ -891,9 +912,9 @@ export function ProfileEditModal({
               maxLength={NAME_MAX}
               onChange={(e) => setDraftName(e.target.value)}
               placeholder="Please enter your name"
-              className="h-12 w-full border-0 border-b border-white/20 bg-transparent text-[16px] text-yn-text outline-none placeholder:text-yn-muted focus:border-pink-400"
+              className="yn-pe-input"
             />
-            <div className="mt-1.5 flex justify-between text-[12px] text-yn-muted">
+            <div className="mt-1.5 flex justify-between text-[12px] yn-pe-sheet-muted">
               <span>{changesLeft} changes left this month</span>
               <span>
                 {draftName.length}/{NAME_MAX}
@@ -919,10 +940,10 @@ export function ProfileEditModal({
                 maxLength={BIO_MAX}
                 onChange={(e) => setDraftBio(e.target.value)}
                 rows={5}
-                className="w-full resize-none rounded-2xl bg-yn-bg p-3.5 pr-16 text-[15px] leading-relaxed text-yn-text outline-none placeholder:text-yn-muted"
+                className="yn-pe-area"
                 placeholder="A short intro about you"
               />
-              <span className="absolute bottom-3 right-3 text-[12px] text-yn-muted">
+              <span className="absolute bottom-3 right-3 text-[12px] yn-pe-sheet-muted">
                 {draftBio.length}/{BIO_MAX}
               </span>
             </div>
@@ -943,14 +964,14 @@ export function ProfileEditModal({
             <div className="max-h-[46vh] overflow-y-auto">
               {draftLangs.length > 0 && (
                 <div className="mb-3">
-                  <p className="mb-2 text-[12px] font-medium uppercase tracking-wide text-yn-muted">Selected</p>
+                  <p className="mb-2 text-[12px] font-medium uppercase tracking-wide yn-pe-sheet-muted">Selected</p>
                   <div className="flex flex-wrap gap-1.5">
                     {draftLangs.map((id) => (
                       <button
                         key={id}
                         type="button"
                         onClick={() => setDraftLangs((prev) => prev.filter((x) => x !== id))}
-                        className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--pink)] px-3 text-[12px] font-medium text-white active:bg-[var(--pink-pressed)]"
+                        className="yn-pe-lang-chip"
                       >
                         {languageLabel(id)}
                         <X size={12} />
@@ -964,7 +985,7 @@ export function ProfileEditModal({
                 value={langQuery}
                 onChange={(e) => setLangQuery(e.target.value)}
                 placeholder="Add"
-                className="mb-2 h-11 w-full rounded-xl bg-yn-bg px-3.5 text-[14px] text-yn-text outline-none placeholder:text-yn-muted"
+                className="yn-pe-search"
               />
               <div className="space-y-0.5">
                 {addableLangs.map((l) => (
@@ -975,13 +996,13 @@ export function ProfileEditModal({
                     onClick={() =>
                       setDraftLangs((prev) => (prev.includes(l.id) || prev.length >= MAX_LANGUAGES ? prev : [...prev, l.id]))
                     }
-                    className="flex h-11 w-full items-center justify-between rounded-xl px-2 text-left text-[14px] text-yn-text hover:bg-black/5 disabled:opacity-40"
+                    className="yn-pe-pick"
                   >
                     <span>
                       {l.native}
-                      {l.native !== l.id ? <span className="ml-2 text-yn-muted">{l.id}</span> : null}
+                      {l.native !== l.id ? <span className="ml-2 yn-pe-sheet-muted">{l.id}</span> : null}
                     </span>
-                    <Plus size={16} className="text-yn-muted" />
+                    <Plus size={16} className="yn-pe-sheet-muted" />
                   </button>
                 ))}
               </div>
@@ -1005,7 +1026,7 @@ export function ProfileEditModal({
               value={countryQuery}
               onChange={(e) => setCountryQuery(e.target.value)}
               placeholder="Search country"
-              className="mb-2 h-11 w-full rounded-xl bg-yn-bg px-3.5 text-[14px] text-yn-text outline-none placeholder:text-yn-muted"
+              className="yn-pe-search"
             />
             <div className="max-h-[40vh] overflow-y-auto">
               {filteredCountries.map((c) => (
@@ -1013,9 +1034,7 @@ export function ProfileEditModal({
                   key={c}
                   type="button"
                   onClick={() => setDraftCountry(c)}
-                  className={`flex h-11 w-full items-center rounded-xl px-3 text-left text-[14px] ${
-                    draftCountry === c ? "bg-purple-600/30 font-semibold text-yn-text" : "text-yn-muted"
-                  }`}
+                  className={`yn-pe-country${draftCountry === c ? " is-on" : ""}`}
                 >
                   <CountryLabel country={c} size={18} />
                 </button>
@@ -1046,7 +1065,8 @@ export function ProfileEditModal({
               max={AGE_MAX}
               value={draftAge}
               onChange={(e) => setDraftAge(e.target.value)}
-              className="h-12 w-full rounded-xl bg-yn-bg px-3.5 text-[16px] text-yn-text outline-none"
+              className="yn-pe-search"
+            />
             />
           </BottomSheet>
         )}
@@ -1059,11 +1079,7 @@ export function ProfileEditModal({
                   key={option}
                   type="button"
                   onClick={() => applyGender(option)}
-                  className={`flex h-12 w-full items-center justify-center rounded-xl text-[14px] font-semibold ${
-                    formData.gender === option
-                      ? "bg-[var(--pink)] text-white"
-                      : "bg-yn-bg text-yn-muted"
-                  }`}
+                  className={`yn-pe-gender${formData.gender === option ? " is-on" : ""}`}
                 >
                   {option}
                 </button>
@@ -1074,7 +1090,7 @@ export function ProfileEditModal({
 
         {sheet === "badge" && (
           <BottomSheet title="YouNeon Badge" onClose={() => setSheet(null)}>
-            <p className="pb-4 text-[13px] leading-relaxed text-yn-muted">
+            <p className="pb-4 text-[13px] leading-relaxed yn-pe-sheet-muted">
               The bar fills as you complete your profile: photo, name, age (18+), bio, country, languages, and
               interests. Premium counts as complete. You earn the YouNeon Badge only if that is done, you have no
               reports against you in the last 14 days, and your account is at least a day old or you have finished at
