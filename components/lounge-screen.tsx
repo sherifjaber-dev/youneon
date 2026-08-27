@@ -22,7 +22,7 @@ import {
   type LoungeMe,
   type LoungePerson,
 } from "@/lib/lounge-service";
-import { DEMO_LUNA_ID, isDemoLunaId, withDemoLunaFirst } from "@/lib/demo-luna-profile";
+import { isDemoLunaId } from "@/lib/demo-luna-profile";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { useBlockedIds } from "@/hooks/use-user-settings";
@@ -173,12 +173,7 @@ export function LoungeScreen({
     return applyLoungeFilters(visible, applied, me).all;
   }, [people, applied, me, blockedIds]);
 
-  const feed = useMemo(() => {
-    const sorted = sortLoungeFeed(filtered, chip, me);
-    if (chip !== "forYou") return sorted;
-    if (blockedIds.has(DEMO_LUNA_ID)) return sorted;
-    return withDemoLunaFirst(sorted);
-  }, [filtered, chip, me, blockedIds]);
+  const feed = useMemo(() => sortLoungeFeed(filtered, chip, me), [filtered, chip, me]);
   const liveNow = useMemo(
     () =>
       filtered

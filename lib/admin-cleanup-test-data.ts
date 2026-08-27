@@ -13,6 +13,7 @@ export type TestDataCleanupResult = {
     notifications: number;
     history: number;
   };
+  deletedUserIds: string[];
 };
 
 const BATCH_LIMIT = 400;
@@ -152,5 +153,5 @@ export async function cleanupMarkedTestData(): Promise<TestDataCleanupResult> {
   });
   deleted.notifications = await deleteQueryDocs(firestore, notifRefs);
 
-  return { ok: true, deleted };
+  return { ok: true, deleted, deletedUserIds: fakeUserIds };
 }

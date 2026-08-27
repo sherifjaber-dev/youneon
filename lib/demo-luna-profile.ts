@@ -1,5 +1,4 @@
 import type { UserProfile } from "@/lib/firestore-service";
-import type { LoungePerson } from "@/lib/lounge-service";
 
 /** Isolated client-side seed. Never persist this id to Firestore. */
 export const DEMO_LUNA_ID = "demo_luna";
@@ -45,31 +44,4 @@ export function demoLunaUserProfile(): UserProfile {
     giftsReceivedCount: REACTION_TOTAL,
     hideGender: false,
   };
-}
-
-export function demoLunaLoungePerson(): LoungePerson {
-  const now = Date.now();
-  return {
-    id: DEMO_LUNA_ID,
-    name: "Luna",
-    displayName: "Luna",
-    photo: DEMO_LUNA_PHOTO,
-    age: 24,
-    country: "Sweden",
-    gender: "Female",
-    languages: ["English", "Swedish"],
-    lastSeenMs: now,
-    createdAtMs: now,
-    giftsReceivedCount: REACTION_TOTAL,
-    followersCount: 48,
-    lat: 59.3293,
-    lng: 18.0686,
-    online: true,
-    isLive: true,
-  };
-}
-
-export function withDemoLunaFirst(people: LoungePerson[]): LoungePerson[] {
-  const luna = demoLunaLoungePerson();
-  return [luna, ...people.filter((person) => person.id !== DEMO_LUNA_ID)];
 }

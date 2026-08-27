@@ -22,10 +22,11 @@
  *   4. Firestore → conversations — delete docs with those flags, or participants including fake ids.
  */
 
-const { readFileSync, existsSync } = require("fs");
-const { resolve } = require("path");
-const { cert, getApps, initializeApp } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+import { readFileSync, existsSync } from "fs";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
 function loadEnvFile(filePath) {
   if (!existsSync(filePath)) return;
@@ -44,19 +45,26 @@ function loadEnvFile(filePath) {
   });
 }
 
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+loadEnvFile(resolve(ROOT, ".env.local"));
+loadEnvFile(resolve(ROOT, ".env"));
 loadEnvFile(resolve(process.cwd(), ".env.local"));
 loadEnvFile(resolve(process.cwd(), ".env"));
 
 function readServiceAccount() {
   const json = process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (json) {
-    const parsed = JSON.parse(json);
-    if (parsed.client_email && parsed.private_key) {
-      return {
-        projectId: parsed.project_id || process.env.FIREBASE_PROJECT_ID || "youneon",
-        clientEmail: parsed.client_email,
-        privateKey: parsed.private_key,
-      };
+    try {
+      const parsed = JSON.parse(json);
+      if (parsed.client_email && parsed.private_key) {
+        return {
+          projectId: parsed.project_id || process.env.FIREBASE_PROJECT_ID || "youneon",
+          clientEmail: parsed.client_email,
+          privateKey: parsed.private_key,
+        };
+      }
+    } catch {
+      /* fall through to split fields */
     }
   }
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || "";
@@ -121,11 +129,17 @@ function isFakeUserRecord(id, data) {
 async function main() {
   const account = readServiceAccount();
   if (!account) {
+    const localEnv = existsSync(resolve(ROOT, ".env.local"));
     console.error(
       "No Firebase Admin credentials. Set FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY."
     );
     console.error("This machine cannot wipe production Firestore without those keys.");
     console.error("Use Firebase Console on presence and matchQueue (and only marked users) instead.");
+    console.error("Or run Cleanup from /admin (POST /api/admin/cleanup-test-data) on a host that has Admin keys.");
+    console.error(".env.local next to the script:", localEnv ? "found" : "missing");
+    console.error("Admin JSON present:", !!(process.env.FIREBASE_SERVICE_ACCOUNT || process.env.FIREBASE_SERVICE_ACCOUNT_JSON));
+    console.error("Admin email present:", !!process.env.FIREBASE_CLIENT_EMAIL);
+    console.error("Admin private key present:", !!process.env.FIREBASE_PRIVATE_KEY);
     process.exit(1);
   }
 
@@ -162,13 +176,39 @@ async function main() {
 
   const usersSnap = await db.collection("users").get();
   const fakeUserIds = [];
+  const keepUserIds = [];
   const userRefs = [];
+  const deletePlan = [];
+
   usersSnap.forEach((doc) => {
-    if (isFakeUserRecord(doc.id, doc.data())) {
+    const data = doc.data() || {};
+    const piUsername = String(data.piUsername || data.userId || "").trim();
+    const name = String(data.fullName || data.displayName || data.name || "").trim();
+    if (isFakeUserRecord(doc.id, data)) {
       fakeUserIds.push(doc.id);
       userRefs.push(doc.ref);
+      deletePlan.push({
+        collection: "users",
+        id: doc.id,
+        piUsername: piUsername || "(none)",
+        name: name || "(none)",
+      });
+    } else {
+      keepUserIds.push(doc.id);
     }
   });
+
+  console.log("=== KEEP (real Pi users) ===");
+  if (keepUserIds.length === 0) console.log("(none)");
+  keepUserIds.forEach((id) => console.log("KEEP user", id));
+
+  console.log("=== DELETE (non-Pi / fake / guest / demo / test) ===");
+  if (deletePlan.length === 0) console.log("(none)");
+  deletePlan.forEach((row) =>
+    console.log("WILL DELETE user", row.id, "piUsername=", row.piUsername, "name=", row.name)
+  );
+  console.log("Will delete", fakeUserIds.length, "user doc(s); keeping", keepUserIds.length);
+
   for (const userId of fakeUserIds) {
     const historySnap = await db.collection("users").doc(userId).collection("history").get();
     counts.history += await flush(historySnap.docs.map((d) => d.ref));
@@ -176,14 +216,18 @@ async function main() {
   counts.users = await flush(userRefs);
 
   const presenceSnap = await db.collection("presence").get();
-  counts.presence = await flush(
-    presenceSnap.docs.filter((d) => isFakeUserRecord(d.id, d.data()) || recordHasDemoFlag(d.data())).map((d) => d.ref)
+  const presenceRefs = presenceSnap.docs.filter(
+    (d) => isFakeUserRecord(d.id, d.data()) || recordHasDemoFlag(d.data()) || fakeUserIds.includes(d.id)
   );
+  presenceRefs.forEach((d) => console.log("WILL DELETE presence", d.id));
+  counts.presence = await flush(presenceRefs.map((d) => d.ref));
 
   const queueSnap = await db.collection("matchQueue").get();
-  counts.matchQueue = await flush(
-    queueSnap.docs.filter((d) => isFakeUserRecord(d.id, d.data()) || recordHasDemoFlag(d.data())).map((d) => d.ref)
+  const queueRefs = queueSnap.docs.filter(
+    (d) => isFakeUserRecord(d.id, d.data()) || recordHasDemoFlag(d.data()) || fakeUserIds.includes(d.id)
   );
+  queueRefs.forEach((d) => console.log("WILL DELETE matchQueue", d.id));
+  counts.matchQueue = await flush(queueRefs.map((d) => d.ref));
 
   const convSnap = await db.collection("conversations").get();
   counts.conversations = await flush(

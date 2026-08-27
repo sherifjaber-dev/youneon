@@ -157,11 +157,14 @@ export function AdminPanel({
     try {
       const { data } = await api.post<{
         deleted?: Record<string, number>;
+        deletedUserIds?: string[];
         error?: string;
       }>("/api/admin/cleanup-test-data");
       const deleted = data.deleted || {};
+      const ids = data.deletedUserIds || [];
       setCleanupResult(
-        `Removed ${deleted.users || 0} users, ${deleted.presence || 0} presence, ${deleted.matchQueue || 0} matchQueue, ${deleted.conversations || 0} conversations.`
+        `Removed ${deleted.users || 0} users, ${deleted.presence || 0} presence, ${deleted.matchQueue || 0} matchQueue, ${deleted.conversations || 0} conversations.` +
+          (ids.length ? ` User ids: ${ids.join(", ")}.` : " No fake user docs found.")
       );
     } catch (error) {
       setCleanupResult(
@@ -447,7 +450,8 @@ export function AdminPanel({
             Real Pi accounts are not mass-deleted.
           </p>
           <p className="mt-3 text-[13px] leading-6 text-yn-muted">
-            Needs Firebase Admin credentials on the host. If this action fails, in Firebase Console delete matching docs from
+            Needs Firebase Admin credentials on the host (FIREBASE_SERVICE_ACCOUNT or FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY).
+            You can also run <code>node scripts/cleanup-test-users.mjs</code> locally with those keys. If this action fails, in Firebase Console delete matching docs from
             <strong> presence</strong> and <strong> matchQueue</strong> first (same flags / fake ids), then only those same ids under
             <strong> users</strong> and any <strong> conversations</strong> whose participants include them.
           </p>
