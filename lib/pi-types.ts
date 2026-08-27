@@ -64,7 +64,7 @@ export type PiSDK = {
     (options: PiAuthenticateOptions): Promise<PiAuthResult>;
     (
       scopes: PiScope[],
-      onIncompletePaymentFound?: (payment: PiPaymentDTO) => void
+      onIncompletePaymentFound?: (payment: PiPaymentDTO) => void | Promise<void>
     ): Promise<PiAuthResult>;
   };
   createPayment: (

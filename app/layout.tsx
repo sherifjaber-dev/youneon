@@ -187,7 +187,7 @@ const PI_BOOT_SCRIPT =
   "console.log('[Pi] authenticate start');" +
   "setLast('Last: authenticate called');" +
   "var promise = null;" +
-  "try { promise = P.authenticate(['username','payments'], function (payment) { try { var x = new XMLHttpRequest(); x.open('POST', '/api/pi/payment/incomplete', true); x.setRequestHeader('Content-Type', 'application/json'); x.withCredentials = true; x.send(JSON.stringify({ paymentId: payment && payment.identifier, payment: payment })); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); } }); wireAuth(promise); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
+  "try { promise = P.authenticate(['username','payments'], function (payment) { return new Promise(function (done) { try { var x = new XMLHttpRequest(); x.open('POST', '/api/pi/payment/incomplete', true); x.setRequestHeader('Content-Type', 'application/json'); x.withCredentials = true; x.onload = function () { done(); }; x.onerror = function () { done(); }; x.send(JSON.stringify({ paymentId: payment && payment.identifier, txid: payment && payment.transaction && payment.transaction.txid, payment: payment })); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); done(); } }); }); wireAuth(promise); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
   "if (!promise) { try { promise = P.authenticate({ scopes: ['username','payments'] }); wireAuth(promise); } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); setSigninBusy(false); showAuthMsg(failAuthText(objectErr)); } }" +
   "if (!promise) { setSigninBusy(false); showAuthMsg('Could not start Pi sign-in. Try again.'); }" +
   "window.__YOUNEON_PI_AUTH_PROMISE__ = promise;" +
@@ -391,7 +391,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=signin-auth-3"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=pay-complete-1"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"

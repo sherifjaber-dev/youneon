@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { completePaymentById } from "@/lib/pi-payment-server";
+import { PiPlatformError } from "@/lib/pi-platform";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  let body: { paymentId?: unknown; txid?: unknown } = {};
+  let body: { paymentId?: unknown; txid?: unknown; username?: unknown } = {};
   try {
     body = await request.json();
   } catch {
@@ -12,7 +13,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await completePaymentById(body?.paymentId, body?.txid);
+    const result = await completePaymentById(
+      body?.paymentId,
+      body?.txid,
+      typeof body?.username === "string" ? body.username : null
+    );
     if (!result.ok) {
       return NextResponse.json(
         { error: result.error || "Complete failed", payment: result.payment },
@@ -26,10 +31,12 @@ export async function POST(request: Request) {
       alreadyGranted: result.grant?.alreadyGranted || false,
       granted: result.grant?.granted || false,
       neonGranted: result.grant?.neonGranted || 0,
+      skipped: result.grant?.skipped || null,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Complete failed";
+    const message = error instanceof Error ? error.message : "Could not complete payment";
+    const status = error instanceof PiPlatformError ? error.status : 502;
     console.warn("[Pi] complete route error", message);
-    return NextResponse.json({ error: "Could not complete payment" }, { status: 502 });
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -31,6 +31,12 @@ service cloud.firestore {
     match /promoCodes/{id} {
       allow read, write: if false;
     }
+    match /pi_payments/{id} {
+      allow read, write: if true;
+    }
+    match /pi_users/{id} {
+      allow read, write: if true;
+    }
     match /matchQueue/{id} {
       allow read, write: if true;
     }

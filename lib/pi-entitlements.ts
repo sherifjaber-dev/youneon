@@ -1,5 +1,7 @@
-import { doc, getDoc, increment, setDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc, increment, setDoc } from "firebase/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { db } from "@/lib/firebase";
+import { getAdminFirestore } from "@/lib/firebase-admin";
 import {
   getNeonPackageById,
   NEON_PACK_METADATA_TYPE,
@@ -62,6 +64,105 @@ function nextPremiumUntil(existingUntil: unknown): string {
   return new Date(base + SUBSCRIPTION_PLAN.days * MS_PER_DAY).toISOString();
 }
 
+async function readDoc(collectionName: string, id: string): Promise<Record<string, unknown> | null> {
+  if (!id) return null;
+  const admin = getAdminFirestore();
+  if (admin) {
+    const snap = await admin.collection(collectionName).doc(id).get();
+    return snap.exists ? ((snap.data() || {}) as Record<string, unknown>) : null;
+  }
+  const snap = await getDoc(doc(db, collectionName, id));
+  return snap.exists() ? ((snap.data() || {}) as Record<string, unknown>) : null;
+}
+
+function compact(data: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
+async function mergeDoc(collectionName: string, id: string, data: Record<string, unknown>): Promise<void> {
+  const payload = compact(data);
+  const admin = getAdminFirestore();
+  if (admin) {
+    await admin.collection(collectionName).doc(id).set(payload, { merge: true });
+    return;
+  }
+  await setDoc(doc(db, collectionName, id), payload, { merge: true });
+}
+
+async function mergeNeonGrant(
+  collectionName: "pi_users" | "users",
+  id: string,
+  fields: Record<string, unknown>,
+  neonGranted: number
+): Promise<void> {
+  const payload = compact({ ...fields, neonBalance: undefined });
+  const admin = getAdminFirestore();
+  if (admin) {
+    await admin.collection(collectionName).doc(id).set(
+      { ...payload, neonBalance: FieldValue.increment(neonGranted) },
+      { merge: true }
+    );
+    return;
+  }
+  await setDoc(
+    doc(db, collectionName, id),
+    { ...payload, neonBalance: increment(neonGranted) },
+    { merge: true }
+  );
+}
+
+async function lookupUsername(userUid: string, sessionName?: string | null): Promise<string> {
+  if (sessionName) return sessionName;
+  if (!userUid) return "";
+  const piUser = await readDoc("pi_users", userUid);
+  const fromPi = typeof piUser?.username === "string" ? piUser.username.trim() : "";
+  if (fromPi) return fromPi;
+  const fromUser = typeof piUser?.piUsername === "string" ? piUser.piUsername.trim() : "";
+  return fromUser;
+}
+
+function alreadyGrantedResult(data: Record<string, unknown> | null): PremiumGrantResult {
+  return {
+    granted: false,
+    alreadyGranted: true,
+    premiumUntil: typeof data?.premiumUntil === "string" ? data.premiumUntil : null,
+    neonGranted: 0,
+  };
+}
+
+async function persistGrant(opts: {
+  payment: PiPaymentDTO;
+  username: string;
+  paymentFields: Record<string, unknown>;
+  userFields: Record<string, unknown>;
+  neonGranted: number;
+}): Promise<void> {
+  const { payment, username, paymentFields, userFields, neonGranted } = opts;
+  const userUid = typeof payment.user_uid === "string" ? payment.user_uid : "";
+
+  try {
+    await mergeDoc("pi_payments", payment.identifier, paymentFields);
+  } catch (error) {
+    console.warn("[Pi] pi_payments write failed", error);
+  }
+
+  if (userUid) {
+    try {
+      await mergeNeonGrant("pi_users", userUid, userFields, neonGranted);
+    } catch (error) {
+      console.warn("[Pi] pi_users write failed", error);
+    }
+  }
+
+  if (username) {
+    await mergeNeonGrant("users", username, userFields, neonGranted);
+  }
+}
+
 export async function grantPremiumIfNeeded(
   payment: PiPaymentDTO,
   username?: string | null
@@ -79,36 +180,41 @@ export async function grantPremiumIfNeeded(
     return skipped("amount_mismatch");
   }
 
-  const paymentRef = doc(db, "pi_payments", payment.identifier);
-  const existingPay = await getDoc(paymentRef);
-  if (existingPay.exists() && existingPay.data()?.entitlementGranted) {
-    const data = existingPay.data();
-    const premiumUntil =
-      typeof data?.premiumUntil === "string" ? data.premiumUntil : null;
-    return {
-      granted: false,
-      alreadyGranted: true,
-      premiumUntil,
-      neonGranted: 0,
-    };
+  const existingPay = await readDoc("pi_payments", payment.identifier);
+  if (existingPay?.entitlementGranted) {
+    return alreadyGrantedResult(existingPay);
   }
 
   const userUid = typeof payment.user_uid === "string" ? payment.user_uid : "";
+  const resolvedUsername = await lookupUsername(userUid, username);
+  if (resolvedUsername) {
+    const userDoc = await readDoc("users", resolvedUsername);
+    if (userDoc?.lastPaymentId === payment.identifier && userDoc?.entitlementGranted) {
+      return alreadyGrantedResult(userDoc);
+    }
+  }
+
   let currentUntil: unknown = null;
   if (userUid) {
-    const userSnap = await getDoc(doc(db, "pi_users", userUid));
-    currentUntil = userSnap.exists() ? userSnap.data()?.premiumUntil : null;
+    const piUser = await readDoc("pi_users", userUid);
+    currentUntil = piUser?.premiumUntil ?? null;
+  }
+  if (!currentUntil && resolvedUsername) {
+    const userDoc = await readDoc("users", resolvedUsername);
+    currentUntil = userDoc?.premiumUntil ?? null;
   }
   const premiumUntil = nextPremiumUntil(currentUntil);
-  const now = Timestamp.now();
+  const now = new Date();
   const neonGranted = PREMIUM_SUBSCRIBE_NEON;
 
-  await setDoc(
-    paymentRef,
-    {
+  await persistGrant({
+    payment,
+    username: resolvedUsername,
+    neonGranted,
+    paymentFields: {
       paymentId: payment.identifier,
       userUid,
-      username: username || "",
+      username: resolvedUsername,
       amount: payment.amount,
       memo: payment.memo,
       metadata: payment.metadata || {},
@@ -120,38 +226,16 @@ export async function grantPremiumIfNeeded(
       grantedAt: now,
       updatedAt: now,
     },
-    { merge: true }
-  );
-
-  if (userUid) {
-    await setDoc(
-      doc(db, "pi_users", userUid),
-      {
-        uid: userUid,
-        username: username || "",
-        premiumUntil,
-        neonBalance: increment(neonGranted),
-        lastPaymentId: payment.identifier,
-        updatedAt: now,
-      },
-      { merge: true }
-    );
-  }
-
-  if (username) {
-    await setDoc(
-      doc(db, "users", username),
-      {
-        uid: userUid || undefined,
-        piUsername: username,
-        premiumUntil,
-        neonBalance: increment(neonGranted),
-        lastPaymentId: payment.identifier,
-        updatedAt: now,
-      },
-      { merge: true }
-    );
-  }
+    userFields: {
+      uid: userUid || undefined,
+      piUsername: resolvedUsername || undefined,
+      username: resolvedUsername || undefined,
+      premiumUntil,
+      lastPaymentId: payment.identifier,
+      entitlementGranted: true,
+      updatedAt: now,
+    },
+  });
 
   return { granted: true, alreadyGranted: false, premiumUntil, neonGranted };
 }
@@ -192,28 +276,31 @@ export async function grantNeonPackIfNeeded(
     return skipped("amount_mismatch");
   }
 
-  const paymentRef = doc(db, "pi_payments", payment.identifier);
-  const existingPay = await getDoc(paymentRef);
-  if (existingPay.exists() && existingPay.data()?.entitlementGranted) {
-    const data = existingPay.data();
-    return {
-      granted: false,
-      alreadyGranted: true,
-      premiumUntil: typeof data?.premiumUntil === "string" ? data.premiumUntil : null,
-      neonGranted: 0,
-    };
+  const existingPay = await readDoc("pi_payments", payment.identifier);
+  if (existingPay?.entitlementGranted) {
+    return alreadyGrantedResult(existingPay);
   }
 
   const userUid = typeof payment.user_uid === "string" ? payment.user_uid : "";
-  const now = Timestamp.now();
+  const resolvedUsername = await lookupUsername(userUid, username);
+  if (resolvedUsername) {
+    const userDoc = await readDoc("users", resolvedUsername);
+    if (userDoc?.lastPaymentId === payment.identifier && userDoc?.entitlementGranted) {
+      return alreadyGrantedResult(userDoc);
+    }
+  }
+
+  const now = new Date();
   const neonGranted = pkg.neon;
 
-  await setDoc(
-    paymentRef,
-    {
+  await persistGrant({
+    payment,
+    username: resolvedUsername,
+    neonGranted,
+    paymentFields: {
       paymentId: payment.identifier,
       userUid,
-      username: username || "",
+      username: resolvedUsername,
       amount: payment.amount,
       memo: payment.memo,
       metadata: payment.metadata || {},
@@ -225,44 +312,22 @@ export async function grantNeonPackIfNeeded(
       grantedAt: now,
       updatedAt: now,
     },
-    { merge: true }
-  );
-
-  if (userUid) {
-    await setDoc(
-      doc(db, "pi_users", userUid),
-      {
-        uid: userUid,
-        username: username || "",
-        neonBalance: increment(neonGranted),
-        lastPaymentId: payment.identifier,
-        updatedAt: now,
-      },
-      { merge: true }
-    );
-  }
-
-  if (username) {
-    await setDoc(
-      doc(db, "users", username),
-      {
-        uid: userUid || undefined,
-        piUsername: username,
-        neonBalance: increment(neonGranted),
-        lastPaymentId: payment.identifier,
-        updatedAt: now,
-      },
-      { merge: true }
-    );
-  }
+    userFields: {
+      uid: userUid || undefined,
+      piUsername: resolvedUsername || undefined,
+      username: resolvedUsername || undefined,
+      lastPaymentId: payment.identifier,
+      entitlementGranted: true,
+      updatedAt: now,
+    },
+  });
 
   return { granted: true, alreadyGranted: false, premiumUntil: null, neonGranted };
 }
 
 export async function getPremiumUntil(userUid: string): Promise<string | null> {
   if (!userUid) return null;
-  const snap = await getDoc(doc(db, "pi_users", userUid));
-  if (!snap.exists()) return null;
-  const until = snap.data()?.premiumUntil;
+  const data = await readDoc("pi_users", userUid);
+  const until = data?.premiumUntil;
   return typeof until === "string" ? until : null;
 }

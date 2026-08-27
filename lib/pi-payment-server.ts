@@ -12,9 +12,12 @@ import {
 } from "@/lib/pi-entitlements";
 import {
   approvePiPayment,
+  cancelPiPayment,
   completePiPayment,
+  describePiApiFailure,
   getPiPayment,
   parsePaymentId,
+  parseTxid,
 } from "@/lib/pi-platform";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 
@@ -25,12 +28,9 @@ export type PaymentActionResult = {
   error?: string;
   grant?: PremiumGrantResult;
   approved?: boolean;
+  cancelled?: boolean;
   waiting?: boolean;
 };
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 async function sessionUsername(): Promise<string | null> {
   try {
@@ -45,10 +45,13 @@ async function sessionUsername(): Promise<string | null> {
   }
 }
 
-async function grantFromPayment(payment: PiPaymentDTO | null): Promise<PremiumGrantResult | undefined> {
+async function grantFromPayment(
+  payment: PiPaymentDTO | null,
+  usernameHint?: string | null
+): Promise<PremiumGrantResult | undefined> {
   if (!payment) return undefined;
   try {
-    const username = await sessionUsername();
+    const username = (await sessionUsername()) || (typeof usernameHint === "string" ? usernameHint.trim() : "") || null;
     if (isSubscriptionPayment(payment)) {
       return await grantPremiumIfNeeded(payment, username);
     }
@@ -57,8 +60,15 @@ async function grantFromPayment(payment: PiPaymentDTO | null): Promise<PremiumGr
     }
     return undefined;
   } catch (error) {
+    const message = error instanceof Error ? error.message : "grant failed";
     console.warn("[Pi] entitlement grant failed", error);
-    return undefined;
+    return {
+      granted: false,
+      alreadyGranted: false,
+      premiumUntil: null,
+      neonGranted: 0,
+      skipped: `grant_failed: ${message}`,
+    };
   }
 }
 
@@ -83,7 +93,7 @@ export async function approvePaymentById(paymentIdRaw: unknown): Promise<Payment
       ok: false,
       status: approved.status || 502,
       payment: approved.data,
-      error: "Pi approve failed",
+      error: describePiApiFailure("approve", approved.status || 502, approved.data),
     };
   }
 
@@ -92,10 +102,11 @@ export async function approvePaymentById(paymentIdRaw: unknown): Promise<Payment
 
 export async function completePaymentById(
   paymentIdRaw: unknown,
-  txidRaw: unknown
+  txidRaw: unknown,
+  usernameHint?: string | null
 ): Promise<PaymentActionResult> {
   const paymentId = parsePaymentId(paymentIdRaw);
-  const txid = typeof txidRaw === "string" ? txidRaw.trim() : "";
+  const txid = parseTxid(txidRaw);
   if (!paymentId) {
     return { ok: false, status: 400, payment: null, error: "paymentId is required" };
   }
@@ -105,7 +116,7 @@ export async function completePaymentById(
 
   const current = await getPiPayment(paymentId);
   if (current.ok && current.data?.status?.developer_completed) {
-    const grant = await grantFromPayment(current.data);
+    const grant = await grantFromPayment(current.data, usernameHint);
     return { ok: true, status: 200, payment: current.data, grant };
   }
 
@@ -118,20 +129,57 @@ export async function completePaymentById(
 
   const completed = await completePiPayment(paymentId, txid);
   if (!completed.ok) {
+    const again = await getPiPayment(paymentId);
+    if (again.ok && again.data?.status?.developer_completed) {
+      const grant = await grantFromPayment(again.data, usernameHint);
+      return { ok: true, status: 200, payment: again.data, grant };
+    }
     return {
       ok: false,
       status: completed.status || 502,
       payment: completed.data,
-      error: "Pi complete failed",
+      error: describePiApiFailure("complete", completed.status || 502, completed.data),
     };
   }
 
-  const grant = await grantFromPayment(completed.data);
+  const grant = await grantFromPayment(completed.data, usernameHint);
   return { ok: true, status: 200, payment: completed.data, grant };
 }
 
+export async function cancelPaymentById(paymentIdRaw: unknown): Promise<PaymentActionResult> {
+  const paymentId = parsePaymentId(paymentIdRaw);
+  if (!paymentId) {
+    return { ok: false, status: 400, payment: null, error: "paymentId is required" };
+  }
+
+  const current = await getPiPayment(paymentId);
+  if (current.data?.status?.developer_completed) {
+    const grant = await grantFromPayment(current.data);
+    return { ok: true, status: 200, payment: current.data, grant };
+  }
+  if (current.data?.status?.cancelled || current.data?.status?.user_cancelled) {
+    return { ok: true, status: 200, payment: current.data, cancelled: true };
+  }
+
+  const cancelled = await cancelPiPayment(paymentId);
+  if (!cancelled.ok) {
+    return {
+      ok: false,
+      status: cancelled.status || 502,
+      payment: cancelled.data,
+      error: describePiApiFailure("cancel", cancelled.status || 502, cancelled.data),
+    };
+  }
+  return { ok: true, status: 200, payment: cancelled.data, cancelled: true };
+}
+
+/**
+ * Resolve a payment that Pi SDK reported as incomplete.
+ * With a blockchain txid: complete (and grant). Without a txid: cancel so the next buy can proceed.
+ */
 export async function resolveIncompletePayment(
-  paymentIdRaw: unknown
+  paymentIdRaw: unknown,
+  extra?: { txid?: unknown; payment?: PiPaymentDTO | null; username?: string | null }
 ): Promise<PaymentActionResult> {
   const paymentId = parsePaymentId(paymentIdRaw);
   if (!paymentId) {
@@ -139,45 +187,50 @@ export async function resolveIncompletePayment(
   }
 
   const current = await getPiPayment(paymentId);
-  if (!current.ok || !current.data) {
+  const payment = current.data || extra?.payment || null;
+
+  if (!current.ok && !payment) {
     return {
       ok: false,
       status: current.status || 502,
-      payment: current.data,
-      error: "Could not load Pi payment",
+      payment: null,
+      error: describePiApiFailure("get payment", current.status || 502, current.data),
     };
   }
 
-  const payment = current.data;
-  if (payment.status?.cancelled || payment.status?.user_cancelled) {
-    return { ok: true, status: 200, payment };
+  if (payment?.status?.cancelled || payment?.status?.user_cancelled) {
+    return { ok: true, status: 200, payment, cancelled: true };
   }
 
-  if (payment.status?.developer_completed) {
-    const grant = await grantFromPayment(payment);
+  if (payment?.status?.developer_completed) {
+    const grant = await grantFromPayment(payment, extra?.username);
     return { ok: true, status: 200, payment, grant };
   }
 
-  const existingTxid = payment.transaction?.txid;
-  if (existingTxid) {
-    return completePaymentById(paymentId, existingTxid);
+  const txid =
+    parseTxid(extra?.txid) ||
+    parseTxid(payment?.transaction?.txid) ||
+    parseTxid(extra?.payment?.transaction?.txid);
+
+  if (txid) {
+    return completePaymentById(paymentId, txid, extra?.username);
   }
 
-  if (!payment.status?.developer_approved) {
-    const approved = await approvePaymentById(paymentId);
-    if (!approved.ok) return approved;
+  const cancelled = await cancelPaymentById(paymentId);
+  if (cancelled.ok) return cancelled;
 
-    for (let i = 0; i < 3; i++) {
-      await sleep(1000);
-      const again = await getPiPayment(paymentId);
-      const txid = again.data?.transaction?.txid;
-      if (txid) {
-        return completePaymentById(paymentId, txid);
-      }
-    }
-
-    return { ok: true, status: 200, payment: approved.payment, approved: true, waiting: true };
+  const retry = await getPiPayment(paymentId);
+  const retryTxid = parseTxid(retry.data?.transaction?.txid);
+  if (retryTxid) {
+    return completePaymentById(paymentId, retryTxid, extra?.username);
   }
 
-  return { ok: true, status: 200, payment, waiting: true };
+  return {
+    ok: false,
+    status: cancelled.status || 502,
+    payment: cancelled.payment || payment,
+    error:
+      cancelled.error ||
+      "Incomplete Pi payment could not be completed or cancelled. Further purchases may stay blocked until this payment is resolved in Pi Develop.",
+  };
 }

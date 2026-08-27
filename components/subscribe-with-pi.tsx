@@ -44,6 +44,15 @@ export function SubscribeWithPi({
 
     try {
       const result = await subscribeWithPi();
+      if (!result.alreadyGranted && result.granted !== true) {
+        setStatus("error");
+        setMessage(
+          result.skipped
+            ? `Payment reached Pi, but Premium was not added (${result.skipped}). Try again.`
+            : "Payment reached Pi, but Premium was not added. Try again or check PI_API_KEY on Vercel."
+        );
+        return;
+      }
       const until = result.premiumUntil || null;
       const neonGranted =
         result.alreadyGranted

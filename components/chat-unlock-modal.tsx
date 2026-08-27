@@ -79,6 +79,15 @@ export function ChatUnlockModal({
 
     try {
       const result = await purchaseNeonPackWithPi(packageId);
+      if (!result.alreadyGranted && result.granted !== true) {
+        setMessage({
+          type: "error",
+          text: result.skipped
+            ? `Payment reached Pi, but Neon was not added (${result.skipped}). Try again.`
+            : "Payment reached Pi, but Neon was not added. Try again or check PI_API_KEY on Vercel.",
+        });
+        return;
+      }
       const neonGranted =
         result.alreadyGranted
           ? 0
