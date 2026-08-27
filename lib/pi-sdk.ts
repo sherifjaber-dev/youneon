@@ -15,7 +15,8 @@ import type {
 export const PI_SDK_UNAVAILABLE = "PI_SDK_UNAVAILABLE";
 /** App Studio + U2A payments: username identity and payments scope together. */
 export const PI_AUTH_SCOPES: PiScope[] = ["username", "payments"];
-export const PI_SDK_WAIT_MS = 4000;
+export const PI_SDK_WAIT_MS = 3000;
+export const PI_INIT_TIMEOUT_MS = 3000;
 
 let initPromise: Promise<void> | null = null;
 let initSucceeded = false;
@@ -84,6 +85,14 @@ export function isPiAvailable(): boolean {
   return typeof resolvePiSdk() !== "undefined";
 }
 
+function isPinetHost(): boolean {
+  try {
+    return typeof location !== "undefined" && location.hostname.includes("pinet.com");
+  } catch {
+    return false;
+  }
+}
+
 export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean> {
   if (typeof window === "undefined") {
     return false;
@@ -101,7 +110,7 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
       logSdkLoaded();
       return true;
     }
-    if (!requestedSdk && Date.now() - started >= 800) {
+    if (!requestedSdk && Date.now() - started >= 800 && !isPinetHost()) {
       requestedSdk = true;
       loadOfficialSdkIfMissing();
     }
@@ -110,18 +119,45 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
   return !!resolvePiSdk();
 }
 
-/** Load sdk.minepi.com only if Pi is still missing. Never replace an existing window.Pi. */
+/** Load sdk.minepi.com only if Pi is still missing. Never on pinet.com (hangs the iframe). */
 function loadOfficialSdkIfMissing(): void {
   if (typeof document === "undefined") return;
   if (resolvePiSdk()) return;
+  if (isPinetHost()) return;
   if (document.querySelector("script[data-youneon-pi-sdk]")) return;
   const s = document.createElement("script");
-  s.src = "https://sdk.minepi.com/pi-sdk.js";
   s.async = true;
   s.setAttribute("data-youneon-pi-sdk", "1");
-  s.onerror = () => {
-    console.log("[Pi] error: failed to load sdk.minepi.com");
+  let finished = false;
+  const abort = (reason: string) => {
+    if (finished) return;
+    finished = true;
+    try {
+      s.onload = null;
+      s.onerror = null;
+    } catch {
+      /* ignore */
+    }
+    try {
+      s.src = "about:blank";
+    } catch {
+      /* ignore */
+    }
+    try {
+      s.remove();
+    } catch {
+      /* ignore */
+    }
+    console.log("[Pi] error: " + reason);
   };
+  s.onload = () => {
+    finished = true;
+  };
+  s.onerror = () => {
+    abort("failed to load sdk.minepi.com");
+  };
+  window.setTimeout(() => abort("SDK script timeout"), PI_SDK_WAIT_MS);
+  s.src = "https://sdk.minepi.com/pi-sdk.js";
   (document.head || document.documentElement).appendChild(s);
 }
 
@@ -162,7 +198,16 @@ export async function initPiSdk(): Promise<void> {
 
       logSdkLoaded();
       console.log("[Pi] init start");
-      await Promise.resolve(Pi.init(getPiInitOptions()));
+      try {
+        await Promise.race([
+          Promise.resolve(Pi.init(getPiInitOptions())),
+          new Promise<void>((resolve) => {
+            window.setTimeout(resolve, PI_INIT_TIMEOUT_MS);
+          }),
+        ]);
+      } catch (error) {
+        logError(error);
+      }
       initSucceeded = true;
       console.log("[Pi] init success");
     })().catch((error) => {

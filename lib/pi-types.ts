@@ -93,6 +93,9 @@ declare global {
     __YOUNEON_PI_LAST__?: string;
     __YOUNEON_PI_CLIENT_ID__?: string;
     __YOUNEON_PI_SDK_LOAD_SCHEDULED__?: boolean;
+    __YOUNEON_PI_POLL_STARTED__?: boolean;
+    __YOUNEON_PI_WAIT_DONE__?: boolean;
+    __YOUNEON_PI_POLL__?: number;
     __YOUNEON_RESTORING_SIGNIN__?: boolean;
     __PI_AUTH_OK?: boolean;
     __youneonWaitForPi?: (timeoutMs: number) => Promise<boolean>;

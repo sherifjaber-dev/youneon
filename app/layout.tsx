@@ -35,8 +35,9 @@ const CRITICAL_CSS =
 /**
  * Vanilla ES5 boot script. No async/await, no arrow functions, no template
  * literals in the output — old Pi App Studio webviews throw on those.
- * Never loads sdk.minepi.com if App Studio already injected window.Pi.
- * Pi.init is official only: { version: "2.0", sandbox: true } — never clientId.
+ * Never loads sdk.minepi.com if App Studio / Pi Browser already injected window.Pi,
+ * and never on pinet.com (that URL hangs the ecosystem iframe). Remote SDK load is
+ * timed out at 3s. Pi.init is official only: { version: "2.0", sandbox: true }.
  * Classic Pi.authenticate(scopesArray, cb) runs FIRST so Studio can hook it.
  */
 const PI_BOOT_SCRIPT =
@@ -53,16 +54,22 @@ const PI_BOOT_SCRIPT =
   "function piInitOptions() {" +
   "return { version: '2.0', sandbox: true };" +
   "}" +
+  "var PI_WAIT_MS = 3000;" +
+  "function onPinetHost() {" +
+  "try { var h = String((location && location.hostname) || ''); return h.indexOf('pinet.com') !== -1; } catch (e) { return false; }" +
+  "}" +
   "function safePiInit(P, onOk) {" +
   "if (!P || !P.init) { if (onOk) onOk(); return; }" +
   "console.log('[Pi] init start');" +
-  "function ok() { console.log('[Pi] init success'); if (onOk) onOk(); }" +
+  "var done = false;" +
+  "function finish(ok) { if (done) return; done = true; if (ok) console.log('[Pi] init success'); if (onOk) onOk(); }" +
   "try {" +
   "var r = P.init(piInitOptions());" +
   "if (r && typeof r.then === 'function') {" +
-  "r.then(ok, function (e) { console.log('[Pi] error: ' + errMsg(e)); });" +
-  "} else { ok(); }" +
-  "} catch (e) { console.log('[Pi] error: ' + errMsg(e)); }" +
+  "r.then(function () { finish(true); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); finish(false); });" +
+  "} else { finish(true); }" +
+  "} catch (e) { console.log('[Pi] error: ' + errMsg(e)); finish(false); }" +
+  "try { setTimeout(function () { finish(false); }, PI_WAIT_MS); } catch (t) { finish(false); }" +
   "}" +
   "function findPi() {" +
   "var found = null;" +
@@ -86,6 +93,12 @@ const PI_BOOT_SCRIPT =
   "console.log('[Pi] error: no window.Pi');" +
   "var nodes = document.querySelectorAll('[data-youneon-signin-msg]');" +
   "for (var mi = 0; mi < nodes.length; mi++) { nodes[mi].textContent = 'Open in Pi Browser'; try { nodes[mi].style.display = 'block'; } catch (ds) {} }" +
+  "}" +
+  "function giveUpWaitingForPi() {" +
+  "if (window.__YOUNEON_PI_WAIT_DONE__) return;" +
+  "window.__YOUNEON_PI_WAIT_DONE__ = true;" +
+  "try { if (window.__YOUNEON_PI_POLL__) clearInterval(window.__YOUNEON_PI_POLL__); } catch (c) {}" +
+  "if (!findPi()) showPiMissing();" +
   "}" +
   "function isPublicLegalPath() {" +
   "try { var p = String((location && location.pathname) || ''); return p === '/privacy' || p === '/terms' || p.indexOf('/privacy/') === 0 || p.indexOf('/terms/') === 0; } catch (e) { return false; }" +
@@ -161,24 +174,47 @@ const PI_BOOT_SCRIPT =
   "try { safePiInit(P); } catch (e) { console.log('[Pi] error: ' + errMsg(e)); }" +
   "}" +
   "renderStatus();" +
-  "var piPoll = setInterval(function () { renderStatus(); if (!findPi()) return; clearInterval(piPoll); runInitThenAuth(); }, 200);" +
-  "if (findPi()) { clearInterval(piPoll); runInitThenAuth(); }" +
+  "if (!window.__YOUNEON_PI_POLL_STARTED__) {" +
+  "window.__YOUNEON_PI_POLL_STARTED__ = true;" +
+  "var waited = 0;" +
+  "var piPoll = setInterval(function () {" +
+  "waited += 200; renderStatus();" +
+  "if (findPi()) { clearInterval(piPoll); window.__YOUNEON_PI_WAIT_DONE__ = true; runInitThenAuth(); return; }" +
+  "if (waited >= PI_WAIT_MS) { clearInterval(piPoll); giveUpWaitingForPi(); }" +
+  "}, 200);" +
+  "window.__YOUNEON_PI_POLL__ = piPoll;" +
+  "if (findPi()) { clearInterval(piPoll); window.__YOUNEON_PI_WAIT_DONE__ = true; runInitThenAuth(); }" +
+  "else { try { setTimeout(giveUpWaitingForPi, PI_WAIT_MS); } catch (wt) { giveUpWaitingForPi(); } }" +
+  "}" +
   "if (!window.__YOUNEON_PI_SDK_LOAD_SCHEDULED__) {" +
   "window.__YOUNEON_PI_SDK_LOAD_SCHEDULED__ = true;" +
-  "setTimeout(function () {" +
-  "if (findPi()) { renderStatus(); return; }" +
+  "function abortSdkScript(s, watch, reason) {" +
+  "try { clearInterval(watch); } catch (cw) {}" +
+  "try { s.onload = null; s.onerror = null; } catch (h) {}" +
+  "try { s.src = 'about:blank'; } catch (b) {}" +
+  "try { if (s.parentNode) s.parentNode.removeChild(s); } catch (r) {}" +
+  "console.log('[Pi] error: ' + reason); setLast('Last: ' + reason); showPiMissing();" +
+  "}" +
+  "function loadOfficialSdkIfMissing() {" +
+  "if (findPi() || onPinetHost()) return;" +
   "if (document.querySelector('script[data-youneon-pi-sdk]')) return;" +
   "var nativePi = null; try { nativePi = findPi(); } catch (pe) { console.log('[Pi] error: ' + errMsg(pe)); }" +
-  "if (nativePi) { renderStatus(); return; }" +
+  "if (nativePi) return;" +
+  "var finished = false;" +
   "var watch = setInterval(function () { try { if (window.Pi && !nativePi) nativePi = window.Pi; } catch (we) {} }, 40);" +
   "var s = document.createElement('script');" +
-  "s.src = 'https://sdk.minepi.com/pi-sdk.js';" +
   "s.async = true;" +
   "s.setAttribute('data-youneon-pi-sdk', '1');" +
-  "s.onload = function () { try { clearInterval(watch); } catch (cw) {} if (nativePi) { try { window.Pi = nativePi; } catch (re) { console.log('[Pi] error: ' + errMsg(re)); } } renderStatus(); };" +
-  "s.onerror = function () { try { clearInterval(watch); } catch (cw) {} console.log('[Pi] error: failed to load sdk.minepi.com'); setLast('Last: SDK script failed'); };" +
+  "s.onload = function () { if (finished) return; finished = true; try { clearInterval(watch); } catch (cw) {} if (nativePi) { try { window.Pi = nativePi; } catch (re) { console.log('[Pi] error: ' + errMsg(re)); } } renderStatus(); if (findPi()) runInitThenAuth(); else showPiMissing(); };" +
+  "s.onerror = function () { if (finished) return; finished = true; abortSdkScript(s, watch, 'failed to load sdk.minepi.com'); };" +
+  "try { setTimeout(function () { if (finished) return; finished = true; abortSdkScript(s, watch, 'SDK script timeout'); }, PI_WAIT_MS); } catch (st) {}" +
+  "s.src = 'https://sdk.minepi.com/pi-sdk.js';" +
   "(document.head || document.documentElement).appendChild(s);" +
-  "}, 800);" +
+  "}" +
+  "function tryLoadSdk() { if (findPi()) { renderStatus(); return; } if (onPinetHost()) return; loadOfficialSdkIfMissing(); }" +
+  "function afterPaint() { try { setTimeout(tryLoadSdk, 0); } catch (e) { tryLoadSdk(); } }" +
+  "if (document.readyState === 'complete') afterPaint();" +
+  "else { try { window.addEventListener('load', afterPaint); } catch (le) { setTimeout(tryLoadSdk, PI_WAIT_MS); } }" +
   "}" +
   "})();";
 
@@ -198,6 +234,7 @@ const PUBLIC_LEGAL_PATH_SCRIPT =
 const DEFER_FONTS_SCRIPT =
   "(function(){" +
   "function load(){" +
+  "try{var h=String((location&&location.hostname)||'');if(h.indexOf('pinet.com')!==-1)return;}catch(pe){}" +
   "if(document.querySelector('link[data-youneon-pacifico]'))return;" +
   "var l=document.createElement('link');" +
   "l.rel='stylesheet';" +
@@ -318,7 +355,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=signin-tap-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=ecosystem-nohang-1"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"
