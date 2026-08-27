@@ -19,7 +19,8 @@ const CRITICAL_CSS =
   ".youneon-live-dot{animation:youneonLivePulse 1.4s ease-in-out infinite}" +
   "#youneon-static-login,.youneon-static-login,#youneon-static-login *,.youneon-static-login *{user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;caret-color:transparent !important}" +
   "#youneon-static-login,.youneon-static-login{background:#070010;pointer-events:auto !important;z-index:2147483647 !important;position:fixed !important;top:0;right:0;bottom:0;left:0;cursor:default !important;touch-action:manipulation !important;-webkit-tap-highlight-color:transparent !important}" +
-  "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p,.youneon-welcome-card,.youneon-welcome-card svg,.youneon-welcome-card img,.youneon-welcome-hero,.youneon-welcome-wordmark,.youneon-welcome-wordmark-wrap{pointer-events:none !important;cursor:default !important}" +
+  "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p,.youneon-welcome-card svg,.youneon-welcome-card img,.youneon-welcome-hero,.youneon-welcome-wordmark,.youneon-welcome-wordmark-wrap{pointer-events:none !important;cursor:default !important}" +
+  ".youneon-signin-wrap{pointer-events:auto !important;position:relative !important;z-index:10 !important}" +
   ".youneon-welcome-wordmark-wrap,.youneon-welcome-wordmark{background:transparent !important}" +
   ".youneon-welcome-wordmark{display:block;width:min(80vw,280px);max-width:280px;height:auto;mix-blend-mode:screen;-webkit-mix-blend-mode:screen}" +
   ".youneon-welcome-footer{position:relative !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;z-index:auto !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:flex-start !important;width:100%;margin:12px 0 0 !important;gap:10px !important;flex-shrink:0 !important;transform:none !important}" +
@@ -80,6 +81,12 @@ const PI_BOOT_SCRIPT =
   "for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;" +
   "}" +
   "function setLast(text) { window.__YOUNEON_PI_LAST__ = text; renderStatus(); }" +
+  "function showPiMissing() {" +
+  "setLast('Last: window.Pi missing');" +
+  "console.log('[Pi] error: no window.Pi');" +
+  "var nodes = document.querySelectorAll('[data-youneon-signin-msg]');" +
+  "for (var mi = 0; mi < nodes.length; mi++) { nodes[mi].textContent = 'Open in Pi Browser'; try { nodes[mi].style.display = 'block'; } catch (ds) {} }" +
+  "}" +
   "function isPublicLegalPath() {" +
   "try { var p = String((location && location.pathname) || ''); return p === '/privacy' || p === '/terms' || p.indexOf('/privacy/') === 0 || p.indexOf('/terms/') === 0; } catch (e) { return false; }" +
   "}" +
@@ -125,7 +132,7 @@ const PI_BOOT_SCRIPT =
   "if (window.__PI_AUTH_OK !== true && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();" +
   "function callAuthenticate() {" +
   "var P = findPi();" +
-  "if (!P || typeof P.authenticate !== 'function') { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
+  "if (!P || typeof P.authenticate !== 'function') { showPiMissing(); return; }" +
   "if (window.__YOUNEON_PI_AUTH_LOCK__) return window.__YOUNEON_PI_AUTH_PROMISE__;" +
   "window.__YOUNEON_PI_AUTH_LOCK__ = true;" +
   "try { setTimeout(function () { window.__YOUNEON_PI_AUTH_LOCK__ = false; }, 2500); } catch (st) {}" +
@@ -141,27 +148,10 @@ const PI_BOOT_SCRIPT =
   "window.__youneonCallPiAuthenticate = callAuthenticate;" +
   "window.__youneonPiAuth = function () {" +
   "var P = findPi();" +
-  "if (!P) { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
+  "if (!P) { showPiMissing(); return; }" +
   "try { if (P.init) P.init(piInitOptions()); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); }" +
   "return callAuthenticate();" +
   "};" +
-  "function isLoginTarget(t) {" +
-  "if (!t) return false;" +
-  "if (t.nodeType === 3) t = t.parentNode;" +
-  "if (!t || !t.closest) return false;" +
-  "if (t.closest('[data-youneon-legal],.youneon-welcome-legal')) return false;" +
-  "return !!(t.closest('button.youneon-signin-btn') || t.closest('button[data-youneon-signin]') || t.closest('#youneon-signin-btn'));" +
-  "}" +
-  "function onLoginHit(ev) {" +
-  "if (window.__PI_AUTH_OK) return;" +
-  "if (!isLoginTarget(ev && ev.target)) return;" +
-  "if (typeof window.__youneonPiAuth === 'function') window.__youneonPiAuth(); else callAuthenticate();" +
-  "}" +
-  "if (!window.__YOUNEON_LOGIN_HIT_BOUND__) {" +
-  "window.__YOUNEON_LOGIN_HIT_BOUND__ = true;" +
-  "var hitEv = ['pointerdown', 'mousedown', 'touchstart', 'click'];" +
-  "for (var hi = 0; hi < hitEv.length; hi++) { try { document.addEventListener(hitEv[hi], onLoginHit, true); } catch (he) { console.log('[Pi] error: ' + errMsg(he)); } }" +
-  "}" +
   "function runInitThenAuth() {" +
   "if (window.__YOUNEON_PI_AUTO_AUTH_STARTED__) return;" +
   "window.__YOUNEON_PI_AUTO_AUTH_STARTED__ = true;" +
@@ -328,7 +318,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=official-init-2"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=signin-tap-1"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"

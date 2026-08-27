@@ -3,7 +3,6 @@
 import React from "react";
 import { bindPiSigninButtonIn } from "@/lib/pi-signin-onclick";
 import { piWelcomeInnerHtml } from "@/lib/pi-welcome-markup";
-import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -51,21 +50,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     console.error("YouNeon error boundary:", error, info.componentStack);
   }
 
-  handleSignIn = () => {
-    tapPiAuthenticate();
-  };
-
   bindHost = (el: HTMLDivElement | null) => {
-    const btn = bindPiSigninButtonIn(el);
-    if (!btn || btn.getAttribute("data-youneon-extra-bound") === "1") return;
-    btn.setAttribute("data-youneon-extra-bound", "1");
-    const run = () => {
-      this.handleSignIn();
-    };
-    btn.addEventListener("pointerdown", run);
-    btn.addEventListener("mousedown", run);
-    btn.addEventListener("touchstart", run);
-    btn.addEventListener("click", run);
+    bindPiSigninButtonIn(el);
   };
 
   render() {
@@ -74,7 +60,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <div
           className="youneon-static-login"
           aria-label="YouNeon"
-          data-youneon-login-v="login-footer-flow-1"
+          data-youneon-login-v="login-signin-tap-1"
           style={overlayStyle}
           ref={this.bindHost}
           dangerouslySetInnerHTML={{

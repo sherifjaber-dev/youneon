@@ -3,12 +3,11 @@
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useState, useEffect } from "react";
 import { bindPiSigninButtonIn, piSigninControlsHtml } from "@/lib/pi-signin-onclick";
-import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 const LOGIN_FALLBACK_MS = 2000;
 
 export function AuthLoadingScreen() {
-  const { authMessage, hasError, login, isInitializing } = usePiAuth();
+  const { authMessage, hasError, isInitializing } = usePiAuth();
   const [displayMessage, setDisplayMessage] = useState(authMessage);
   const [showLoginButton, setShowLoginButton] = useState(false);
 
@@ -20,11 +19,6 @@ export function AuthLoadingScreen() {
     const t = setTimeout(() => setShowLoginButton(true), LOGIN_FALLBACK_MS);
     return () => clearTimeout(t);
   }, []);
-
-  const handleSignIn = () => {
-    tapPiAuthenticate();
-    void login();
-  };
 
   return (
     <div
@@ -89,17 +83,9 @@ export function AuthLoadingScreen() {
         {(showLoginButton || hasError) && (
           <div
             ref={(el) => {
-              const btn = bindPiSigninButtonIn(el);
-              if (!btn || btn.getAttribute("data-youneon-extra-bound") === "1") return;
-              btn.setAttribute("data-youneon-extra-bound", "1");
-              const run = () => {
-                handleSignIn();
-              };
-              btn.addEventListener("pointerdown", run);
-              btn.addEventListener("mousedown", run);
-              btn.addEventListener("touchstart", run);
-              btn.addEventListener("click", run);
+              bindPiSigninButtonIn(el);
             }}
+            className="youneon-signin-wrap"
             style={{ pointerEvents: "auto", userSelect: "none", WebkitUserSelect: "none" }}
             dangerouslySetInnerHTML={{
               __html: piSigninControlsHtml("youneon-signin-btn-auth"),

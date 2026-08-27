@@ -380,6 +380,15 @@ html.youneon-signed-in select {
   background-color: #c21875 !important;
   background-image: none !important;
   box-shadow: none !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 2147483647 !important;
+}
+
+.youneon-signin-wrap {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 10 !important;
 }
 
 .youneon-signin-btn:active {

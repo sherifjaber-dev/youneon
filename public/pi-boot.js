@@ -65,6 +65,16 @@
     renderStatus();
   }
 
+  function showPiMissing() {
+    setLast("Last: window.Pi missing");
+    console.log("[Pi] error: no window.Pi");
+    var nodes = document.querySelectorAll("[data-youneon-signin-msg]");
+    for (var mi = 0; mi < nodes.length; mi++) {
+      nodes[mi].textContent = "Open in Pi Browser";
+      try { nodes[mi].style.display = "block"; } catch (ds) {}
+    }
+  }
+
   function logSdkLoaded() {
     if (window.__YOUNEON_PI_SDK_LOGGED__ || !findPi()) return;
     window.__YOUNEON_PI_SDK_LOGGED__ = true;
@@ -219,8 +229,7 @@
   function callAuthenticate() {
     var P = findPi();
     if (!P || typeof P.authenticate !== "function") {
-      setLast("Last: window.Pi missing");
-      console.log("[Pi] error: no window.Pi");
+      showPiMissing();
       return;
     }
     if (window.__YOUNEON_PI_AUTH_LOCK__) return window.__YOUNEON_PI_AUTH_PROMISE__;
@@ -255,8 +264,7 @@
   window.__youneonPiAuth = function () {
     var P = findPi();
     if (!P) {
-      setLast("Last: window.Pi missing");
-      console.log("[Pi] error: no window.Pi");
+      showPiMissing();
       return;
     }
     try {
@@ -268,32 +276,37 @@
   };
 
   var AUTH_JS =
-    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{if(P.init){try{P.init({version:'2.0',sandbox:true});}catch(ie){console.log('[Pi] error: '+ie);}}if(!window.__YOUNEON_PI_AUTH_LOCK__){window.__YOUNEON_PI_AUTH_LOCK__=true;try{setTimeout(function(){window.__YOUNEON_PI_AUTH_LOCK__=false;},2500);}catch(st){}console.log('[Pi] authenticate start');last='Last: authenticate called';var pr=null;try{pr=P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}});wireAuth(pr);}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}if(!pr){try{pr=P.authenticate({scopes:['username','payments']});wireAuth(pr);}catch(o){console.log('[Pi] error: '+o);}}}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
-  var LOGIN_V = "login-footer-flow-1";
+    "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function showNeed(){try{var ms=document.querySelectorAll('[data-youneon-signin-msg]');for(var i=0;i<ms.length;i++){ms[i].textContent='Open in Pi Browser';try{ms[i].style.display='block';}catch(ds){}}}catch(sm){}try{window.__YOUNEON_PI_LAST__='Last: window.Pi missing';}catch(sl){}console.log('[Pi] error: no window.Pi');}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';showNeed();}else{if(P.init){try{P.init({version:'2.0',sandbox:true});}catch(ie){console.log('[Pi] error: '+ie);}}if(!window.__YOUNEON_PI_AUTH_LOCK__){window.__YOUNEON_PI_AUTH_LOCK__=true;try{setTimeout(function(){window.__YOUNEON_PI_AUTH_LOCK__=false;},2500);}catch(st){}console.log('[Pi] authenticate start');last='Last: authenticate called';var pr=null;try{pr=P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}});wireAuth(pr);}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}if(!pr){try{pr=P.authenticate({scopes:['username','payments']});wireAuth(pr);}catch(o){console.log('[Pi] error: '+o);}}}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+(last?'  ·  '+last:'');}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
+  var LOGIN_V = "login-signin-tap-1";
   var NONE =
     "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:default";
   var OVERLAY_CHROME =
     "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;caret-color:transparent";
   var CTRL_STYLE =
-    "height:37px;min-height:37px;padding:0 16px;font-size:14px;font-weight:600;line-height:1;border:0;border-radius:12px;color:#FFFFFF;background-color:#C21875;background-image:none;cursor:pointer;width:100%;max-width:100%;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(194,24,117,0.35);user-select:none;-webkit-user-select:none;caret-color:transparent;box-shadow:none";
+    "height:37px;min-height:37px;padding:0 16px;font-size:14px;font-weight:600;line-height:1;border:0;border-radius:12px;color:#FFFFFF;background-color:#C21875;background-image:none;cursor:pointer;width:100%;max-width:100%;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;touch-action:manipulation;-webkit-tap-highlight-color:rgba(194,24,117,0.35);user-select:none;-webkit-user-select:none;caret-color:transparent;box-shadow:none";
+  var WRAP_STYLE =
+    "pointer-events:auto !important;position:relative !important;z-index:10 !important;user-select:none;-webkit-user-select:none;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center";
   var STATUS_STYLE =
     "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;pointer-events:none;user-select:none;font-family:system-ui,-apple-system,Segoe UI,sans-serif";
   var NATIVE_ATTRS =
-    'onclick="' + AUTH_JS + '" onpointerdown="' + AUTH_JS + '" onmousedown="' + AUTH_JS + '" ontouchstart="' + AUTH_JS + '" onselectstart="return false" unselectable="on"';
+    'onclick="' + AUTH_JS + '" ontouchstart="' + AUTH_JS + '" onselectstart="return false" unselectable="on"';
   var CONTROLS_HTML =
     '<button type="button" class="youneon-signin-btn" data-youneon-signin="1" style="' + CTRL_STYLE + '" ' + NATIVE_ATTRS + '><span aria-hidden="true" style="font-size:16px;line-height:1;font-weight:600;pointer-events:none">&#960;</span>Sign in with Pi</button>';
+  var ERROR_HTML =
+    '<div class="youneon-signin-msg" data-youneon-signin-msg="1" style="display:none;margin:10px 0 0;font-size:12px;line-height:1.45;font-weight:500;color:#fde68a;text-align:center;pointer-events:none;user-select:none;-webkit-user-select:none"></div>';
   var STATUS_HTML =
     '<p id="youneon-pi-status" data-youneon-pi-status="1" style="' + STATUS_STYLE + '">Pi SDK: …</p>';
   var LEGAL_STOP =
     'onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"';
   function overlayInnerHtml() {
     return (
-      '<div class="youneon-welcome-card" style="position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;' + NONE + '">' +
+      '<div class="youneon-welcome-card" style="position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;pointer-events:auto;user-select:none;-webkit-user-select:none;cursor:default">' +
       '<h1 class="youneon-welcome-wordmark-wrap" style="margin:0 0 8px;padding:0;line-height:0;width:100%;display:flex;justify-content:center;align-items:center;background:transparent;' + NONE + '"><img class="youneon-welcome-wordmark" src="/youneon-login-logo.png" alt="YouNeon" width="560" height="274" decoding="async" style="display:block;width:min(80vw,280px);max-width:280px;height:auto;margin:0;background:transparent;mix-blend-mode:screen;-webkit-mix-blend-mode:screen;object-fit:contain;' + NONE + '" /></h1>' +
       '<img class="youneon-welcome-hero" src="/default-avatar.png" alt="" width="512" height="512" decoding="async" style="display:block;width:min(72vw,268px);height:auto;margin:10px 0 18px;object-fit:contain;' + NONE + '" />' +
       '<p style="font-size:15px;line-height:1.4;font-weight:500;color:#8b8494;margin:0 0 22px;' + NONE + '">Meet in the glow.</p>' +
-      '<div style="pointer-events:auto;user-select:none;-webkit-user-select:none;width:100%;display:flex;justify-content:center">' +
+      '<div class="youneon-signin-wrap" style="' + WRAP_STYLE + '">' +
       CONTROLS_HTML +
+      ERROR_HTML +
       "</div>" +
       '<div class="youneon-welcome-footer" data-youneon-login-footer="1" style="position:relative;z-index:2;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;margin:12px 0 0;flex-shrink:0;box-sizing:border-box;' + NONE + '">' +
       '<p class="youneon-welcome-hint" style="font-size:12px;line-height:1.45;font-weight:500;color:#5c5666;margin:0;' + NONE + '">You need a Pi account to enter.</p>' +
@@ -308,31 +321,6 @@
     );
   }
 
-  function isLoginTarget(t) {
-    if (!t) return false;
-    if (t.nodeType === 3) t = t.parentNode;
-    if (!t || !t.closest) return false;
-    if (t.closest("[data-youneon-legal], .youneon-welcome-legal")) return false;
-    return !!(
-      t.closest("button.youneon-signin-btn") ||
-      t.closest("button[data-youneon-signin]") ||
-      t.closest("#youneon-signin-btn")
-    );
-  }
-  function onLoginHit(ev) {
-    if (window.__PI_AUTH_OK) return;
-    if (!isLoginTarget(ev && ev.target)) return;
-    if (typeof window.__youneonPiAuth === "function") window.__youneonPiAuth();
-    else callAuthenticate();
-  }
-  function bindLoginHits() {
-    if (window.__YOUNEON_LOGIN_HIT_BOUND__) return;
-    window.__YOUNEON_LOGIN_HIT_BOUND__ = true;
-    var types = ["pointerdown", "mousedown", "touchstart", "click"];
-    for (var i = 0; i < types.length; i++) {
-      try { document.addEventListener(types[i], onLoginHit, true); } catch (he) { console.log("[Pi] error: " + errMsg(he)); }
-    }
-  }
   function styleOverlay(el) {
     if (!el || !el.style) return;
     el.style.zIndex = "2147483647";
@@ -350,9 +338,17 @@
   function applyNativeAttrs(el) {
     if (!el) return;
     try {
+      el.removeAttribute("disabled");
+      el.removeAttribute("aria-disabled");
+      el.removeAttribute("onpointerdown");
+      el.removeAttribute("onmousedown");
+      try { el.disabled = false; } catch (db) {}
+      if (el.style) {
+        el.style.setProperty("pointer-events", "auto", "important");
+        el.style.setProperty("position", "relative", "important");
+        el.style.setProperty("z-index", "2147483647", "important");
+      }
       el.setAttribute("onclick", AUTH_JS);
-      el.setAttribute("onpointerdown", AUTH_JS);
-      el.setAttribute("onmousedown", AUTH_JS);
       el.setAttribute("ontouchstart", AUTH_JS);
       el.setAttribute("onselectstart", "return false");
       el.setAttribute("unselectable", "on");
@@ -525,7 +521,6 @@
     hideOverlays();
   }
   if (window.__PI_AUTH_OK !== true && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();
-  bindLoginHits();
   restoreSigninControls();
   setTimeout(restoreSigninControls, 0);
   setTimeout(restoreSigninControls, 100);
