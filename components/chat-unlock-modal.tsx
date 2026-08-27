@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { YouNeonChatConnectArt } from "@/components/icons/youneon-chat-connect";
 import { SubscribeWithPi } from "@/components/subscribe-with-pi";
-import { NEON_PACKAGES } from "@/lib/product-config";
+import { CHAT_UNLOCK_NEON, NEON_PACKAGES } from "@/lib/product-config";
 import { hideStaticLoginOverlays } from "@/lib/pi-client-session";
 import { emitPremiumGranted } from "@/lib/premium";
 import { PI_SDK_UNAVAILABLE, purchaseNeonPackWithPi } from "@/lib/pi-sdk";
@@ -30,8 +30,10 @@ interface ChatUnlockModalProps {
   isPremium?: boolean;
   premiumUntil?: string | null;
   confirming?: boolean;
+  neonBalance?: number;
   onClose: () => void;
   onUseFreeMessage: () => void;
+  onUnlockWithNeon?: () => void;
   onUnlockedByPurchase?: () => void;
 }
 
@@ -46,11 +48,14 @@ export function ChatUnlockModal({
   isPremium = false,
   premiumUntil = null,
   confirming = false,
+  neonBalance = 0,
   onClose,
   onUseFreeMessage,
+  onUnlockWithNeon,
   onUnlockedByPurchase,
 }: ChatUnlockModalProps) {
   const hasFree = remaining > 0;
+  const canPayWithNeon = neonBalance >= CHAT_UNLOCK_NEON;
   const [purchasingId, setPurchasingId] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
@@ -201,10 +206,37 @@ export function ChatUnlockModal({
                   Try our recommendation and continue!
                 </DialogTitle>
                 <DialogDescription className="mt-1 text-[12px] text-white/80">
-                  You need Neon to message {name}. Buy a pack to continue — then this chat stays open forever.
+                  After your daily free chat, opening a paid chat costs {CHAT_UNLOCK_NEON} Neon.
+                  Then messages with {name} stay free forever.
                 </DialogDescription>
               </div>
             </div>
+
+            {onUnlockWithNeon && (
+              <div className="px-4 pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!canPayWithNeon) {
+                      setMessage({
+                        type: "error",
+                        text: `You need ${CHAT_UNLOCK_NEON} Neon to open this chat. Buy a pack below.`,
+                      });
+                      return;
+                    }
+                    onUnlockWithNeon();
+                  }}
+                  disabled={busy}
+                  className="flex h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-[15px] font-semibold text-white shadow-[0_8px_24px_rgba(168,85,247,0.35)] transition active:scale-[0.98] disabled:opacity-60"
+                  data-testid="unlock-paid-chat-neon-btn"
+                >
+                  {confirming ? "Starting chat..." : `Unlock for ${CHAT_UNLOCK_NEON} Neon`}
+                </button>
+                <p className="mt-2 text-center text-[12px] text-yn-muted">
+                  Your balance: ◆ {neonBalance} Neon
+                </p>
+              </div>
+            )}
 
             <SubscribeWithPi variant="shop" isPremium={isPremium} premiumUntil={premiumUntil} />
 

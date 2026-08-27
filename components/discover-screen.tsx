@@ -11,6 +11,7 @@ import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
 import { isRealPiUsername } from "@/lib/real-pi-user";
+import { COUNTRY_FILTER_NEON, GENDER_FILTER_NEON } from "@/lib/product-config";
 
 interface DiscoverScreenProps {
   onStartVideo: (filters: { gender: "women" | "men" | "both"; country: string }) => void;
@@ -44,16 +45,17 @@ export function DiscoverScreen({
     cost: number;
     tone: "pink" | "blue" | "purple";
   }[] = [
-    { value: "women", label: "Women", icon: "/youneon/gender-women.png", cost: 10, tone: "pink" },
-    { value: "men", label: "Men", icon: "/youneon/gender-men.png", cost: 10, tone: "blue" },
+    { value: "women", label: "Women", icon: "/youneon/gender-women.png", cost: GENDER_FILTER_NEON, tone: "pink" },
+    { value: "men", label: "Men", icon: "/youneon/gender-men.png", cost: GENDER_FILTER_NEON, tone: "blue" },
     { value: "both", label: "Both", icon: "/youneon/gender-both.png", cost: 0, tone: "purple" },
   ];
 
   const countries = ["Worldwide", ...COUNTRY_OPTIONS];
 
   const genderCost = isPremium ? 0 : genderOptions.find((g) => g.value === selectedGender)?.cost || 0;
-  const countryCost = isPremium || selectedCountry === "Worldwide" ? 0 : 5;
+  const countryCost = isPremium || selectedCountry === "Worldwide" ? 0 : COUNTRY_FILTER_NEON;
   const totalCost = genderCost + countryCost;
+  const startPriceLabel = totalCost === 0 ? "Free" : `${totalCost} Neon`;
   const adItems = announcements.filter((item) => item.active && item.type === "ad");
   const hasEnoughNeon = neonBalance >= totalCost;
   const missingNeon = Math.max(0, totalCost - neonBalance);
@@ -155,7 +157,7 @@ export function DiscoverScreen({
             <div className="flex items-center gap-2">
               {selectedCountry !== "Worldwide" && !isPremium && (
                 <span className="rounded-full border border-[#f5d76e]/40 bg-[#f5d76e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#f5d76e]">
-                  ◆ 5
+                  ◆ {COUNTRY_FILTER_NEON} Neon
                 </span>
               )}
               {selectedCountry !== "Worldwide" && isPremium && (
@@ -187,7 +189,7 @@ export function DiscoverScreen({
                     {country === "Worldwide" ? country : <CountryLabel country={country} size={16} />}
                   </span>
                   {country !== "Worldwide" && !isPremium && (
-                    <span className="text-[10px] font-semibold text-[#f5d76e]">◆ 5</span>
+                    <span className="text-[10px] font-semibold text-[#f5d76e]">◆ {COUNTRY_FILTER_NEON} Neon</span>
                   )}
                 </div>
               ))}
@@ -202,15 +204,25 @@ export function DiscoverScreen({
           onClick={handleStart}
           className="yn-start-cta"
           data-testid="start-random-chat-btn"
-          aria-label="Start Random Chat"
+          aria-label={`Start Random Chat ${startPriceLabel}`}
         >
           <Video className="yn-start-cta-icon" strokeWidth={2.15} aria-hidden />
-          Start Random Chat
+          Start Random Chat · {startPriceLabel}
         </button>
         <p className="yn-start-caption">
           <span aria-hidden>•</span>
-          <span className="yn-start-caption-world">Matching worldwide</span>
-          <span className="yn-start-caption-free">Free</span>
+          {totalCost === 0 ? (
+            <>
+              <span className="yn-start-caption-world">Matching worldwide</span>
+              <span className="yn-start-caption-free">Free</span>
+            </>
+          ) : (
+            <>
+              <span className="yn-start-caption-world">Priority matching</span>
+              <span>·</span>
+              <span className="yn-start-caption-free">{totalCost} Neon</span>
+            </>
+          )}
           <span aria-hidden>•</span>
         </p>
         <button

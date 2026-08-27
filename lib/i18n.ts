@@ -189,7 +189,7 @@ const EN: Record<string, string> = {
     "YouNeon is a Pi Network video chat app. Here is how to get help with the features that actually exist.",
   "settings.faqPayments": "Pi payments",
   "settings.faqPaymentsBody":
-    "Neon packs and Premium (5 π / 30 days) are paid in Pi Browser. Open YouNeon inside Pi Browser to complete a payment. We cannot refund Pi from inside the app.",
+    "Neon packs and Premium (1 π / 30 days) are paid in Pi Browser. Open YouNeon inside Pi Browser to complete a payment. We cannot refund Pi from inside the app.",
   "settings.faqMatching": "Matching",
   "settings.faqMatchingBody":
     "Tap Video Chat to start a random live video chat. Use Lounge to message people who were recently online. Premium removes filter costs and unlocks unlimited chats.",

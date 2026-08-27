@@ -64,6 +64,7 @@ import {
   rememberUnlockedPeer,
   type ChatUnlocks,
 } from "@/lib/chat-unlock";
+import { CHAT_UNLOCK_NEON } from "@/lib/product-config";
 import { ChatUnlockModal, type ChatUnlockTarget } from "@/components/chat-unlock-modal";
 import { isRealPiUsername } from "@/lib/real-pi-user";
 import { isDemoLunaId } from "@/lib/demo-luna-profile";
@@ -662,6 +663,26 @@ export function YouNeonApp() {
     }
   };
 
+  const handleUnlockWithNeon = async () => {
+    if (!pendingChat || !currentUser || unlockBusy) return;
+    if (neonBalance < CHAT_UNLOCK_NEON) return;
+    const meId = currentUser.id || currentUser.piUsername;
+    const peerId = String(pendingChat.id || "");
+    if (!peerId) return;
+    setUnlockBusy(true);
+    try {
+      updateNeonBalance(neonBalance - CHAT_UNLOCK_NEON);
+      await rememberUnlockedPeer(meId, peerId);
+      setUnlockedChats((prev) => (prev.includes(peerId) ? prev : [...prev, peerId]));
+      await openChatWithUser(pendingChat);
+    } catch (e) {
+      console.error(e);
+      alert("Could not start chat. Please try again.");
+    } finally {
+      setUnlockBusy(false);
+    }
+  };
+
   const handleEndVideoChat = async (info?: {
     partner: {
       userId?: string;
@@ -960,10 +981,12 @@ export function YouNeonApp() {
         isPremium={isPremium}
         premiumUntil={premiumUntil}
         confirming={unlockBusy}
+        neonBalance={neonBalance}
         onClose={() => {
           if (!unlockBusy) setPendingChat(null);
         }}
         onUseFreeMessage={() => void handleConfirmFreeMessage()}
+        onUnlockWithNeon={() => void handleUnlockWithNeon()}
         onUnlockedByPurchase={() => void handleUnlockByPurchase()}
       />
     </div>

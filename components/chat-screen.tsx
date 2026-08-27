@@ -28,8 +28,9 @@ import {
 import { CALL_GIFTS, ChatReactionPicker, resolveGiftId, type CallGift } from "@/components/gift-overlay";
 import { GiftArt } from "@/components/icons/gift-art";
 import { playGiftSound } from "@/lib/gift-sounds";
+import { CHAT_UNLOCK_NEON } from "@/lib/product-config";
 
-const UNLOCK_COST = 100;
+const UNLOCK_COST = CHAT_UNLOCK_NEON;
 
 interface ChatScreenProps {
   conversationId: string;

@@ -5,13 +5,14 @@ import { Crown, X } from "lucide-react";
 import type { Announcement } from "@/lib/announcements";
 import { PremiumGem } from "@/components/premium-gem";
 import { GoldSparkle } from "@/components/icons/youneon-chrome-icons";
+import { PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
 
 const INTERSTITIAL_KEY = "youneon_ad_interstitial_at";
 const INTERSTITIAL_INTERVAL_MS = 12 * 60 * 1000;
 
 const FALLBACK_AD: Pick<Announcement, "title" | "body"> = {
   title: "YouNeon Premium",
-  body: "Go ad-free, unlock unlimited chats, and get 1,000 Neon — 5 π for 30 days.",
+  body: `Go ad-free, unlock unlimited chats, and get ${PREMIUM_SUBSCRIBE_NEON.toLocaleString()} Neon — ${SUBSCRIPTION_PLAN.amount} π for ${SUBSCRIPTION_PLAN.days} days.`,
 };
 
 function pickAd(ads: Announcement[]): Pick<Announcement, "title" | "body"> {
@@ -106,10 +107,10 @@ export function AdInterstitial({ ads: _ads, onSubscribe }: AdInterstitialProps) 
 
         <p className="mt-3 text-[14px] leading-relaxed text-white">
           Go ad-free, unlock unlimited chats, and get{" "}
-          <span className="yn-premium-hl-neon">1,000 Neon</span>
+          <span className="yn-premium-hl-neon">{PREMIUM_SUBSCRIBE_NEON.toLocaleString()} Neon</span>
           {" — "}
-          <span className="yn-premium-hl-gold">5 π</span>
-          {" for 30 days."}
+          <span className="yn-premium-hl-gold">{SUBSCRIPTION_PLAN.amount} π</span>
+          {` for ${SUBSCRIPTION_PLAN.days} days.`}
         </p>
 
         <div className="mt-5 flex gap-2.5">

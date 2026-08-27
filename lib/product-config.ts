@@ -2,12 +2,16 @@ export const SUBSCRIPTION_PLAN = {
   id: "youneon_premium_subscribe",
   name: "YouNeon Premium / Subscribe",
   type: "subscription" as const,
-  amount: 5,
+  amount: 1,
   memo: "YouNeon Premium / Subscribe",
   days: 30,
 };
 
-export const PREMIUM_SUBSCRIBE_NEON = 1000;
+export const PREMIUM_SUBSCRIBE_NEON = 2000;
+
+export const GENDER_FILTER_NEON = 25;
+export const COUNTRY_FILTER_NEON = 25;
+export const CHAT_UNLOCK_NEON = 50;
 
 export const PREMIUM_BENEFITS = [
   {
@@ -31,7 +35,7 @@ export const PREMIUM_BENEFITS = [
     detail: "A crown on your profile, top bar, and chats.",
   },
   {
-    title: "1,000 Neon on subscribe",
+    title: "2,000 Neon on subscribe",
     detail: "Granted immediately on every subscribe or renew.",
   },
 ] as const;
@@ -64,39 +68,21 @@ export const NEON_PACK_METADATA_TYPE = "neon_pack" as const;
 export const NEON_PACKAGES = [
   {
     id: "neon_small",
-    neon: 100,
-    price: 1.2,
+    neon: 1000,
+    price: 0.31,
     badge: null,
   },
   {
     id: "neon_medium",
-    neon: 500,
-    price: 4.5,
+    neon: 3000,
+    price: 0.69,
     badge: "Popular",
   },
   {
     id: "neon_large",
-    neon: 1000,
-    price: 8,
-    badge: "Best Value",
-  },
-  {
-    id: "neon_xlarge",
-    neon: 2500,
-    price: 18,
-    badge: null,
-  },
-  {
-    id: "neon_mega",
     neon: 5000,
-    price: 30,
-    badge: "Top Deal",
-  },
-  {
-    id: "neon_ultimate",
-    neon: 10000,
-    price: 55,
-    badge: "Ultimate",
+    price: 0.99,
+    badge: "Best Value",
   },
 ] as const;
 
@@ -112,7 +98,7 @@ export function getNeonPackPaymentData(packageId: string) {
   if (!pkg) return null;
   return {
     amount: pkg.price,
-    memo: `YouNeon Neon Pack · ${pkg.neon.toLocaleString()} Neon`,
+    memo: `YouNeon Neon Pack · ${pkg.neon.toLocaleString("en-US")} Neon`,
     metadata: {
       type: NEON_PACK_METADATA_TYPE,
       packageId: pkg.id,

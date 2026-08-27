@@ -36,7 +36,7 @@ const DEFAULT_ANNOUNCEMENTS: Array<Omit<Announcement, "id" | "createdAtMs" | "ac
   },
   {
     title: "YouNeon Premium is here",
-    body: "Unlimited chats, free filters, ad-free browsing, and 1,000 Neon when you subscribe — 5 π for 30 days.",
+    body: "Unlimited chats, free filters, ad-free browsing, and 2,000 Neon when you subscribe — 1 π for 30 days.",
     type: "promo",
   },
 ];

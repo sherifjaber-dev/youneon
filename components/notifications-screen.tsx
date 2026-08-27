@@ -19,7 +19,7 @@ import {
   type InboxItem,
   type NotificationAction,
 } from "@/lib/notifications";
-import { SUBSCRIPTION_PLAN } from "@/lib/product-config";
+import { PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
 import { UserPhoto } from "@/components/neon-avatar";
 
 const FILTERS: { id: InboxFilter; label: string }[] = [
@@ -174,7 +174,7 @@ export function NotificationsScreen({
         eyebrow: isPremium ? "YouNeon Premium" : "Subscribe",
         title: isPremium
           ? "You're Premium. Unlimited chats, filters, and the full glow."
-          : "Unlock YouNeon Premium. Unlimited chats, free filters, and 1,000 Neon.",
+          : `Unlock YouNeon Premium. Unlimited chats, free filters, and ${PREMIUM_SUBSCRIBE_NEON.toLocaleString()} Neon.`,
         body: isPremium
           ? "Keep the glow on — renew anytime with Pi."
           : `${SUBSCRIPTION_PLAN.amount} π for ${SUBSCRIPTION_PLAN.days} days. Ad-free matching and a Premium badge.`,
@@ -293,7 +293,7 @@ export function NotificationsScreen({
                     : (
                       <>
                         <span className="text-[16px] font-bold text-yn-gold">{SUBSCRIPTION_PLAN.amount} π</span>
-                        {" / "}{SUBSCRIPTION_PLAN.days} days · 1,000 Neon on subscribe.
+                        {" / "}{SUBSCRIPTION_PLAN.days} days · {PREMIUM_SUBSCRIBE_NEON.toLocaleString()} Neon on subscribe.
                       </>
                     )}
                 </span>
