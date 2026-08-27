@@ -1,7 +1,11 @@
 "use client";
 
 import { getNeonPackPaymentData, getSubscriptionPaymentData } from "@/lib/product-config";
-import { emitPurchaseFeedback } from "@/lib/purchase-feedback";
+import {
+  emitPurchaseFeedback,
+  purchaseErrorMessage,
+  purchaseSummaryFromPayment,
+} from "@/lib/purchase-feedback";
 import { getPiInitOptions } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk, readLiteSession } from "@/lib/pi-client-session";
 import type {
@@ -245,16 +249,28 @@ export async function handleIncompletePayment(payment: PiPaymentDTO): Promise<vo
         uid: lite?.uid || undefined,
       }),
     });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       const message =
         (typeof data.error === "string" && data.error) ||
         `Incomplete payment failed (${res.status})`;
       logError(message);
-      emitPurchaseFeedback({ type: "error", message: `Pi complete failed: ${message}` });
+      emitPurchaseFeedback({ type: "error", message });
+      return;
     }
+    if (!txid || res.status !== 200) return;
+    emitPurchaseFeedback({
+      type: "success",
+      summary: purchaseSummaryFromPayment(
+        (data.payment as PiPaymentDTO) || payment
+      ),
+    });
   } catch (error) {
     logError(error);
+    emitPurchaseFeedback({
+      type: "error",
+      message: purchaseErrorMessage(error),
+    });
   }
 }
 
@@ -450,8 +466,13 @@ export async function createPiPayment(
   await initPiSdk();
   const Pi = resolvePiSdk();
   if (!Pi || typeof Pi.createPayment !== "function") {
+    emitPurchaseFeedback({ type: "error", message: PI_SDK_UNAVAILABLE });
     throw new Error(PI_SDK_UNAVAILABLE);
   }
+
+  const summaryFrom = (payload?: CreatePiPaymentResult | null) =>
+    purchaseSummaryFromPayment(payload?.payment) ||
+    purchaseSummaryFromPayment(paymentData);
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -493,7 +514,7 @@ export async function createPiPayment(
       if (settled || !lastPaymentId || !lastTxid) return;
       void completeOnServer(lastPaymentId, lastTxid)
         .then((payload) => {
-          emitPurchaseFeedback({ type: "success" });
+          emitPurchaseFeedback({ type: "success", summary: summaryFrom(payload) });
           finishWith(() => resolve(payload));
         })
         .catch((error) => {
@@ -575,26 +596,26 @@ export async function createPiPayment(
         }
         try {
           const payload = await completeOnServer(paymentId, txid);
-          emitPurchaseFeedback({ type: "success" });
+          emitPurchaseFeedback({ type: "success", summary: summaryFrom(payload) });
           finishWith(() => resolve(payload));
         } catch (error) {
           const err = error instanceof Error ? error : new Error(errorMessage(error));
           logError(err);
-          emitPurchaseFeedback({ type: "error", message: err.message });
-          throw err;
+          finishWith(() => reject(err));
         }
       },
       onCancel: async (paymentId) => {
         extraCallbacks?.onCancel?.(paymentId);
         await postPaymentAction("/api/pi/payment/cancel", { paymentId }).catch(logError);
+        emitPurchaseFeedback({ type: "error", message: "Payment cancelled" });
         finishWith(() => reject(new Error("Payment cancelled")));
       },
       onError: (error, payment) => {
         extraCallbacks?.onError?.(error, payment);
         logError(error);
-        finishWith(() =>
-          reject(error instanceof Error ? error : new Error(errorMessage(error)))
-        );
+        const err = error instanceof Error ? error : new Error(errorMessage(error));
+        emitPurchaseFeedback({ type: "error", message: purchaseErrorMessage(err) });
+        finishWith(() => reject(err));
       },
     });
   });
@@ -607,6 +628,7 @@ export async function subscribeWithPi(): Promise<CreatePiPaymentResult> {
 export async function purchaseNeonPackWithPi(packageId: string): Promise<CreatePiPaymentResult> {
   const paymentData = getNeonPackPaymentData(packageId);
   if (!paymentData) {
+    emitPurchaseFeedback({ type: "error", message: "Unknown Neon pack" });
     throw new Error("Unknown Neon pack");
   }
   return createPiPayment(paymentData);

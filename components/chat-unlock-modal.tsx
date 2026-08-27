@@ -14,8 +14,8 @@ import { SubscribeWithPi } from "@/components/subscribe-with-pi";
 import { CHAT_UNLOCK_NEON, NEON_PACKAGES } from "@/lib/product-config";
 import { hideStaticLoginOverlays } from "@/lib/pi-client-session";
 import { emitPremiumGranted } from "@/lib/premium";
-import { PI_SDK_UNAVAILABLE, purchaseNeonPackWithPi } from "@/lib/pi-sdk";
-import { KOB_GENNEMFORT, PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
+import { purchaseNeonPackWithPi } from "@/lib/pi-sdk";
+import { PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
 
 export type ChatUnlockTarget = {
   id: string;
@@ -73,15 +73,12 @@ export function ChatUnlockModal({
     const onFeedback = (event: Event) => {
       const detail = (event as CustomEvent<PurchaseFeedback>).detail;
       if (!detail?.type) return;
-      if (detail.type === "success") {
-        setMessage({ type: "success", text: KOB_GENNEMFORT });
+      if (detail.type === "waiting") {
+        setMessage({ type: "info", text: detail.message || "Waiting for Pi payment…" });
         return;
       }
-      if (detail.type === "error") {
-        setMessage({ type: "error", text: detail.message });
-        return;
-      }
-      setMessage({ type: "info", text: detail.message || "Waiting for Pi payment…" });
+      setPurchasingId(null);
+      setMessage(null);
     };
     window.addEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
     return () => window.removeEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
@@ -114,35 +111,12 @@ export function ChatUnlockModal({
         alreadyGranted: result.alreadyGranted === true,
       });
 
-      setMessage({
-        type: "success",
-        text: result.alreadyGranted
-          ? `${KOB_GENNEMFORT}. This pack was already granted.`
-          : neonGranted > 0
-            ? `${KOB_GENNEMFORT}. +${neonGranted.toLocaleString()} Neon added.`
-            : KOB_GENNEMFORT,
-      });
+      setMessage(null);
       if (!result.alreadyGranted) {
         onUnlockedByPurchase?.();
       }
-    } catch (error) {
-      const raw = error instanceof Error ? error.message : String(error ?? "");
-      if (raw === PI_SDK_UNAVAILABLE || raw.includes(PI_SDK_UNAVAILABLE)) {
-        setMessage({
-          type: "error",
-          text: "Open YouNeon in Pi Browser to buy Neon with Pi.",
-        });
-      } else if (/cancel/i.test(raw)) {
-        setMessage({
-          type: "error",
-          text: "Payment cancelled. You can try again when you're ready.",
-        });
-      } else {
-        setMessage({
-          type: "error",
-          text: raw || "Purchase failed. Please try again.",
-        });
-      }
+    } catch {
+      setMessage(null);
     } finally {
       setPurchasingId(null);
     }

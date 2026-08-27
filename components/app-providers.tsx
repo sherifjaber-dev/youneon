@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { PurchaseCompleteBanner } from "@/components/purchase-complete-banner";
+import { PurchaseResultModal } from "@/components/purchase-result-modal";
 import { LanguageProvider } from "@/contexts/language-context";
 import { PiAuthProvider } from "@/contexts/pi-auth-context";
 
@@ -16,8 +16,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <LanguageProvider>
         <ErrorBoundary>
           <PiAuthProvider>
-            <PurchaseCompleteBanner />
             {children}
+            <PurchaseResultModal />
           </PiAuthProvider>
         </ErrorBoundary>
       </LanguageProvider>

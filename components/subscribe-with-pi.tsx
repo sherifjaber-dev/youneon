@@ -3,10 +3,10 @@
 import React from "react";
 import { Check, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PI_SDK_UNAVAILABLE, subscribeWithPi } from "@/lib/pi-sdk";
+import { subscribeWithPi } from "@/lib/pi-sdk";
 import { PREMIUM_BENEFITS, PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
 import { emitPremiumGranted, isPremiumActive } from "@/lib/premium";
-import { KOB_GENNEMFORT, PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
+import { PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
 
 function formatUntil(iso: string): string {
   const date = new Date(iso);
@@ -43,18 +43,13 @@ export function SubscribeWithPi({
       if (!inFlightRef.current) return;
       const detail = (event as CustomEvent<PurchaseFeedback>).detail;
       if (!detail?.type) return;
-      if (detail.type === "success") {
-        setStatus("success");
-        setMessage(KOB_GENNEMFORT);
+      if (detail.type === "waiting") {
+        setStatus("loading");
+        setMessage(detail.message || "Waiting for Pi payment…");
         return;
       }
-      if (detail.type === "error") {
-        setStatus("error");
-        setMessage(detail.message);
-        return;
-      }
-      setStatus("loading");
-      setMessage(detail.message || "Waiting for Pi payment…");
+      setStatus("idle");
+      setMessage("");
     };
     window.addEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
     return () => window.removeEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
@@ -84,22 +79,11 @@ export function SubscribeWithPi({
         neonGranted,
         alreadyGranted: result.alreadyGranted === true,
       });
-      setStatus("success");
-      setMessage(
-        until
-          ? `${KOB_GENNEMFORT}. YouNeon Premium is active until ${formatUntil(until)}.${neonGranted > 0 ? ` +${neonGranted} Neon added.` : ""}`
-          : KOB_GENNEMFORT
-      );
-    } catch (error) {
-      const raw = error instanceof Error ? error.message : String(error ?? "");
-      setStatus("error");
-      if (raw === PI_SDK_UNAVAILABLE || raw.includes(PI_SDK_UNAVAILABLE)) {
-        setMessage("Open YouNeon in Pi Browser to Subscribe with Pi.");
-      } else if (/cancel/i.test(raw)) {
-        setMessage("Payment cancelled. You can try again when you're ready.");
-      } else {
-        setMessage(raw || "Subscription failed. Please try again.");
-      }
+      setStatus("idle");
+      setMessage("");
+    } catch {
+      setStatus("idle");
+      setMessage("");
     } finally {
       inFlightRef.current = false;
     }
@@ -176,18 +160,8 @@ export function SubscribeWithPi({
             : "Subscribe with Pi"}
       </Button>
 
-      {status !== "idle" && message && (
-        <p
-          className={`mt-2 text-xs font-medium ${
-            status === "success"
-              ? "text-green-700"
-              : status === "error"
-                ? "text-red-600"
-                : "text-purple-700"
-          }`}
-        >
-          {message}
-        </p>
+      {status === "loading" && message && (
+        <p className="mt-2 text-xs font-medium text-purple-700">{message}</p>
       )}
     </div>
   );
