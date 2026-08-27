@@ -57,7 +57,7 @@ export function LoginScreen({
       ref={bindHost}
       className="youneon-static-login"
       aria-label="YouNeon"
-      data-youneon-login-v="login-signin-tap-1"
+      data-youneon-login-v="login-signin-auth-2"
       style={overlayStyle}
     >
       <div

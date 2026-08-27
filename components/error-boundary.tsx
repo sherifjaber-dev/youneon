@@ -60,7 +60,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <div
           className="youneon-static-login"
           aria-label="YouNeon"
-          data-youneon-login-v="login-signin-tap-1"
+          data-youneon-login-v="login-signin-auth-2"
           style={overlayStyle}
           ref={this.bindHost}
           dangerouslySetInnerHTML={{

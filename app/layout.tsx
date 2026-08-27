@@ -88,11 +88,30 @@ const PI_BOOT_SCRIPT =
   "for (var i = 0; i < nodes.length; i++) nodes[i].textContent = text;" +
   "}" +
   "function setLast(text) { window.__YOUNEON_PI_LAST__ = text; renderStatus(); }" +
+  "function showAuthMsg(text) {" +
+  "var nodes = document.querySelectorAll('[data-youneon-signin-msg]');" +
+  "for (var mi = 0; mi < nodes.length; mi++) { nodes[mi].textContent = text || ''; try { nodes[mi].style.display = text ? 'block' : 'none'; } catch (ds) {} }" +
+  "}" +
+  "function failAuthText(e) {" +
+  "var s = errMsg(e);" +
+  "if (/cancel/i.test(s)) return 'Sign-in was cancelled. Tap Sign in with Pi to try again.';" +
+  "if (/no window\\.Pi|missing|unavailable|PI_SDK/i.test(s)) return 'Open this app in Pi Browser to sign in';" +
+  "return s || 'Could not sign in with Pi. Please try again.';" +
+  "}" +
+  "function setSigninBusy(busy) {" +
+  "var label = busy ? 'Signing in...' : 'Sign in with Pi';" +
+  "var btns = document.querySelectorAll('button.youneon-signin-btn, button[data-youneon-signin], #youneon-signin-btn');" +
+  "for (var bi = 0; bi < btns.length; bi++) {" +
+  "var b = btns[bi];" +
+  "try { b.removeAttribute('disabled'); b.disabled = false; } catch (db) {}" +
+  "var keep = b.querySelector('span');" +
+  "try { b.textContent = label; if (keep) b.insertBefore(keep, b.firstChild); } catch (lb) {}" +
+  "}" +
+  "}" +
   "function showPiMissing() {" +
   "setLast('Last: window.Pi missing');" +
   "console.log('[Pi] error: no window.Pi');" +
-  "var nodes = document.querySelectorAll('[data-youneon-signin-msg]');" +
-  "for (var mi = 0; mi < nodes.length; mi++) { nodes[mi].textContent = 'Open in Pi Browser'; try { nodes[mi].style.display = 'block'; } catch (ds) {} }" +
+  "showAuthMsg('Open this app in Pi Browser to sign in');" +
   "}" +
   "function giveUpWaitingForPi() {" +
   "if (window.__YOUNEON_PI_WAIT_DONE__) return;" +
@@ -120,7 +139,7 @@ const PI_BOOT_SCRIPT =
   "var rec = result || {}; var nested = rec.user && typeof rec.user === 'object' ? rec.user : null; var source = nested || rec;" +
   "var uid = source && source.uid ? String(source.uid) : ''; var username = source && source.username ? String(source.username) : '';" +
   "var token = rec.accessToken ? String(rec.accessToken) : '';" +
-  "if (!(uid || username)) return null;" +
+  "if (!(uid || username)) { if (!token) return null; return { uid: 'pi', username: 'Pi user', accessToken: token }; }" +
   "return { uid: uid || username, username: username || uid, accessToken: token };" +
   "}" +
   "function markOk(result) {" +
@@ -138,22 +157,33 @@ const PI_BOOT_SCRIPT =
   "showOverlays();" +
   "try { window.dispatchEvent(new CustomEvent('youneon:pi-auth-logout')); } catch (ev) { try { window.dispatchEvent(new Event('youneon:pi-auth-logout')); } catch (ev2) {} }" +
   "}" +
-  "function wireAuth(p) { try { if (p && typeof p.then === 'function') p.then(function (r) { markOk(r); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); setLast('Last: ' + errMsg(e)); }); } catch (w) { console.log('[Pi] error: ' + errMsg(w)); } }" +
+  "function wireAuth(p) { try { if (p && typeof p.then === 'function') p.then(function (r) { setSigninBusy(false); markOk(r); }, function (e) { setSigninBusy(false); console.log('[Pi] error: ' + errMsg(e)); setLast('Last: ' + errMsg(e)); showAuthMsg(failAuthText(e)); }); else if (!p) setSigninBusy(false); } catch (w) { setSigninBusy(false); console.log('[Pi] error: ' + errMsg(w)); showAuthMsg(failAuthText(w)); } }" +
   "window.__youneonMarkPiAuthOk = markOk;" +
   "window.__youneonClearPiAuth = clearAuth;" +
   "if (isPublicLegalPath()) { window.__YOUNEON_PUBLIC_PAGE__ = true; hideOverlays(); }" +
   "if (window.__PI_AUTH_OK !== true && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();" +
   "function callAuthenticate() {" +
   "var P = findPi();" +
-  "if (!P || typeof P.authenticate !== 'function') { showPiMissing(); return; }" +
-  "if (window.__YOUNEON_PI_AUTH_LOCK__) return window.__YOUNEON_PI_AUTH_PROMISE__;" +
+  "if (!P || typeof P.authenticate !== 'function') {" +
+  "showPiMissing();" +
+  "if (!window.__YOUNEON_PI_DELAY_AUTH__) {" +
+  "window.__YOUNEON_PI_DELAY_AUTH__ = true;" +
+  "try { setTimeout(function () { window.__YOUNEON_PI_DELAY_AUTH__ = false; var Q = findPi(); if (Q && typeof Q.authenticate === 'function') callAuthenticate(); }, 800); } catch (d) {}" +
+  "}" +
+  "return;" +
+  "}" +
+  "if (window.__YOUNEON_PI_AUTH_LOCK__) { setSigninBusy(true); return window.__YOUNEON_PI_AUTH_PROMISE__; }" +
   "window.__YOUNEON_PI_AUTH_LOCK__ = true;" +
   "try { setTimeout(function () { window.__YOUNEON_PI_AUTH_LOCK__ = false; }, 2500); } catch (st) {}" +
+  "try { if (P.init) P.init(piInitOptions()); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); }" +
+  "setSigninBusy(true);" +
+  "showAuthMsg('');" +
   "console.log('[Pi] authenticate start');" +
   "setLast('Last: authenticate called');" +
   "var promise = null;" +
   "try { promise = P.authenticate(['username','payments'], function (payment) { try { var x = new XMLHttpRequest(); x.open('POST', '/api/pi/payment/incomplete', true); x.setRequestHeader('Content-Type', 'application/json'); x.withCredentials = true; x.send(JSON.stringify({ paymentId: payment && payment.identifier, payment: payment })); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); } }); wireAuth(promise); } catch (classicErr) { console.log('[Pi] error: ' + errMsg(classicErr)); setLast('Last: ' + errMsg(classicErr)); }" +
-  "if (!promise) { try { promise = P.authenticate({ scopes: ['username','payments'] }); wireAuth(promise); } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); } }" +
+  "if (!promise) { try { promise = P.authenticate({ scopes: ['username','payments'] }); wireAuth(promise); } catch (objectErr) { console.log('[Pi] error: ' + errMsg(objectErr)); setSigninBusy(false); showAuthMsg(failAuthText(objectErr)); } }" +
+  "if (!promise) { setSigninBusy(false); showAuthMsg('Could not start Pi sign-in. Try again.'); }" +
   "window.__YOUNEON_PI_AUTH_PROMISE__ = promise;" +
   "return promise;" +
   "}" +
@@ -355,7 +385,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=ecosystem-nohang-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=signin-auth-2"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"

@@ -6,9 +6,28 @@
  *
  * No preventDefault/stopPropagation — Pi needs the user gesture.
  * Classic Pi.authenticate(scopesArray, cb) is invoked FIRST (Studio wraps that).
+ *
+ * onclick is the real auth gesture. ontouchstart only schedules a fallback if
+ * click never fires — it must not set AUTH_LOCK or the click is a silent no-op.
  */
 export const PI_SIGNIN_ONCLICK =
-  "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function showNeed(){try{var ms=document.querySelectorAll('[data-youneon-signin-msg]');for(var i=0;i<ms.length;i++){ms[i].textContent='Open in Pi Browser';try{ms[i].style.display='block';}catch(ds){}}}catch(sm){}try{window.__YOUNEON_PI_LAST__='Last: window.Pi missing';}catch(sl){}console.log('[Pi] error: no window.Pi');}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';showNeed();}else{if(P.init){try{P.init({version:'2.0',sandbox:true});}catch(ie){console.log('[Pi] error: '+ie);}}if(!window.__YOUNEON_PI_AUTH_LOCK__){window.__YOUNEON_PI_AUTH_LOCK__=true;try{setTimeout(function(){window.__YOUNEON_PI_AUTH_LOCK__=false;},2500);}catch(st){}console.log('[Pi] authenticate start');last='Last: authenticate called';var pr=null;try{pr=P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}});wireAuth(pr);}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}if(!pr){try{pr=P.authenticate({scopes:['username','payments']});wireAuth(pr);}catch(o){console.log('[Pi] error: '+o);}}}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+(last?'  ·  '+last:'');}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
+  "try{" +
+  "var P=null;" +
+  "try{P=window.Pi;}catch(w){}" +
+  "if(!P){try{P=window.parent.Pi;}catch(p){}}" +
+  "if(!P){try{P=window.top.Pi;}catch(t){}}" +
+  "if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}" +
+  "function errMsg(e){if(!e)return 'unknown';if(typeof e==='string')return e;if(e.message)return e.message;try{return JSON.stringify(e);}catch(x){return String(e);}}" +
+  "function showMsg(text){try{var ms=document.querySelectorAll('[data-youneon-signin-msg]');for(var i=0;i<ms.length;i++){ms[i].textContent=text||'';try{ms[i].style.display=text?'block':'none';}catch(ds){}}}catch(sm){}}" +
+  "function failText(e){var s=errMsg(e);if(/cancel/i.test(s))return 'Sign-in was cancelled. Tap Sign in with Pi to try again.';if(/no window\\.Pi|missing|unavailable|PI_SDK/i.test(s))return 'Open this app in Pi Browser to sign in';return s||'Could not sign in with Pi. Please try again.';}" +
+  "function setBtnBusy(busy){try{var label=busy?'Signing in...':'Sign in with Pi';var btns=document.querySelectorAll('button.youneon-signin-btn,button[data-youneon-signin],#youneon-signin-btn');for(var i=0;i<btns.length;i++){var b=btns[i];try{b.removeAttribute('disabled');b.disabled=false;}catch(db){}var keep=b.querySelector('span');try{b.textContent=label;if(keep)b.insertBefore(keep,b.firstChild);}catch(lb){}}}catch(sb){}}" +
+  "function wireAuth(p){try{if(p&&typeof p.then==='function'){p.then(function(r){setBtnBusy(false);try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){setBtnBusy(false);console.log('[Pi] error: '+errMsg(e));showMsg(failText(e));try{window.__YOUNEON_PI_LAST__='Last: '+errMsg(e);}catch(sl){}});}else if(!p){setBtnBusy(false);}}catch(w2){setBtnBusy(false);console.log('[Pi] error: '+errMsg(w2));showMsg(failText(w2));}}" +
+    "function runAuth(sdk){if(!sdk||typeof sdk.authenticate!=='function'){showMsg('Open this app in Pi Browser to sign in');try{window.__YOUNEON_PI_LAST__='Last: window.Pi missing';}catch(sl){}console.log('[Pi] error: no window.Pi');return;}try{if(sdk.init)sdk.init({version:'2.0',sandbox:true});}catch(ie){console.log('[Pi] error: '+errMsg(ie));}setBtnBusy(true);showMsg('');console.log('[Pi] authenticate start');try{window.__YOUNEON_PI_LAST__='Last: authenticate called';}catch(ls){}var pr=null;try{pr=sdk.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}});wireAuth(pr);}catch(c){console.log('[Pi] error: '+errMsg(c));try{window.__YOUNEON_PI_LAST__='Last: '+errMsg(c);}catch(cl){}}if(!pr){try{pr=sdk.authenticate({scopes:['username','payments']});wireAuth(pr);}catch(o){console.log('[Pi] error: '+errMsg(o));setBtnBusy(false);showMsg(failText(o));}}if(!pr){setBtnBusy(false);showMsg('Could not start Pi sign-in. Try again.');}}" +
+  "var evType='click';try{evType=String((typeof event!=='undefined'&&event&&event.type)||'click');}catch(et){evType='click';}" +
+  "if(evType==='touchstart'){try{window.__YOUNEON_PI_TOUCH_AT__=(new Date()).getTime();}catch(ta){}try{setTimeout(function(){var clickAt=window.__YOUNEON_PI_CLICK_AT__||0;var touchAt=window.__YOUNEON_PI_TOUCH_AT__||0;if(!clickAt||clickAt<touchAt){var Q=P;if(!Q){try{Q=window.Pi;}catch(w){}}runAuth(Q);}},400);}catch(st){runAuth(P);}}" +
+  "else{try{window.__YOUNEON_PI_CLICK_AT__=(new Date()).getTime();}catch(ca){}if(!P||typeof P.authenticate!=='function'){showMsg('Open this app in Pi Browser to sign in');try{window.__YOUNEON_PI_LAST__='Last: window.Pi missing';}catch(sl2){}console.log('[Pi] error: no window.Pi');if(!window.__YOUNEON_PI_DELAY_AUTH__){window.__YOUNEON_PI_DELAY_AUTH__=1;try{setTimeout(function(){var Q=null;try{Q=window.Pi;}catch(w){}if(!Q){try{Q=window.parent.Pi;}catch(p){}}if(!Q){try{Q=window.top.Pi;}catch(t){}}if(Q&&typeof Q.authenticate==='function')runAuth(Q);else window.__YOUNEON_PI_DELAY_AUTH__=0;},800);}catch(d){}}}else{runAuth(P);}}" +
+  "try{var last=window.__YOUNEON_PI_LAST__||'';var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+(last?'  ·  '+last:'');}}catch(su){console.log('[Pi] error: '+su);}" +
+  "}catch(e){console.log('[Pi] error: '+e);try{var ms2=document.querySelectorAll('[data-youneon-signin-msg]');for(var j=0;j<ms2.length;j++){ms2[j].textContent='Could not sign in with Pi. Please try again.';try{ms2[j].style.display='block';}catch(ds2){}}}catch(sm2){}}";
 
 /**
  * Native onclick starts Pi.authenticate. ontouchstart only for webviews that
@@ -63,6 +82,8 @@ export function applyPiSigninNativeAttrs(el: Element | null): void {
   el.setAttribute("onclick", PI_SIGNIN_ONCLICK);
   el.setAttribute("ontouchstart", PI_SIGNIN_ONCLICK);
   el.setAttribute("onselectstart", "return false");
+  el.removeAttribute("onpointerdown");
+  el.removeAttribute("onmousedown");
   el.setAttribute("unselectable", "on");
 }
 
@@ -111,10 +132,10 @@ export function piSigninStatusHtml(): string {
 
 export function piSigninErrorHtml(): string {
   return (
-    '<div class="youneon-signin-msg" data-youneon-signin-msg="1" style="display:none;margin:10px 0 0;font-size:12px;line-height:1.45;font-weight:500;color:#fde68a;text-align:center;pointer-events:none;user-select:none;-webkit-user-select:none"></div>'
+    '<div class="youneon-signin-msg" data-youneon-signin-msg="1" style="display:none;margin:10px 0 0;font-size:13px;line-height:1.45;font-weight:500;color:#fde68a;text-align:center;pointer-events:none;user-select:none;-webkit-user-select:none"></div>'
   );
 }
 
 export function piSigninControlsHtml(buttonId: string): string {
-  return piSigninButtonHtml(buttonId);
+  return piSigninButtonHtml(buttonId) + piSigninErrorHtml();
 }

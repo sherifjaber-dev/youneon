@@ -1,7 +1,6 @@
 import {
   PI_SIGNIN_WRAP_STYLE,
   piSigninControlsHtml,
-  piSigninErrorHtml,
   piSigninStatusHtml,
 } from "@/lib/pi-signin-onclick";
 
@@ -122,7 +121,6 @@ export function piWelcomeInnerHtml(buttonId: string, idPrefix: string): string {
     BUTTON_WRAP +
     '">' +
     piSigninControlsHtml(buttonId) +
-    piSigninErrorHtml() +
     "</div>" +
     youneonWelcomeFooterHtml() +
     piSigninStatusHtml() +
@@ -141,7 +139,7 @@ export function piWelcomeOverlayHtml(opts: {
   return (
     '<div class="youneon-static-login"' +
     idAttr +
-    ' aria-label="YouNeon" data-youneon-login-v="login-signin-tap-1" style="' +
+    ' aria-label="YouNeon" data-youneon-login-v="login-signin-auth-2" style="' +
     PI_WELCOME_OVERLAY_STYLE +
     '">' +
     piWelcomeInnerHtml(opts.buttonId, prefix) +
