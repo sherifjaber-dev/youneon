@@ -59,7 +59,7 @@ export type PiNativeFeature = "inline_media" | "request_permission" | "ad_networ
 export type PiAdType = "interstitial" | "rewarded";
 
 export type PiSDK = {
-  init: (options: { version: string; sandbox?: boolean }) => Promise<void> | void;
+  init: (options: { version: string; sandbox?: boolean; clientId?: string }) => Promise<void> | void;
   authenticate: {
     (options: PiAuthenticateOptions): Promise<PiAuthResult>;
     (
@@ -90,6 +90,7 @@ declare global {
     __YOUNEON_PI_AUTH_PENDING__?: boolean;
     __YOUNEON_PI_AUTO_AUTH_STARTED__?: boolean;
     __YOUNEON_PI_LAST__?: string;
+    __YOUNEON_PI_CLIENT_ID__?: string;
     __YOUNEON_PI_SDK_LOAD_SCHEDULED__?: boolean;
     __YOUNEON_LOGIN_HIT_BOUND__?: boolean;
     __YOUNEON_RESTORING_SIGNIN__?: boolean;

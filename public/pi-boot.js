@@ -6,6 +6,16 @@
     try { return JSON.stringify(e); } catch (x) { return String(e); }
   }
 
+  // Sign-In OAuth client_id from layout (NEXT_PUBLIC_PI_CLIENT_ID). Keep sandbox: true.
+  // Redirect URIs must be set in Pi Develop (e.g. pinet.com + vercel.app). No custom OAuth SPA.
+  function piInitOptions() {
+    var opts = { version: "2.0", sandbox: true };
+    var id = "";
+    try { id = window.__YOUNEON_PI_CLIENT_ID__ || ""; } catch (cid) {}
+    if (id) opts.clientId = id;
+    return opts;
+  }
+
   function findPi() {
     var found = null;
     try { if (window.Pi) found = window.Pi; } catch (w) {}
@@ -225,7 +235,7 @@
       return;
     }
     try {
-      if (P.init) P.init({ version: "2.0", sandbox: true });
+      if (P.init) P.init(piInitOptions());
     } catch (ie) {
       console.log("[Pi] error: " + errMsg(ie));
     }
@@ -451,7 +461,7 @@
     try {
       if (P.init) {
         console.log("[Pi] init start");
-        var r = P.init({ version: "2.0", sandbox: true });
+        var r = P.init(piInitOptions());
         if (r && typeof r.then === "function") {
           r.then(function () { console.log("[Pi] init success"); }, function (e) { console.log("[Pi] error: " + errMsg(e)); });
         } else {

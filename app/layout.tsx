@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { AppProviders } from "@/components/app-providers";
 import { StaticPiLogin } from "@/components/static-pi-login";
+import { PI_NETWORK_CONFIG } from "@/lib/system-config";
 import "./globals.css";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pinet.com";
@@ -35,11 +36,21 @@ const CRITICAL_CSS =
  */
 const PI_BOOT_SCRIPT =
   "(function youneonPiEarly() {" +
+  "try { window.__YOUNEON_PI_CLIENT_ID__ = " +
+  JSON.stringify(PI_NETWORK_CONFIG.CLIENT_ID || "") +
+  "; } catch (cid) {}" +
   "function errMsg(e) {" +
   "if (!e) return 'unknown';" +
   "if (typeof e === 'string') return e;" +
   "if (e.message) return e.message;" +
   "try { return JSON.stringify(e); } catch (x) { return String(e); }" +
+  "}" +
+  "function piInitOptions() {" +
+  "var opts = { version: '2.0', sandbox: true };" +
+  "var id = '';" +
+  "try { id = window.__YOUNEON_PI_CLIENT_ID__ || ''; } catch (cid) {}" +
+  "if (id) opts.clientId = id;" +
+  "return opts;" +
   "}" +
   "function findPi() {" +
   "var found = null;" +
@@ -116,7 +127,7 @@ const PI_BOOT_SCRIPT =
   "window.__youneonPiAuth = function () {" +
   "var P = findPi();" +
   "if (!P) { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
-  "try { if (P.init) P.init({ version: '2.0', sandbox: true }); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); }" +
+  "try { if (P.init) P.init(piInitOptions()); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); }" +
   "return callAuthenticate();" +
   "};" +
   "function isLoginTarget(t) {" +
@@ -145,7 +156,7 @@ const PI_BOOT_SCRIPT =
   "try {" +
   "if (P.init) {" +
   "console.log('[Pi] init start');" +
-  "var r = P.init({ version: '2.0', sandbox: true });" +
+  "var r = P.init(piInitOptions());" +
   "if (r && typeof r.then === 'function') {" +
   "r.then(function () { console.log('[Pi] init success'); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); });" +
   "} else { console.log('[Pi] init success'); }" +
@@ -287,7 +298,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=login-footer-flow-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=pi-signin-client-id-1"></script>
         <div
           id="youneon-app-tree"
           style={{

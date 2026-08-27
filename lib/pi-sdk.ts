@@ -1,7 +1,7 @@
 "use client";
 
 import { getNeonPackPaymentData, getSubscriptionPaymentData } from "@/lib/product-config";
-import { PI_NETWORK_CONFIG } from "@/lib/system-config";
+import { getPiInitOptions } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk } from "@/lib/pi-client-session";
 import type {
   PiAuthResult,
@@ -142,7 +142,7 @@ export async function initPiSdk(): Promise<void> {
 
       logSdkLoaded();
       console.log("[Pi] init start");
-      await Promise.resolve(Pi.init({ version: "2.0", sandbox: PI_NETWORK_CONFIG.SANDBOX }));
+      await Promise.resolve(Pi.init(getPiInitOptions()));
       initSucceeded = true;
       console.log("[Pi] init success");
     })().catch((error) => {
