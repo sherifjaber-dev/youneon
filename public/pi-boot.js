@@ -8,12 +8,49 @@
 
   // Sign-In OAuth client_id from layout (NEXT_PUBLIC_PI_CLIENT_ID). Keep sandbox: true.
   // Redirect URIs must be set in Pi Develop (e.g. pinet.com + vercel.app). No custom OAuth SPA.
-  function piInitOptions() {
+  // Testnet Pi.init may reject unknown clientId — retry without it (Studio still works).
+  function piInitOptions(withId) {
     var opts = { version: "2.0", sandbox: true };
+    if (withId === false) return opts;
     var id = "";
     try { id = window.__YOUNEON_PI_CLIENT_ID__ || ""; } catch (cid) {}
     if (id) opts.clientId = id;
     return opts;
+  }
+
+  function safePiInit(P, onOk) {
+    if (!P || !P.init) {
+      if (onOk) onOk();
+      return;
+    }
+    console.log("[Pi] init start");
+    function ok() {
+      console.log("[Pi] init success");
+      if (onOk) onOk();
+    }
+    function attempt(opts, retried) {
+      try {
+        var r = P.init(opts);
+        if (r && typeof r.then === "function") {
+          r.then(ok, function (e) {
+            console.log("[Pi] error: " + errMsg(e));
+            if (!retried && opts.clientId) {
+              console.log("[Pi] init retry without clientId");
+              attempt(piInitOptions(false), true);
+            }
+          });
+        } else {
+          ok();
+        }
+      } catch (e) {
+        console.log("[Pi] error: " + errMsg(e));
+        if (!retried && opts.clientId) {
+          console.log("[Pi] init retry without clientId");
+          attempt(piInitOptions(false), true);
+        }
+      }
+    }
+    attempt(piInitOptions(true), false);
   }
 
   function findPi() {
@@ -235,9 +272,22 @@
       return;
     }
     try {
-      if (P.init) P.init(piInitOptions());
+      if (P.init) {
+        var ir = P.init(piInitOptions(true));
+        if (ir && typeof ir.then === "function") {
+          ir.then(function () {}, function (e) {
+            console.log("[Pi] error: " + errMsg(e));
+            try { P.init(piInitOptions(false)); } catch (ie2) { console.log("[Pi] error: " + errMsg(ie2)); }
+          });
+        }
+      }
     } catch (ie) {
       console.log("[Pi] error: " + errMsg(ie));
+      try {
+        if (P.init) P.init(piInitOptions(false));
+      } catch (ie2) {
+        console.log("[Pi] error: " + errMsg(ie2));
+      }
     }
     return callAuthenticate();
   };
@@ -400,7 +450,7 @@
     for (var i = 0; i < overlays.length; i++) paintLoginOverlay(overlays[i]);
   }
   function restoreSigninControls() {
-    if (window.__PI_AUTH_OK) {
+    if (window.__PI_AUTH_OK === true) {
       hideOverlays();
       return;
     }
@@ -459,15 +509,7 @@
     }
     logSdkLoaded();
     try {
-      if (P.init) {
-        console.log("[Pi] init start");
-        var r = P.init(piInitOptions());
-        if (r && typeof r.then === "function") {
-          r.then(function () { console.log("[Pi] init success"); }, function (e) { console.log("[Pi] error: " + errMsg(e)); });
-        } else {
-          console.log("[Pi] init success");
-        }
-      }
+      safePiInit(P);
     } catch (e) {
       console.log("[Pi] error: " + errMsg(e));
     }
@@ -477,7 +519,8 @@
     if (findPi()) return;
     if (document.querySelector("script[data-youneon-pi-sdk]")) return;
     var preserved = null;
-    try { preserved = window.Pi; } catch (pe) { console.log("[Pi] error: " + errMsg(pe)); }
+    try { preserved = findPi(); } catch (pe) { console.log("[Pi] error: " + errMsg(pe)); }
+    if (preserved) return;
     var s = document.createElement("script");
     s.src = "https://sdk.minepi.com/pi-sdk.js";
     s.async = true;
@@ -500,7 +543,7 @@
     window.__YOUNEON_PUBLIC_PAGE__ = true;
     hideOverlays();
   }
-  if (!window.__PI_AUTH_OK && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();
+  if (window.__PI_AUTH_OK !== true && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();
   bindLoginHits();
   restoreSigninControls();
   setTimeout(restoreSigninControls, 0);

@@ -341,12 +341,16 @@ html.youneon-signed-in select {
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   html,
-  body {
+  body,
+  #__next,
+  #youneon-app-tree {
     background-color: #070010;
     color: #ffffff;
   }
   html.youneon-signed-in,
-  html.youneon-signed-in body {
+  html.youneon-signed-in body,
+  html.youneon-signed-in #__next,
+  html.youneon-signed-in #youneon-app-tree {
     background-color: #05050d !important;
     color: var(--yn-text);
   }

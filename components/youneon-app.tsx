@@ -225,6 +225,8 @@ export function YouNeonApp() {
     if (isPiAuthOk()) {
       hideStaticLoginOverlays();
       setBootAuthOk(true);
+    } else {
+      showStaticLoginOverlays();
     }
   }, []);
 

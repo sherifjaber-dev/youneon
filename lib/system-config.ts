@@ -24,12 +24,12 @@ export type PiInitOptions = {
 };
 
 /** Official Pi.init payload. Login stays Pi.authenticate; clientId is Sign-In config only. */
-export function getPiInitOptions(): PiInitOptions {
+export function getPiInitOptions(includeClientId = true): PiInitOptions {
   const opts: PiInitOptions = {
     version: "2.0",
     sandbox: PI_NETWORK_CONFIG.SANDBOX,
   };
-  if (PI_NETWORK_CONFIG.CLIENT_ID) {
+  if (includeClientId && PI_NETWORK_CONFIG.CLIENT_ID) {
     opts.clientId = PI_NETWORK_CONFIG.CLIENT_ID;
   }
   return opts;

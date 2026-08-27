@@ -26,6 +26,7 @@ export function StaticPiLogin({
     <div
       data-youneon-login-host="1"
       suppressHydrationWarning
+      style={{ background: "#070010", backgroundColor: "#070010" }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

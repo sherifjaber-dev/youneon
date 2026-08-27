@@ -9,9 +9,12 @@ import "./globals.css";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pinet.com";
 
 const CRITICAL_CSS =
-  "html,body{background:#070010 !important;background-color:#070010 !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}" +
-  "html.youneon-signed-in,html.youneon-signed-in body{background:#05050d !important;background-color:#05050d !important;color:#1f1f23 !important}" +
-  "html.youneon-legal,html.youneon-legal body{background:#F6F4F8 !important;background-color:#F6F4F8 !important;color:#1f1f23 !important}" +
+  "html{color-scheme:dark}" +
+  "html,body,#__next,#youneon-app-tree{background:#070010 !important;background-color:#070010 !important;color:#fff !important;margin:0;min-height:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif}" +
+  "#youneon-static-login,.youneon-static-login,[data-youneon-login-host]{background:#070010 !important;background-color:#070010 !important;color:#fff !important}" +
+  "html.youneon-signed-in,html.youneon-signed-in body,html.youneon-signed-in #__next,html.youneon-signed-in #youneon-app-tree{background:#05050d !important;background-color:#05050d !important;color:#1f1f23 !important}" +
+  "html.youneon-legal{color-scheme:light}" +
+  "html.youneon-legal,html.youneon-legal body,html.youneon-legal #__next,html.youneon-legal #youneon-app-tree{background:#F6F4F8 !important;background-color:#F6F4F8 !important;color:#1f1f23 !important}" +
   "@keyframes youneonLivePulse{0%,100%{opacity:1}50%{opacity:.4}}" +
   ".youneon-live-dot{animation:youneonLivePulse 1.4s ease-in-out infinite}" +
   "#youneon-static-login,.youneon-static-login,#youneon-static-login *,.youneon-static-login *{user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;-webkit-touch-callout:none !important;caret-color:transparent !important}" +
@@ -45,12 +48,33 @@ const PI_BOOT_SCRIPT =
   "if (e.message) return e.message;" +
   "try { return JSON.stringify(e); } catch (x) { return String(e); }" +
   "}" +
-  "function piInitOptions() {" +
+  "function piInitOptions(withId) {" +
   "var opts = { version: '2.0', sandbox: true };" +
+  "if (withId === false) return opts;" +
   "var id = '';" +
   "try { id = window.__YOUNEON_PI_CLIENT_ID__ || ''; } catch (cid) {}" +
   "if (id) opts.clientId = id;" +
   "return opts;" +
+  "}" +
+  "function safePiInit(P, onOk) {" +
+  "if (!P || !P.init) { if (onOk) onOk(); return; }" +
+  "console.log('[Pi] init start');" +
+  "function ok() { console.log('[Pi] init success'); if (onOk) onOk(); }" +
+  "function attempt(opts, retried) {" +
+  "try {" +
+  "var r = P.init(opts);" +
+  "if (r && typeof r.then === 'function') {" +
+  "r.then(ok, function (e) {" +
+  "console.log('[Pi] error: ' + errMsg(e));" +
+  "if (!retried && opts.clientId) { console.log('[Pi] init retry without clientId'); attempt(piInitOptions(false), true); }" +
+  "});" +
+  "} else { ok(); }" +
+  "} catch (e) {" +
+  "console.log('[Pi] error: ' + errMsg(e));" +
+  "if (!retried && opts.clientId) { console.log('[Pi] init retry without clientId'); attempt(piInitOptions(false), true); }" +
+  "}" +
+  "}" +
+  "attempt(piInitOptions(true), false);" +
   "}" +
   "function findPi() {" +
   "var found = null;" +
@@ -111,7 +135,7 @@ const PI_BOOT_SCRIPT =
   "window.__youneonMarkPiAuthOk = markOk;" +
   "window.__youneonClearPiAuth = clearAuth;" +
   "if (isPublicLegalPath()) { window.__YOUNEON_PUBLIC_PAGE__ = true; hideOverlays(); }" +
-  "if (!window.__PI_AUTH_OK && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();" +
+  "if (window.__PI_AUTH_OK !== true && !window.__YOUNEON_PUBLIC_PAGE__) showOverlays();" +
   "function callAuthenticate() {" +
   "var P = findPi();" +
   "if (!P || typeof P.authenticate !== 'function') { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
@@ -127,7 +151,7 @@ const PI_BOOT_SCRIPT =
   "window.__youneonPiAuth = function () {" +
   "var P = findPi();" +
   "if (!P) { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
-  "try { if (P.init) P.init(piInitOptions()); } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); }" +
+  "try { if (P.init) { var ir = P.init(piInitOptions(true)); if (ir && typeof ir.then === 'function') ir.then(function () {}, function (e) { console.log('[Pi] error: ' + errMsg(e)); try { P.init(piInitOptions(false)); } catch (ie2) { console.log('[Pi] error: ' + errMsg(ie2)); } }); } } catch (ie) { console.log('[Pi] error: ' + errMsg(ie)); try { if (P.init) P.init(piInitOptions(false)); } catch (ie2) { console.log('[Pi] error: ' + errMsg(ie2)); } }" +
   "return callAuthenticate();" +
   "};" +
   "function isLoginTarget(t) {" +
@@ -153,15 +177,7 @@ const PI_BOOT_SCRIPT =
   "var P = findPi();" +
   "if (!P) { setLast('Last: window.Pi missing'); console.log('[Pi] error: no window.Pi'); return; }" +
   "if (!window.__YOUNEON_PI_SDK_LOGGED__) { window.__YOUNEON_PI_SDK_LOGGED__ = true; console.log('[Pi] SDK loaded'); }" +
-  "try {" +
-  "if (P.init) {" +
-  "console.log('[Pi] init start');" +
-  "var r = P.init(piInitOptions());" +
-  "if (r && typeof r.then === 'function') {" +
-  "r.then(function () { console.log('[Pi] init success'); }, function (e) { console.log('[Pi] error: ' + errMsg(e)); });" +
-  "} else { console.log('[Pi] init success'); }" +
-  "}" +
-  "} catch (e) { console.log('[Pi] error: ' + errMsg(e)); }" +
+  "try { safePiInit(P); } catch (e) { console.log('[Pi] error: ' + errMsg(e)); }" +
   "}" +
   "renderStatus();" +
   "var piPoll = setInterval(function () { renderStatus(); if (!findPi()) return; clearInterval(piPoll); runInitThenAuth(); }, 200);" +
@@ -171,7 +187,8 @@ const PI_BOOT_SCRIPT =
   "setTimeout(function () {" +
   "if (findPi()) { renderStatus(); return; }" +
   "if (document.querySelector('script[data-youneon-pi-sdk]')) return;" +
-  "var preserved = null; try { preserved = window.Pi; } catch (pe) { console.log('[Pi] error: ' + errMsg(pe)); }" +
+  "var preserved = null; try { preserved = findPi(); } catch (pe) { console.log('[Pi] error: ' + errMsg(pe)); }" +
+  "if (preserved) { renderStatus(); return; }" +
   "var s = document.createElement('script');" +
   "s.src = 'https://sdk.minepi.com/pi-sdk.js';" +
   "s.async = true;" +
@@ -266,9 +283,16 @@ export default async function RootLayout({
       lang="en"
       suppressHydrationWarning
       className={isPublicLegal ? "youneon-legal youneon-signed-in" : undefined}
-      style={{ background: pageBg, backgroundColor: pageBg, minHeight: "100%", height: "100%" }}
+      style={{
+        background: pageBg,
+        backgroundColor: pageBg,
+        colorScheme: isPublicLegal ? "light" : "dark",
+        minHeight: "100%",
+        height: "100%",
+      }}
     >
       <head>
+        <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
         <meta charSet="utf-8" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -281,7 +305,6 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet" />
-        <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PUBLIC_LEGAL_PATH_SCRIPT }} />
       </head>
       <body
@@ -298,14 +321,17 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=pi-signin-client-id-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=testnet-dark-init-1"></script>
         <div
           id="youneon-app-tree"
           style={{
+            background: pageBg,
+            backgroundColor: pageBg,
             position: "relative",
             zIndex: 0,
             isolation: "isolate",
             pointerEvents: isPublicLegal ? "auto" : "none",
+            minHeight: "100%",
           }}
         >
           <AppProviders>{children}</AppProviders>

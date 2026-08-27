@@ -142,7 +142,18 @@ export async function initPiSdk(): Promise<void> {
 
       logSdkLoaded();
       console.log("[Pi] init start");
-      await Promise.resolve(Pi.init(getPiInitOptions()));
+      const withClientId = getPiInitOptions(true);
+      try {
+        await Promise.resolve(Pi.init(withClientId));
+      } catch (error) {
+        logError(error);
+        if (withClientId.clientId) {
+          console.log("[Pi] init retry without clientId");
+          await Promise.resolve(Pi.init(getPiInitOptions(false)));
+        } else {
+          throw error;
+        }
+      }
       initSucceeded = true;
       console.log("[Pi] init success");
     })().catch((error) => {
