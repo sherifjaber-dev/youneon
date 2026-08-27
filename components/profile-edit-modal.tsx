@@ -1067,6 +1067,7 @@ export function ProfileEditModal({
               onChange={(e) => setDraftAge(e.target.value)}
               className="yn-pe-search"
             />
+            {/* Kick a production build of the JSX closer fix. */}
           </BottomSheet>
         )}
 
