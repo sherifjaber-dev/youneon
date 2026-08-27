@@ -52,8 +52,8 @@ export function DiscoverScreen({
 
   const countries = ["Worldwide", ...COUNTRY_OPTIONS];
 
-  const genderCost = isPremium ? 0 : genderOptions.find((g) => g.value === selectedGender)?.cost || 0;
-  const countryCost = isPremium || selectedCountry === "Worldwide" ? 0 : COUNTRY_FILTER_NEON;
+  const genderCost = genderOptions.find((g) => g.value === selectedGender)?.cost || 0;
+  const countryCost = selectedCountry === "Worldwide" ? 0 : COUNTRY_FILTER_NEON;
   const totalCost = genderCost + countryCost;
   const startPriceLabel = totalCost === 0 ? "Free" : `${totalCost} Neon`;
   const adItems = announcements.filter((item) => item.active && item.type === "ad");
@@ -120,12 +120,12 @@ export function DiscoverScreen({
                     {option.label}
                     <img src={option.icon} alt="" draggable={false} className="yn-gender-asset" />
                   </span>
-                  <span className="mt-1 text-[10px] font-semibold leading-none">
-                    {isPremium || option.cost === 0 ? (
-                      <span className={selected ? "text-emerald-200" : "text-emerald-400/80"}>Free</span>
+                  <span className="yn-filter-price">
+                    {option.cost > 0 ? (
+                      <span className="yn-filter-price-gold">{option.cost} Neon</span>
                     ) : (
-                      <span className="text-[#f5d76e] drop-shadow-[0_0_6px_rgba(212,175,55,0.45)]">
-                        ◆ {option.cost} Neon
+                      <span className={selected ? "yn-filter-price-free is-on" : "yn-filter-price-free"}>
+                        Free
                       </span>
                     )}
                   </span>
@@ -155,14 +155,11 @@ export function DiscoverScreen({
               </span>
             </span>
             <div className="flex items-center gap-2">
-              {selectedCountry !== "Worldwide" && !isPremium && (
-                <span className="rounded-full border border-[#f5d76e]/40 bg-[#f5d76e]/10 px-2 py-0.5 text-[10px] font-semibold text-[#f5d76e]">
-                  ◆ {COUNTRY_FILTER_NEON} Neon
-                </span>
-              )}
-              {selectedCountry !== "Worldwide" && isPremium && (
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                  Free
+              {selectedCountry === "Worldwide" ? (
+                <span className="yn-filter-price-free">Free</span>
+              ) : (
+                <span className="yn-filter-price-gold rounded-full border border-[#f5d76e]/40 bg-[#f5d76e]/10 px-2 py-0.5">
+                  {COUNTRY_FILTER_NEON} Neon
                 </span>
               )}
               <ChevronDown
@@ -188,8 +185,10 @@ export function DiscoverScreen({
                   <span>
                     {country === "Worldwide" ? country : <CountryLabel country={country} size={16} />}
                   </span>
-                  {country !== "Worldwide" && !isPremium && (
-                    <span className="text-[10px] font-semibold text-[#f5d76e]">◆ {COUNTRY_FILTER_NEON} Neon</span>
+                  {country === "Worldwide" ? (
+                    <span className="yn-filter-price-free">Free</span>
+                  ) : (
+                    <span className="yn-filter-price-gold">{COUNTRY_FILTER_NEON} Neon</span>
                   )}
                 </div>
               ))}
@@ -207,7 +206,8 @@ export function DiscoverScreen({
           aria-label={`Start Random Chat ${startPriceLabel}`}
         >
           <Video className="yn-start-cta-icon" strokeWidth={2.15} aria-hidden />
-          Start Random Chat · {startPriceLabel}
+          Start Random Chat ·{" "}
+          <span className={totalCost > 0 ? "yn-start-cta-price" : undefined}>{startPriceLabel}</span>
         </button>
         <p className="yn-start-caption">
           <span aria-hidden>•</span>
@@ -220,7 +220,7 @@ export function DiscoverScreen({
             <>
               <span className="yn-start-caption-world">Priority matching</span>
               <span>·</span>
-              <span className="yn-start-caption-free">{totalCost} Neon</span>
+              <span className="yn-start-caption-price">{totalCost} Neon</span>
             </>
           )}
           <span aria-hidden>•</span>

@@ -2407,11 +2407,44 @@ html.yn-profile-open {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  overflow: visible;
   border-radius: 999px;
   border: 1.6px solid transparent;
   background: #0c0616;
   color: #d6c7e8;
   transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.yn-filter-price {
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.yn-filter-price-gold,
+.yn-start-caption-price,
+.yn-start-cta-price {
+  color: #f5d76e;
+  font-weight: 700;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(212, 175, 55, 0.45);
+}
+
+.yn-filter-price-gold,
+.yn-filter-price-free {
+  font-size: 10px;
+}
+
+.yn-filter-price-free {
+  color: #6ee7b7;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.yn-filter-price-free.is-on {
+  color: #a7f3d0;
 }
 
 .yn-gender-symbol {
