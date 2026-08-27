@@ -6,6 +6,7 @@ import {
 import { db } from "./firebase";
 import { GIFT_TO_REACTION } from "@/lib/profile-catalog";
 import { isFakeDisplayName, isFakeUserRecord, isRealPiUsername } from "@/lib/real-pi-user";
+import { readSpokenLanguages, readStringList } from "@/lib/profile-fields";
 
 export interface UserProfile {
   id?: string;
@@ -83,15 +84,61 @@ function isPersistableUsername(piUsername: string | undefined | null): piUsernam
   return isRealPiUsername(piUsername);
 }
 
+function omitUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
+export { readSpokenLanguages };
+
+function profileFromDoc(id: string, data: Record<string, unknown>): UserProfile {
+  const languages = readSpokenLanguages(data);
+  const interests = readStringList(data.interests);
+  const photos = readStringList(data.photos);
+  const piUsername =
+    (typeof data.piUsername === "string" && data.piUsername.trim()) || id;
+  return {
+    ...(data as object),
+    id,
+    piUsername,
+    languages,
+    interests,
+    photos,
+  } as UserProfile;
+}
+
 export const saveUserProfile = async (profile: UserProfile) => {
   if (!isPersistableUsername(profile.piUsername)) {
     throw new Error("invalid username");
   }
-  const { neonBalance: _neon, premiumUntil: _until, lastPaymentId: _pay, ...rest } = profile;
+  const languages = readSpokenLanguages(profile);
+  const interests = readStringList(profile.interests);
+  const photos = readStringList(profile.photos);
   const ref = doc(db, "users", profile.piUsername);
   await setDoc(
     ref,
-    { ...rest, updatedAt: Timestamp.now(), lastProfileUpdate: Timestamp.now() },
+    omitUndefined({
+      piUsername: profile.piUsername,
+      uid: profile.uid || undefined,
+      fullName: profile.fullName,
+      age: profile.age,
+      country: profile.country,
+      location: profile.location,
+      gender: profile.gender,
+      languages: languages.length ? languages : undefined,
+      interests,
+      avatar: profile.avatar,
+      profilePicture: profile.profilePicture,
+      photos,
+      bio: profile.bio,
+      nameChangeMonth: profile.nameChangeMonth,
+      nameChangeCount: profile.nameChangeCount,
+      updatedAt: Timestamp.now(),
+      lastProfileUpdate: Timestamp.now(),
+    }),
     { merge: true }
   );
   return profile.piUsername;
@@ -116,7 +163,7 @@ export const loadOrCreateUserProfile = async (
     created = false;
     const snap = await tx.get(ref);
     if (snap.exists()) {
-      profile = { id: snap.id, ...(snap.data() as object) } as UserProfile;
+      profile = profileFromDoc(snap.id, snap.data() as Record<string, unknown>);
       return;
     }
     const payload = {
@@ -138,7 +185,7 @@ export const loadOrCreateUserProfile = async (
   if (!profile) {
     const snap = await getDoc(ref);
     if (snap.exists()) {
-      return { profile: { id: snap.id, ...snap.data() } as UserProfile, created: false };
+      return { profile: profileFromDoc(snap.id, snap.data() as Record<string, unknown>), created: false };
     }
     throw new Error("user profile missing after load");
   }
@@ -146,8 +193,7 @@ export const loadOrCreateUserProfile = async (
 };
 
 export const persistUserNeonBalance = async (piUsername: string, balance: number) => {
-  if (!isRealPiUsername(currentUserId) || !isRealPiUsername(match.id)) return;
-  if (isFakeDisplayName(match.name)) return;
+  if (!isPersistableUsername(piUsername)) return;
   await setDoc(
     doc(db, "users", piUsername),
     { neonBalance: Math.max(0, Math.floor(balance)), updatedAt: Timestamp.now() },
@@ -167,7 +213,7 @@ export const persistUserPremiumUntil = async (piUsername: string, premiumUntil: 
 export const getUserProfile = async (piUsername: string) => {
   const ref = doc(db, "users", piUsername);
   const snap = await getDoc(ref);
-  if (snap.exists()) return { id: snap.id, ...snap.data() } as UserProfile;
+  if (snap.exists()) return profileFromDoc(snap.id, snap.data() as Record<string, unknown>);
   return null;
 };
 
@@ -193,7 +239,7 @@ export const subscribeToUserProfile = (
         cb(null);
         return;
       }
-      cb({ id: snap.id, ...(snap.data() as object) } as UserProfile);
+      cb(profileFromDoc(snap.id, snap.data() as Record<string, unknown>));
     },
     () => cb(null)
   );

@@ -24,6 +24,7 @@ import { CountryLabel } from "@/components/country-flag";
 import { COUNTRY_OPTIONS, isCountryOption } from "@/lib/countries";
 import type { Announcement } from "@/lib/announcements";
 import type { UserProfile } from "@/lib/firestore-service";
+import { readSpokenLanguages } from "@/lib/firestore-service";
 import {
   AGE_MAX,
   AGE_MIN,
@@ -62,6 +63,7 @@ export type ProfileSavePayload = {
 };
 
 export type ProfileModalUser = {
+  piUsername?: string;
   fullName?: string;
   age?: number;
   country?: string;
@@ -70,6 +72,8 @@ export type ProfileModalUser = {
   bio?: string;
   interests?: string[];
   languages?: string[];
+  spokenLanguages?: string[];
+  langs?: string[];
   profilePicture?: string;
   photos?: string[];
   nameChangeMonth?: string;
@@ -126,7 +130,7 @@ function emptyForm(): ProfileSavePayload {
     gender: "",
     bio: "",
     interests: [],
-    languages: ["English"],
+    languages: [],
     profilePicture: "",
     photos: [],
   };
@@ -143,9 +147,30 @@ function uniquePhotos(values: Array<string | undefined>): string[] {
   return out;
 }
 
+function hasValue(value: unknown): boolean {
+  if (value === undefined || value === null || value === "") return false;
+  if (Array.isArray(value) && value.length === 0) return false;
+  return true;
+}
+
+function firstSpokenLanguages(...sources: Array<unknown>): string[] {
+  for (const src of sources) {
+    const langs = readSpokenLanguages(src).map(canonicalLanguage).filter(Boolean);
+    if (langs.length) return langs;
+  }
+  return [];
+}
+
 function formFromSources(user?: ProfileModalUser | null): ProfileSavePayload {
-  const stored = typeof window !== "undefined" ? readStoredProfile() : {};
-  const src = { ...stored, ...user };
+  const storedRaw = typeof window !== "undefined" ? readStoredProfile() : {};
+  const stored =
+    user?.piUsername && storedRaw.piUsername && storedRaw.piUsername !== user.piUsername
+      ? {}
+      : storedRaw;
+  const src: ProfileModalUser = { ...stored };
+  for (const [key, value] of Object.entries(user || {})) {
+    if (hasValue(value)) (src as Record<string, unknown>)[key] = value;
+  }
   const rawPlace = src.country || src.location || "";
   const country = isCountryOption(rawPlace) ? rawPlace : rawPlace.trim();
   const gender = src.gender && isProfileGender(src.gender) ? src.gender : "";
@@ -161,9 +186,7 @@ function formFromSources(user?: ProfileModalUser | null): ProfileSavePayload {
     gender,
     bio: src.bio || "",
     interests: Array.isArray(src.interests) ? src.interests : [],
-    languages: Array.isArray(src.languages) && src.languages.length > 0
-      ? src.languages.map(canonicalLanguage).filter(Boolean)
-      : ["English"],
+    languages: firstSpokenLanguages(user, stored),
     profilePicture: photos[0] || src.profilePicture || "",
     photos,
     nameChangeMonth: src.nameChangeMonth,
@@ -269,16 +292,33 @@ export function ProfileEditModal({
       openedRef.current = false;
       return;
     }
-    if (openedRef.current) return;
-    openedRef.current = true;
-    setFormData(formFromSources(currentUser));
-    setError("");
-    setSaving(false);
-    setUploading(false);
-    setSheet(null);
-    setShowInterests(false);
-    setShowSettings(false);
-    setShowPreview(false);
+    const incoming = formFromSources(currentUser);
+    if (!openedRef.current) {
+      openedRef.current = true;
+      setFormData(incoming);
+      setError("");
+      setSaving(false);
+      setUploading(false);
+      setSheet(null);
+      setShowInterests(false);
+      setShowSettings(false);
+      setShowPreview(false);
+      return;
+    }
+    setFormData((prev) => ({
+      ...incoming,
+      ...prev,
+      fullName: prev.fullName.trim() ? prev.fullName : incoming.fullName,
+      bio: prev.bio ? prev.bio : incoming.bio,
+      country: prev.country ? prev.country : incoming.country,
+      location: prev.location ? prev.location : incoming.location,
+      gender: prev.gender ? prev.gender : incoming.gender,
+      interests: prev.interests.length ? prev.interests : incoming.interests,
+      languages: prev.languages.length ? prev.languages : incoming.languages,
+      photos: prev.photos.length ? prev.photos : incoming.photos,
+      profilePicture: prev.profilePicture || incoming.profilePicture,
+      age: prev.age !== 18 ? prev.age : incoming.age || prev.age,
+    }));
   }, [isOpen, currentUser]);
 
   useEffect(() => {
@@ -307,7 +347,17 @@ export function ProfileEditModal({
     setSaving(true);
     setError("");
     try {
-      localStorage.setItem("youneon_user_profile", JSON.stringify(payload));
+      const previous = readStoredProfile();
+      const cached = {
+        ...previous,
+        ...payload,
+        piUsername: currentUsername || previous.piUsername || "",
+      };
+      try {
+        localStorage.setItem("youneon_user_profile", JSON.stringify(cached));
+      } catch {
+        /* quota — still save to the Pi user document */
+      }
       await onSave?.(payload);
       if (currentUsername) {
         const { refreshYouNeonBadge } = await import("@/lib/safety");

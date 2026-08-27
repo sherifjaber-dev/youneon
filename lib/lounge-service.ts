@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { badgeFromUserDoc } from "@/lib/safety";
-import type { UserProfile } from "./firestore-service";
+import { readSpokenLanguages, type UserProfile } from "./firestore-service";
 import { isFakeUserRecord, isRealPiUsername } from "./real-pi-user";
 
 export const LOUNGE_RECENT_MS = 72 * 60 * 60 * 1000;
@@ -283,9 +283,7 @@ function personFromUserDoc(
   const age = ageRaw && ageRaw > 0 ? Math.round(ageRaw) : undefined;
   if (!age || age < 18) return null;
   if (data.banned === true) return null;
-  const languages = Array.isArray(data.languages)
-    ? data.languages.filter((l): l is string => typeof l === "string" && !!l.trim())
-    : [];
+  const languages = readSpokenLanguages(data);
   const coords = parseCoords(data);
   const presenceMs = Math.max(
     lastSeenMs,

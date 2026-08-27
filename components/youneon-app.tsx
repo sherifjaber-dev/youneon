@@ -21,6 +21,7 @@ import {
   conversationExists,
   unlockConversation,
   STARTING_NEON_BALANCE,
+  readSpokenLanguages,
   type UserProfile as CloudUserProfile,
 } from "@/lib/firestore-service";
 import { formatCallDuration } from "@/lib/history-utils";
@@ -138,8 +139,9 @@ function userFromRemote(
   const photos = remotePhotos.length ? remotePhotos : extraPhotos;
   const picture = remote.profilePicture || photos[0] || extras.profilePicture || "";
   const place = remote.country || remote.location || extras.country || extras.location || "";
-  const remoteLangs = Array.isArray(remote.languages) ? remote.languages : [];
-  const remoteInterests = Array.isArray(remote.interests) ? remote.interests : [];
+  const remoteLangs = readSpokenLanguages(remote);
+  const extraLangs = readSpokenLanguages(extras);
+  const remoteInterests = Array.isArray(remote.interests) ? remote.interests.filter(Boolean) : [];
   return {
     id: remote.piUsername || piUsername,
     uid,
@@ -152,7 +154,7 @@ function userFromRemote(
     avatar: remote.avatar || extras.avatar || "🙂",
     profilePicture: picture,
     photos: photos.length ? photos : picture ? [picture] : [],
-    languages: remoteLangs.length ? remoteLangs : extras.languages || [],
+    languages: remoteLangs.length ? remoteLangs : extraLangs,
     interests: remoteInterests.length ? remoteInterests : extras.interests || [],
     bio: remote.bio || extras.bio || "",
     premiumUntil: remote.premiumUntil || extras.premiumUntil,
@@ -178,7 +180,7 @@ function stubUser(uid?: string, username?: string): YouNeonUser {
     avatar: extras.avatar || "🙂",
     profilePicture: extras.profilePicture || "",
     photos: extras.photos || (extras.profilePicture ? [extras.profilePicture] : []),
-    languages: extras.languages || [],
+    languages: readSpokenLanguages(extras),
     reactionsReceived: extras.reactionsReceived,
     giftsReceivedCount: extras.giftsReceivedCount,
     nameChangeMonth: extras.nameChangeMonth,
@@ -454,8 +456,18 @@ export function YouNeonApp() {
         if (!prev) return prev;
         const recentlySaved = profileSavedAtRef.current > Date.now() - 2500;
         const hydrated = userFromRemote(remote, prev.uid || "", prev.piUsername, prev);
+        const merged = recentlySaved ? { ...hydrated, ...prev } : hydrated;
         return {
-          ...(recentlySaved ? prev : hydrated),
+          ...merged,
+          languages: merged.languages.length ? merged.languages : prev.languages,
+          interests: merged.interests.length ? merged.interests : prev.interests,
+          photos: merged.photos?.length ? merged.photos : prev.photos,
+          profilePicture: merged.profilePicture || prev.profilePicture,
+          fullName: merged.fullName || prev.fullName,
+          bio: merged.bio || prev.bio,
+          country: merged.country || prev.country,
+          location: merged.location || prev.location,
+          gender: merged.gender || prev.gender,
           reactionsReceived: remote.reactionsReceived || prev.reactionsReceived,
           giftsReceivedCount:
             typeof remote.giftsReceivedCount === "number"
@@ -498,7 +510,7 @@ export function YouNeonApp() {
       location: place,
       gender: saved.gender || "",
       bio: saved.bio || "",
-      interests: saved.interests || base.interests,
+      interests: saved.interests?.length ? saved.interests : base.interests,
       languages: saved.languages?.length ? saved.languages : base.languages,
       profilePicture: saved.profilePicture || "",
       photos: Array.isArray(saved.photos) ? saved.photos : base.photos || [],

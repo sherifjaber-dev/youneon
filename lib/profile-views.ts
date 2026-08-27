@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { getUserProfile } from "./firestore-service";
+import { readSpokenLanguages } from "./profile-fields";
 import { toMillis } from "./history-utils";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -47,8 +48,8 @@ export async function recordProfileView(opts: {
       name = (profile.fullName && profile.fullName.trim()) || name;
       photo = profile.profilePicture || profile.photos?.[0] || photo;
       country = profile.country || profile.location || country;
-      if (!languages.length && Array.isArray(profile.languages)) {
-        languages = profile.languages.filter(Boolean);
+      if (!languages.length) {
+        languages = readSpokenLanguages(profile);
       }
     }
   } catch {
@@ -89,9 +90,7 @@ export function subscribeToProfileViews(
       const rows: ProfileView[] = snap.docs
         .map((d) => {
           const data = d.data() as Record<string, unknown>;
-          const langs = Array.isArray(data.languages)
-            ? data.languages.filter((x): x is string => typeof x === "string" && !!x.trim())
-            : [];
+          const langs = readSpokenLanguages(data);
           return {
             id: d.id,
             viewerId: String(data.viewerId || d.id),

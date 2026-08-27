@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase";
 import { profileCompleteness } from "@/lib/profile-catalog";
 import { isPremiumActive } from "@/lib/premium";
 import { isRealPiUsername } from "@/lib/real-pi-user";
+import { readSpokenLanguages } from "@/lib/profile-fields";
 
 export const AGE_GATE_MIN = 18;
 export const REPORT_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -130,7 +131,7 @@ export function badgeFromUserDoc(data: Record<string, unknown> | null | undefine
     age: typeof data.age === "number" ? data.age : undefined,
     bio: typeof data.bio === "string" ? data.bio : "",
     country: typeof data.country === "string" ? data.country : "",
-    languages: Array.isArray(data.languages) ? (data.languages as string[]) : [],
+    languages: readSpokenLanguages(data),
     interests: Array.isArray(data.interests) ? (data.interests as string[]) : [],
   });
   const premium =

@@ -1,8 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// Firebase konfiguration (fra dit projekt)
 const firebaseConfig = {
   apiKey: "AIzaSyB48SU_Yy-ld89I0QV6_-7Y_M85NQsbB0u",
   authDomain: "youneon.firebaseapp.com",
@@ -13,11 +12,17 @@ const firebaseConfig = {
   measurementId: "G-M0D8SDQRT6"
 };
 
-// Initialiser Firebase
 const app = initializeApp(firebaseConfig);
 
-// Eksporter de services vi skal bruge
-export const db = getFirestore(app);        // Firestore database
-export const auth = getAuth(app);           // Authentication (til senere)
+function firestoreDb() {
+  try {
+    return initializeFirestore(app, { ignoreUndefinedProperties: true });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
+export const db = firestoreDb();
+export const auth = getAuth(app);
 
 export default app;

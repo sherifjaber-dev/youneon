@@ -9,7 +9,7 @@ import { InterestIcon } from "@/components/icons/interest-icons";
 import { UserPhoto, isPhotoSrc } from "@/components/neon-avatar";
 import { CountryFlag } from "@/components/country-flag";
 import { countryLabel, countryToIso } from "@/lib/countries";
-import { incrementGiftsReceived, subscribeToUserProfile, type UserProfile } from "@/lib/firestore-service";
+import { incrementGiftsReceived, readSpokenLanguages, subscribeToUserProfile, type UserProfile } from "@/lib/firestore-service";
 import { subscribeToOnlineMap, type FollowSnapshot } from "@/lib/follow-service";
 import { useFollowGraph } from "@/hooks/use-follow-graph";
 import { recordProfileView } from "@/lib/profile-views";
@@ -182,7 +182,7 @@ export function mergeRemoteProfile(
     heroPhoto: photos[0] || "",
     giftsReceived: gifts,
     interests: firestoreUser?.interests?.length ? firestoreUser.interests : hint?.interests || [],
-    languages: Array.isArray(firestoreUser?.languages) ? firestoreUser!.languages.filter(Boolean) : [],
+    languages: readSpokenLanguages(firestoreUser),
     youneonBadge: badgeFromUserDoc(firestoreUser as unknown as Record<string, unknown>),
     hideGender,
     gender: genderLabel(genderRaw),
