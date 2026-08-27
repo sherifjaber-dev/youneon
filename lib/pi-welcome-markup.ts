@@ -11,16 +11,12 @@ const INNER_STYLE =
   "position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;" +
   NONE;
 
-const WORDMARK_STYLE =
-  "font-size:2.05rem;font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin:0 0 8px;color:#ffffff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;" +
+const WORDMARK_WRAP_STYLE =
+  "margin:0 0 8px;padding:0;line-height:0;width:100%;display:flex;justify-content:center;align-items:center;background:transparent;" +
   NONE;
 
-const YOU_STYLE =
-  "color:#ffffff;font-weight:800;font-family:system-ui,-apple-system,Segoe UI,sans-serif;" +
-  NONE;
-
-const NEON_STYLE =
-  "color:#E03596;font-family:Pacifico,'Segoe Script','Snell Roundhand',cursive;font-weight:400;font-size:1.15em;letter-spacing:0.01em;text-shadow:0 0 8px rgba(224,53,150,0.72),0 0 18px rgba(194,24,117,0.4);" +
+const WORDMARK_IMG_STYLE =
+  "display:block;width:min(80vw,280px);max-width:280px;height:auto;margin:0;background:transparent;mix-blend-mode:screen;-webkit-mix-blend-mode:screen;object-fit:contain;" +
   NONE;
 
 const HERO_STYLE =
@@ -61,13 +57,11 @@ export function youneonWelcomeHeroHtml(_idPrefix: string): string {
 
 export function youneonWelcomeWordmarkHtml(): string {
   return (
-    '<h1 style="' +
-    WORDMARK_STYLE +
-    '"><span style="' +
-    YOU_STYLE +
-    '">You</span><span style="' +
-    NEON_STYLE +
-    '">Neon</span></h1>'
+    '<h1 class="youneon-welcome-wordmark-wrap" style="' +
+    WORDMARK_WRAP_STYLE +
+    '"><img class="youneon-welcome-wordmark" src="/youneon-login-logo.png" alt="YouNeon" width="560" height="274" decoding="async" style="' +
+    WORDMARK_IMG_STYLE +
+    '" /></h1>'
   );
 }
 
@@ -127,7 +121,7 @@ export function piWelcomeOverlayHtml(opts: {
   return (
     '<div class="youneon-static-login"' +
     idAttr +
-    ' aria-label="YouNeon" data-youneon-login-v="signin-btn-only-1" style="' +
+    ' aria-label="YouNeon" data-youneon-login-v="login-wordmark-img-1" style="' +
     PI_WELCOME_OVERLAY_STYLE +
     '">' +
     piWelcomeInnerHtml(opts.buttonId, prefix) +

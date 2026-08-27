@@ -234,7 +234,7 @@
 
   var AUTH_JS =
     "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{wireAuth(P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}}));}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{wireAuth(P.authenticate({scopes:['username','payments']}));}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
-  var LOGIN_V = "signin-btn-only-1";
+  var LOGIN_V = "login-wordmark-img-1";
   var NONE =
     "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:default";
   var OVERLAY_CHROME =
@@ -254,7 +254,7 @@
   function overlayInnerHtml() {
     return (
       '<div class="youneon-welcome-card" style="position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;' + NONE + '">' +
-      '<h1 style="font-size:2.05rem;font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin:0 0 8px;color:#ffffff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;' + NONE + '"><span style="color:#ffffff;font-weight:800;font-family:system-ui,-apple-system,Segoe UI,sans-serif;' + NONE + '">You</span><span style="color:#E03596;font-family:Pacifico,\'Segoe Script\',\'Snell Roundhand\',cursive;font-weight:400;font-size:1.15em;letter-spacing:0.01em;text-shadow:0 0 8px rgba(224,53,150,0.72),0 0 18px rgba(194,24,117,0.4);' + NONE + '">Neon</span></h1>' +
+      '<h1 class="youneon-welcome-wordmark-wrap" style="margin:0 0 8px;padding:0;line-height:0;width:100%;display:flex;justify-content:center;align-items:center;background:transparent;' + NONE + '"><img class="youneon-welcome-wordmark" src="/youneon-login-logo.png" alt="YouNeon" width="560" height="274" decoding="async" style="display:block;width:min(80vw,280px);max-width:280px;height:auto;margin:0;background:transparent;mix-blend-mode:screen;-webkit-mix-blend-mode:screen;object-fit:contain;' + NONE + '" /></h1>' +
       '<img class="youneon-welcome-hero" src="/default-avatar.png" alt="" width="512" height="512" decoding="async" style="display:block;width:min(72vw,268px);height:auto;margin:10px 0 18px;object-fit:contain;' + NONE + '" />' +
       '<p style="font-size:15px;line-height:1.4;font-weight:500;color:#8b8494;margin:0 0 22px;' + NONE + '">Meet in the glow.</p>' +
       '<div style="pointer-events:auto;user-select:none;-webkit-user-select:none;width:100%;display:flex;justify-content:center">' +
@@ -343,7 +343,7 @@
     try {
       if (el.getAttribute("data-youneon-login-v") !== LOGIN_V) return false;
     } catch (a) { return false; }
-    return !!(el.querySelector(".youneon-welcome-hero") && el.querySelector("button.youneon-signin-btn"));
+    return !!(el.querySelector(".youneon-welcome-wordmark") && el.querySelector(".youneon-welcome-hero") && el.querySelector("button.youneon-signin-btn"));
   }
   function paintLoginOverlay(overlay) {
     if (!overlay) return;
