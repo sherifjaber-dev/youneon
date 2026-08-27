@@ -2,7 +2,7 @@
 
 import { useRef, type CSSProperties } from "react";
 import { bindPiSigninButtonIn } from "@/lib/pi-signin-onclick";
-import { PI_WELCOME_OVERLAY_STYLE, piWelcomeInnerHtml, youneonWelcomeLegalHtml } from "@/lib/pi-welcome-markup";
+import { PI_WELCOME_OVERLAY_STYLE, piWelcomeInnerHtml } from "@/lib/pi-welcome-markup";
 import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 interface LoginScreenProps {
@@ -74,7 +74,7 @@ export function LoginScreen({
       ref={bindHost}
       className="youneon-static-login"
       aria-label="YouNeon"
-      data-youneon-login-v="login-wordmark-img-1"
+      data-youneon-login-v="login-footer-flow-1"
       style={overlayStyle}
     >
       <div
@@ -87,11 +87,6 @@ export function LoginScreen({
             piWelcomeInnerHtml("youneon-signin-btn-login", "ynlogin") +
             "</div>",
         }}
-      />
-
-      <div
-        suppressHydrationWarning
-        dangerouslySetInnerHTML={{ __html: youneonWelcomeLegalHtml() }}
       />
 
       <div

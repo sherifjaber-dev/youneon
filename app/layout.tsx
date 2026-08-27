@@ -18,7 +18,10 @@ const CRITICAL_CSS =
   "#youneon-static-login h1,.youneon-static-login h1,#youneon-static-login p,.youneon-static-login p,.youneon-welcome-card,.youneon-welcome-card svg,.youneon-welcome-card img,.youneon-welcome-hero,.youneon-welcome-wordmark,.youneon-welcome-wordmark-wrap{pointer-events:none !important;cursor:default !important}" +
   ".youneon-welcome-wordmark-wrap,.youneon-welcome-wordmark{background:transparent !important}" +
   ".youneon-welcome-wordmark{display:block;width:min(80vw,280px);max-width:280px;height:auto;mix-blend-mode:screen;-webkit-mix-blend-mode:screen}" +
+  ".youneon-welcome-footer{position:relative !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;z-index:auto !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:flex-start !important;width:100%;margin:12px 0 0 !important;gap:10px !important;flex-shrink:0 !important;transform:none !important}" +
+  ".youneon-welcome-hint{position:relative !important;margin:0 !important;flex-shrink:0 !important}" +
   ".youneon-welcome-legal,.youneon-welcome-legal a{pointer-events:auto !important;cursor:pointer !important}" +
+  ".youneon-welcome-legal{position:relative !important;left:auto !important;right:auto !important;top:auto !important;bottom:auto !important;inset:auto !important;z-index:auto !important;display:flex !important;align-items:center !important;justify-content:center !important;gap:6px !important;margin:0 !important;flex-shrink:0 !important;transform:none !important}" +
   "#youneon-signin-btn,.youneon-signin-btn,button[data-youneon-signin],input[data-youneon-signin]{pointer-events:auto !important;position:relative !important;z-index:2147483647 !important;cursor:pointer !important;touch-action:manipulation !important;-webkit-tap-highlight-color:rgba(194,24,117,0.5) !important}" +
   "#youneon-app-tree{pointer-events:none;position:relative;z-index:0}" +
   "html.youneon-signed-in #youneon-static-login,html.youneon-signed-in .youneon-static-login,html.youneon-signed-in [data-youneon-login-host],html.youneon-signed-in [data-youneon-login-hidden='1'],html.youneon-legal #youneon-static-login,html.youneon-legal .youneon-static-login,html.youneon-legal [data-youneon-login-host],html.youneon-legal [data-youneon-login-hidden='1']{display:none !important;visibility:hidden !important;pointer-events:none !important;z-index:0 !important}" +
@@ -284,7 +287,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=login-wordmark-img-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=login-footer-flow-1"></script>
         <div
           id="youneon-app-tree"
           style={{

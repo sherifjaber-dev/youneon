@@ -5,7 +5,7 @@ const NONE =
 
 /** First-paint overlay: dark Studio-safe canvas. Auth handlers stay on the Sign in button. */
 export const PI_WELCOME_OVERLAY_STYLE =
-  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px 72px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;caret-color:transparent";
+  "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;caret-color:transparent";
 
 const INNER_STYLE =
   "position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;" +
@@ -28,18 +28,23 @@ const TAG_STYLE =
   NONE;
 
 const HINT_STYLE =
-  "font-size:12px;line-height:1.45;font-weight:500;color:#5c5666;margin:12px 0 0;" +
+  "font-size:12px;line-height:1.45;font-weight:500;color:#5c5666;margin:0;" +
   NONE;
 
 const BUTTON_WRAP =
   "pointer-events:auto;user-select:none;-webkit-user-select:none;width:100%;display:flex;justify-content:center";
+
+/** In-flow block under Sign in — never absolute/fixed to the overlay bottom. */
+const FOOTER_STYLE =
+  "position:relative;z-index:2;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;margin:12px 0 0;flex-shrink:0;box-sizing:border-box;" +
+  NONE;
 
 /** stopPropagation only — never preventDefault (Pi needs the user gesture on the button). */
 const LEGAL_STOP =
   'onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"';
 
 const LEGAL_WRAP =
-  "position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));z-index:3;display:flex;align-items:center;justify-content:center;gap:6px;pointer-events:auto;user-select:none;-webkit-user-select:none";
+  "position:relative;display:flex;align-items:center;justify-content:center;gap:6px;margin:0;flex-shrink:0;pointer-events:auto;user-select:none;-webkit-user-select:none";
 
 const LEGAL_LINK =
   "color:#E03596;font-size:14px;font-weight:600;text-decoration:none;pointer-events:auto;cursor:pointer;font-family:system-ui,-apple-system,Segoe UI,sans-serif";
@@ -87,6 +92,19 @@ export function youneonWelcomeLegalHtml(): string {
   );
 }
 
+export function youneonWelcomeFooterHtml(): string {
+  return (
+    '<div class="youneon-welcome-footer" data-youneon-login-footer="1" style="' +
+    FOOTER_STYLE +
+    '">' +
+    '<p class="youneon-welcome-hint" style="' +
+    HINT_STYLE +
+    '">You need a Pi account to enter.</p>' +
+    youneonWelcomeLegalHtml() +
+    "</div>"
+  );
+}
+
 export function piWelcomeInnerHtml(buttonId: string, idPrefix: string): string {
   return (
     '<div class="youneon-welcome-card" style="' +
@@ -102,9 +120,7 @@ export function piWelcomeInnerHtml(buttonId: string, idPrefix: string): string {
     '">' +
     piSigninControlsHtml(buttonId) +
     "</div>" +
-    '<p style="' +
-    HINT_STYLE +
-    '">You need a Pi account to enter.</p>' +
+    youneonWelcomeFooterHtml() +
     piSigninStatusHtml() +
     "</div>"
   );
@@ -121,11 +137,10 @@ export function piWelcomeOverlayHtml(opts: {
   return (
     '<div class="youneon-static-login"' +
     idAttr +
-    ' aria-label="YouNeon" data-youneon-login-v="login-wordmark-img-1" style="' +
+    ' aria-label="YouNeon" data-youneon-login-v="login-footer-flow-1" style="' +
     PI_WELCOME_OVERLAY_STYLE +
     '">' +
     piWelcomeInnerHtml(opts.buttonId, prefix) +
-    youneonWelcomeLegalHtml() +
     "</div>"
   );
 }

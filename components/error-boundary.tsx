@@ -2,7 +2,7 @@
 
 import React from "react";
 import { bindPiSigninButtonIn } from "@/lib/pi-signin-onclick";
-import { piWelcomeInnerHtml, youneonWelcomeLegalHtml } from "@/lib/pi-welcome-markup";
+import { piWelcomeInnerHtml } from "@/lib/pi-welcome-markup";
 import { tapPiAuthenticate } from "@/lib/pi-sdk";
 
 interface ErrorBoundaryProps {
@@ -26,7 +26,7 @@ const overlayStyle: React.CSSProperties = {
   justifyContent: "center",
   backgroundColor: "#070010",
   color: "#ffffff",
-  padding: "48px 16px 72px",
+  padding: "48px 16px",
   textAlign: "center",
   fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
   pointerEvents: "auto",
@@ -74,11 +74,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <div
           className="youneon-static-login"
           aria-label="YouNeon"
-          data-youneon-login-v="login-wordmark-img-1"
+          data-youneon-login-v="login-footer-flow-1"
           style={overlayStyle}
           ref={this.bindHost}
           dangerouslySetInnerHTML={{
-            __html: piWelcomeInnerHtml("youneon-signin-btn-error", "ynerror") + youneonWelcomeLegalHtml(),
+            __html: piWelcomeInnerHtml("youneon-signin-btn-error", "ynerror"),
           }}
         />
       );

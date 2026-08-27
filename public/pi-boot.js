@@ -234,11 +234,11 @@
 
   var AUTH_JS =
     "try{var P=null;try{P=window.Pi;}catch(w){}if(!P){try{P=window.parent.Pi;}catch(p){}}if(!P){try{P=window.top.Pi;}catch(t){}}if(P&&!window.Pi){try{window.Pi=P;}catch(cp){}}function wireAuth(p){try{if(p&&typeof p.then==='function')p.then(function(r){try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){console.log('[Pi] error: '+e);});}catch(w2){}}var last='';if(!P||typeof P.authenticate!=='function'){last='Last: window.Pi missing';console.log('[Pi] error: no window.Pi');}else{console.log('[Pi] authenticate start');last='Last: authenticate called';try{wireAuth(P.authenticate(['username','payments'],function(payment){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.send(JSON.stringify({paymentId:payment&&payment.identifier,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);}}));}catch(c){console.log('[Pi] error: '+c);last='Last: '+c;}try{wireAuth(P.authenticate({scopes:['username','payments']}));}catch(o){console.log('[Pi] error: '+o);}}try{window.__YOUNEON_PI_LAST__=last;var sts=document.querySelectorAll('[data-youneon-pi-status],#youneon-pi-status');for(var si=0;si<sts.length;si++){sts[si].textContent='Pi SDK: '+(P?'yes':'no')+'  ·  '+last;}}catch(su){console.log('[Pi] error: '+su);}if(typeof window.__youneonPiAuth==='function'){try{window.__youneonPiAuth();}catch(au){console.log('[Pi] error: '+au);}}}catch(e){console.log('[Pi] error: '+e)}";
-  var LOGIN_V = "login-wordmark-img-1";
+  var LOGIN_V = "login-footer-flow-1";
   var NONE =
     "pointer-events:none;user-select:none;-webkit-user-select:none;cursor:default";
   var OVERLAY_CHROME =
-    "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px 72px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;caret-color:transparent";
+    "position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#070010;color:#ffffff;padding:48px 16px;text-align:center;font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%;box-sizing:border-box;pointer-events:auto;cursor:default;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;caret-color:transparent";
   var CTRL_STYLE =
     "height:37px;min-height:37px;padding:0 16px;font-size:14px;font-weight:600;line-height:1;border:0;border-radius:12px;color:#FFFFFF;background-color:#C21875;background-image:none;cursor:pointer;width:100%;max-width:100%;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,sans-serif;pointer-events:auto;position:relative;z-index:2147483647;touch-action:manipulation;-webkit-tap-highlight-color:rgba(194,24,117,0.35);user-select:none;-webkit-user-select:none;caret-color:transparent;box-shadow:none";
   var STATUS_STYLE =
@@ -260,13 +260,15 @@
       '<div style="pointer-events:auto;user-select:none;-webkit-user-select:none;width:100%;display:flex;justify-content:center">' +
       CONTROLS_HTML +
       "</div>" +
-      '<p style="font-size:12px;line-height:1.45;font-weight:500;color:#5c5666;margin:12px 0 0;' + NONE + '">You need a Pi account to enter.</p>' +
-      STATUS_HTML +
-      "</div>" +
-      '<div class="youneon-welcome-legal" data-youneon-legal="1" style="position:absolute;left:0;right:0;bottom:max(22px,env(safe-area-inset-bottom));z-index:3;display:flex;align-items:center;justify-content:center;gap:6px;pointer-events:auto;user-select:none;-webkit-user-select:none">' +
+      '<div class="youneon-welcome-footer" data-youneon-login-footer="1" style="position:relative;z-index:2;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;margin:12px 0 0;flex-shrink:0;box-sizing:border-box;' + NONE + '">' +
+      '<p class="youneon-welcome-hint" style="font-size:12px;line-height:1.45;font-weight:500;color:#5c5666;margin:0;' + NONE + '">You need a Pi account to enter.</p>' +
+      '<div class="youneon-welcome-legal" data-youneon-legal="1" style="position:relative;display:flex;align-items:center;justify-content:center;gap:6px;margin:0;flex-shrink:0;pointer-events:auto;user-select:none;-webkit-user-select:none">' +
       '<a href="/terms" ' + LEGAL_STOP + ' style="color:#E03596;font-size:14px;font-weight:600;text-decoration:none;pointer-events:auto;cursor:pointer;font-family:system-ui,-apple-system,Segoe UI,sans-serif">Terms</a>' +
       '<span style="color:#E03596;font-size:14px;font-weight:600;pointer-events:none;font-family:system-ui,-apple-system,Segoe UI,sans-serif">&amp;</span>' +
       '<a href="/privacy" ' + LEGAL_STOP + ' style="color:#E03596;font-size:14px;font-weight:600;text-decoration:none;pointer-events:auto;cursor:pointer;font-family:system-ui,-apple-system,Segoe UI,sans-serif">Privacy</a>' +
+      "</div>" +
+      "</div>" +
+      STATUS_HTML +
       "</div>"
     );
   }
@@ -343,7 +345,7 @@
     try {
       if (el.getAttribute("data-youneon-login-v") !== LOGIN_V) return false;
     } catch (a) { return false; }
-    return !!(el.querySelector(".youneon-welcome-wordmark") && el.querySelector(".youneon-welcome-hero") && el.querySelector("button.youneon-signin-btn"));
+    return !!(el.querySelector(".youneon-welcome-wordmark") && el.querySelector(".youneon-welcome-hero") && el.querySelector("button.youneon-signin-btn") && el.querySelector(".youneon-welcome-footer"));
   }
   function paintLoginOverlay(overlay) {
     if (!overlay) return;
