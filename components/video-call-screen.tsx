@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, type RefObject } from "react";
 import DailyIframe, { DailyCall, DailyParticipant } from "@daily-co/daily-js";
 import {
   enqueueOrMatch,
@@ -306,10 +306,12 @@ function WaitingMatchPanel({
   title,
   subtitle,
   premium,
+  videoRef,
 }: {
   title: string;
   subtitle: string;
   premium?: boolean;
+  videoRef?: RefObject<HTMLVideoElement | null>;
 }) {
   return (
     <div className="yn-wait-overlay">
@@ -336,22 +338,34 @@ function WaitingMatchPanel({
         </p>
       </header>
       <div className="yn-wait-center">
-        <div className="yn-wait-constellation" aria-hidden="true">
-          <span className="yn-wait-avatar yn-wait-av-tl"><WaitSilhouette face="right" /></span>
-          <span className="yn-wait-avatar yn-wait-av-tr"><WaitSilhouette face="left" /></span>
-          <span className="yn-wait-avatar yn-wait-av-bl"><WaitSilhouette face="right" /></span>
-          <span className="yn-wait-avatar yn-wait-av-br"><WaitSilhouette face="left" /></span>
-          <div className="yn-wait-ringbox">
-            <span className="yn-wait-halo" />
-            <span className="yn-wait-ring-outer" />
-            <span className="yn-wait-ring-inner" />
-            <span className="yn-wait-cam">
-              <CallIcon name="cam" uid="wait-hero" size={42} />
+        <div className="yn-wait-radar" aria-hidden="true">
+          <span className="yn-wait-sweep" />
+          <span className="yn-wait-pulse" />
+          <span className="yn-wait-pulse yn-wait-pulse-2" />
+          <span className="yn-wait-pulse yn-wait-pulse-3" />
+          <span className="yn-wait-sat yn-wait-sat-1"><WaitSilhouette face="right" /></span>
+          <span className="yn-wait-sat yn-wait-sat-2"><WaitSilhouette face="left" /></span>
+          <span className="yn-wait-sat yn-wait-sat-3"><WaitSilhouette face="right" /></span>
+          <span className="yn-wait-sat yn-wait-sat-4"><WaitSilhouette face="left" /></span>
+          <div className="yn-wait-self">
+            <span className="yn-wait-self-fallback">
+              <CallIcon name="cam" uid="wait-hero" size={36} />
             </span>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="yn-wait-self-video"
+            />
+            <span className="yn-wait-self-ring" />
           </div>
         </div>
         {premium && <p className="yn-wait-priority">Priority matching</p>}
-        <p className="yn-wait-title">{title}</p>
+        <p className="yn-wait-title">
+          {title}
+          <span className="yn-wait-dots" aria-hidden="true" />
+        </p>
         <p className="yn-wait-sub">{subtitle}</p>
       </div>
     </div>
@@ -371,6 +385,7 @@ function VideoCallScreen({
   roomKey,
 }: VideoCallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const waitCamRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const callRef = useRef<DailyCall | null>(null);
@@ -614,12 +629,12 @@ function VideoCallScreen({
 
   useEffect(() => {
     if (permission !== "granted") return;
-    attachVideoEl(
-      localVideoRef.current,
+    const track =
       liveTrackFromStream(previewStreamRef.current, "video") ||
-        localDailyTrack(callRef.current, "video")
-    );
-  }, [permission]);
+      localDailyTrack(callRef.current, "video");
+    attachVideoEl(localVideoRef.current, track, true);
+    attachVideoEl(waitCamRef.current, track, true);
+  }, [permission, callStatus]);
 
   useEffect(() => {
     if (callStatus !== "joined" || !nsfwModelRef.current || bypassNsfw) {
@@ -658,6 +673,7 @@ function VideoCallScreen({
         setTrackEnabled(videoTrack, camOnRef.current);
         setTrackEnabled(audioTrack, micOnRef.current);
         attachVideoEl(localVideoRef.current, videoTrack, true);
+        attachVideoEl(waitCamRef.current, videoTrack, true);
         if (camOnRef.current && p.tracks?.video?.state === "off") {
           void call.setLocalVideo(true).catch(() => {});
         }
@@ -827,8 +843,12 @@ function VideoCallScreen({
           const local = !!ev?.participant?.local;
           if (track?.kind === "video") {
             watchTrackEnded(track);
-            attachVideoEl(local ? localVideoRef.current : remoteVideoRef.current, track, true);
-          } else if (track?.kind === "audio" && !local) {
+            if (local) {
+              attachVideoEl(localVideoRef.current, track, true);
+              attachVideoEl(waitCamRef.current, track, true);
+            } else {
+              attachVideoEl(remoteVideoRef.current, track, true);
+            } else if (track?.kind === "audio" && !local) {
             attachAudioEl(remoteAudioRef.current, track);
           }
           refresh();
@@ -1480,23 +1500,29 @@ function VideoCallScreen({
       {callStatus === "preview" && (
         <div className="yn-wait-screen">
           <WaitingMatchPanel
-            title="Finding a match…"
-            subtitle="Looking for someone in the same room…"
+            title="Finding someone"
+            subtitle="Looking for someone in the same room"
+            videoRef={waitCamRef}
           />
         </div>
       )}
       {callStatus === "waiting" && (
         <div className={`yn-wait-screen${showGiftPicker ? " is-gift-hidden" : ""}`}>
           <WaitingMatchPanel
-            title="Waiting for match…"
-            subtitle={isPremium ? "You are in the priority queue." : "Stay on this screen — the next person joins the same room."}
+            title="Finding someone"
+            subtitle={isPremium ? "You skip ahead in the queue." : "Stay here — the next person joins this room."}
             premium={isPremium}
+            videoRef={waitCamRef}
           />
         </div>
       )}
       {callStatus === "joining" && (
         <div className="yn-wait-screen">
-          <WaitingMatchPanel title="Starting video…" subtitle="Connecting your camera and microphone." />
+          <WaitingMatchPanel
+            title="Connecting"
+            subtitle="Opening your camera and microphone."
+            videoRef={waitCamRef}
+          />
         </div>
       )}
       {(callStatus === "preview" || callStatus === "joining") && (
