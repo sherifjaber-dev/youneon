@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Check, MessageCircle, PencilLine, SlidersHorizontal, Sparkles, Video } from "lucide-react";
+import { Check, MessageCircle, SlidersHorizontal } from "lucide-react";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { NeonAvatar } from "@/components/neon-avatar";
 import { getUserProfile, subscribeToHistory, type UserProfile } from "@/lib/firestore-service";
@@ -13,7 +13,6 @@ import { subscribeToProfileViews, type ProfileView } from "@/lib/profile-views";
 import {
   displayDuration,
   durationSecondsFromHistory,
-  formatHistoryWhen,
   genderBucket,
   toMillis,
   type GenderFilter,
@@ -39,7 +38,6 @@ interface HistoryScreenProps {
 type HistoryTab = "recent" | "viewed";
 type StatusFilter = "all" | "online";
 type SortFilter = "recent" | "long";
-type ActivityKind = "perfect" | "updated" | "chat";
 type ActionTone = "outline" | "fill";
 
 type HistoryRow = {
@@ -72,7 +70,6 @@ type AppliedFilter = {
   sort: SortFilter;
 };
 
-const PROFILE_UPDATE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 const EMPTY_FILTER: AppliedFilter = { gender: "all", status: "all", sort: "recent" };
 
 function timestampMs(value: unknown): number {
@@ -91,25 +88,6 @@ function mergeRow(row: HistoryRow, live?: LiveProfile): HistoryRow {
   };
 }
 
-function pickPerfectMatches(rows: HistoryRow[]): HistoryRow[] {
-  const best = new Map<string, HistoryRow>();
-  rows.forEach((row) => {
-    const key = row.matchId || row.id;
-    if (!key) return;
-    const prev = best.get(key);
-    const dur = durationSecondsFromHistory(row) ?? -1;
-    const prevDur = prev ? durationSecondsFromHistory(prev) ?? -1 : -1;
-    const newer = timestampMs(row.timestamp) > timestampMs(prev?.timestamp);
-    if (!prev || dur > prevDur || (dur === prevDur && newer)) best.set(key, row);
-  });
-  const unique = [...best.values()];
-  const quality = unique.filter((r) => (durationSecondsFromHistory(r) ?? 0) >= 45);
-  if (quality.length === 0) return [];
-  return quality
-    .sort((a, b) => (durationSecondsFromHistory(b) ?? 0) - (durationSecondsFromHistory(a) ?? 0))
-    .slice(0, 6);
-}
-
 function filterLabel(filter: AppliedFilter): string {
   const parts: string[] = [];
   if (filter.gender === "female") parts.push("Female");
@@ -117,26 +95,6 @@ function filterLabel(filter: AppliedFilter): string {
   if (filter.status === "online") parts.push("Online");
   if (filter.sort === "long") parts.push("Long chats");
   return parts.length ? parts.join(" · ") : "All";
-}
-
-function formatTimeAgo(ts: unknown): string {
-  const ms = typeof ts === "number" && Number.isFinite(ts) ? ts : toMillis(ts);
-  if (!ms) return "Just now";
-  const diff = Math.max(0, Date.now() - ms);
-  if (diff < 45_000) return "Just now";
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 60) return `${Math.max(1, minutes)}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return formatHistoryWhen(ts);
-}
-
-function chatDescription(row: HistoryRow): string {
-  const dur = displayDuration(row);
-  if (dur && dur !== "—") return `Video chat · ${dur}`;
-  return "Video chat";
 }
 
 function GenderArt({ kind }: { kind: "all" | "female" | "male" }) {
@@ -203,41 +161,13 @@ function FollowMessageActions({
   );
 }
 
-function ActivityKindLabel({ kind }: { kind: ActivityKind }) {
-  if (kind === "perfect") {
-    return (
-      <span className="yn-history-kind is-perfect">
-        <Sparkles size={12} strokeWidth={2.2} />
-        Perfect match
-      </span>
-    );
-  }
-  if (kind === "updated") {
-    return (
-      <span className="yn-history-kind is-updated">
-        <PencilLine size={12} strokeWidth={2.2} />
-        Profile updated
-      </span>
-    );
-  }
-  return (
-    <span className="yn-history-kind is-chat">
-      <Video size={12} strokeWidth={2.2} />
-      Video chat
-    </span>
-  );
-}
-
 function HistoryPersonCard({
   name,
   photo,
   country,
   showPhoto,
   online,
-  timeLabel,
-  kind,
-  description,
-  viewed,
+  durationLabel,
   following,
   busy,
   tone,
@@ -250,10 +180,7 @@ function HistoryPersonCard({
   country?: string;
   showPhoto: boolean;
   online?: boolean;
-  timeLabel: string;
-  kind?: ActivityKind;
-  description: string;
-  viewed?: boolean;
+  durationLabel: string;
   following: boolean;
   busy?: boolean;
   tone: ActionTone;
@@ -285,12 +212,9 @@ function HistoryPersonCard({
             <CountryFlag country={country} size={14} className="shadow-none ring-1 ring-white/15" />
           ) : null}
         </span>
-        {kind ? <ActivityKindLabel kind={kind} /> : null}
-        {viewed ? <span className="yn-history-viewed">Viewed your profile</span> : null}
-        {description ? <span className="yn-history-desc">{description}</span> : null}
+        {durationLabel ? <span className="yn-history-duration">{durationLabel}</span> : null}
       </button>
       <div className="yn-history-aside">
-        <span className="yn-history-time">{timeLabel}</span>
         <FollowMessageActions
           following={following}
           busy={busy}
@@ -406,22 +330,6 @@ export function HistoryScreen({
     [history, liveById]
   );
 
-  const perfectMatches = useMemo(() => pickPerfectMatches(enriched), [enriched]);
-
-  const profileUpdated = useMemo(() => {
-    const cutoff = Date.now() - PROFILE_UPDATE_WINDOW_MS;
-    const seen = new Set<string>();
-    const people: { id: string; name: string; photo: string }[] = [];
-    enriched.forEach((row) => {
-      const live = liveById[row.matchId];
-      if (!live || seen.has(row.matchId)) return;
-      if (live.lastProfileUpdateMs < cutoff) return;
-      seen.add(row.matchId);
-      people.push({ id: row.matchId, name: live.name || row.name, photo: live.photo || row.photo || "" });
-    });
-    return people;
-  }, [enriched, liveById]);
-
   const visibleViews = useMemo(
     () => views.filter((view) => !isHiddenSocialPeer(view.viewerId, view.name)),
     [views]
@@ -451,35 +359,27 @@ export function HistoryScreen({
     return rows;
   }, [enriched, applied, online, updatedFocus, blockedIds]);
 
-  const perfectRowIds = useMemo(() => new Set(perfectMatches.map((u) => u.id)), [perfectMatches]);
-  const perfectMatchIds = useMemo(
-    () => new Set(perfectMatches.map((u) => u.matchId)),
-    [perfectMatches]
-  );
-  const listWithoutCarouselDupes = useMemo(
-    () => filteredList.filter((u) => !perfectRowIds.has(u.id)),
-    [filteredList, perfectRowIds]
-  );
-  const visibleMatchIds = useMemo(() => {
-    const ids = new Set(perfectMatchIds);
-    listWithoutCarouselDupes.forEach((u) => ids.add(u.matchId));
-    return ids;
-  }, [perfectMatchIds, listWithoutCarouselDupes]);
-  const extraUpdated = useMemo(
-    () => profileUpdated.filter((person) => !visibleMatchIds.has(person.id)),
-    [profileUpdated, visibleMatchIds]
-  );
-  const updatedRowIds = useMemo(() => {
-    const seen = new Set<string>();
-    const ids = new Set<string>();
-    listWithoutCarouselDupes.forEach((u) => {
-      if (seen.has(u.matchId)) return;
-      if (!profileUpdated.some((person) => person.id === u.matchId)) return;
-      seen.add(u.matchId);
-      ids.add(u.id);
+  const uniqueCalls = useMemo(() => {
+    const best = new Map<string, HistoryRow>();
+    filteredList.forEach((row) => {
+      const key = row.matchId || row.id;
+      if (!key) return;
+      const prev = best.get(key);
+      const dur = durationSecondsFromHistory(row) ?? -1;
+      const prevDur = prev ? durationSecondsFromHistory(prev) ?? -1 : -1;
+      const newer = timestampMs(row.timestamp) > timestampMs(prev?.timestamp);
+      if (!prev || dur > prevDur || (dur === prevDur && newer)) best.set(key, row);
     });
-    return ids;
-  }, [listWithoutCarouselDupes, profileUpdated]);
+    const rows = [...best.values()];
+    if (applied.sort === "long") {
+      rows.sort(
+        (a, b) => (durationSecondsFromHistory(b) ?? -1) - (durationSecondsFromHistory(a) ?? -1)
+      );
+    } else {
+      rows.sort((a, b) => timestampMs(b.timestamp) - timestampMs(a.timestamp));
+    }
+    return rows;
+  }, [filteredList, applied.sort]);
 
   const openChat = useCallback(
     (user: { id: string; name: string; photo?: string; country?: string; countryFlag?: string }) => {
@@ -518,7 +418,7 @@ export function HistoryScreen({
   return (
     <div className="yn-history">
       <div className="yn-history-head">
-        <h1>History</h1>
+        <h1 className="yn-lounge-title">History</h1>
       </div>
 
       <div className="yn-history-tabs">
@@ -554,18 +454,7 @@ export function HistoryScreen({
           ) : (
             <>
               <div className="yn-history-toolbar">
-                <div className="flex min-w-0 items-center gap-2">
-                  {profileUpdated.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => setUpdatedFocus("all")}
-                      className={`yn-history-all ${updatedFocus === "all" ? "is-on" : ""}`}
-                    >
-                      All · {profileUpdated.length}
-                    </button>
-                  ) : null}
-                  <p className="yn-history-filter-label">{filterLabel(applied)}</p>
-                </div>
+                <p className="yn-history-filter-label">{filterLabel(applied)}</p>
                 <button
                   type="button"
                   onClick={openFilter}
@@ -577,82 +466,11 @@ export function HistoryScreen({
                 </button>
               </div>
 
-              {perfectMatches.map((u) => {
-                const dur = displayDuration(u);
-                const description =
-                  dur && dur !== "—"
-                    ? `You and ${u.name} matched · ${dur}`
-                    : `You and ${u.name} matched`;
-                return (
-                  <HistoryPersonCard
-                    key={`perfect-${u.id}`}
-                    name={u.name}
-                    photo={u.photo}
-                    country={u.country || u.countryFlag}
-                    showPhoto={hasOwnPhoto}
-                    online={online[u.matchId]}
-                    timeLabel={formatTimeAgo(u.timestamp)}
-                    kind="perfect"
-                    description={description}
-                    following={followingIds.has(u.matchId)}
-                    busy={busyId === u.matchId || !me.id}
-                    tone="outline"
-                    onOpenProfile={() => openProfile(u.matchId)}
-                    onFollow={() =>
-                      followPerson(u.matchId, u.name, u.photo, u.country || u.countryFlag)
-                    }
-                    onMessage={() =>
-                      openChat({
-                        id: u.matchId,
-                        name: u.name,
-                        photo: u.photo,
-                        country: u.country,
-                        countryFlag: u.countryFlag,
-                      })
-                    }
-                  />
-                );
-              })}
-
-              {extraUpdated.map((person) => {
-                const live = liveById[person.id];
-                const row = enriched.find((r) => r.matchId === person.id);
-                const country = live?.country || row?.country || row?.countryFlag;
-                return (
-                  <HistoryPersonCard
-                    key={`updated-${person.id}`}
-                    name={person.name}
-                    photo={person.photo}
-                    country={country}
-                    showPhoto={hasOwnPhoto}
-                    online={online[person.id]}
-                    timeLabel={formatTimeAgo(live?.lastProfileUpdateMs)}
-                    kind="updated"
-                    description="Recently updated their profile"
-                    following={followingIds.has(person.id)}
-                    busy={busyId === person.id || !me.id}
-                    tone="outline"
-                    onOpenProfile={() => openProfile(person.id)}
-                    onFollow={() => followPerson(person.id, person.name, person.photo, country)}
-                    onMessage={() =>
-                      openChat({
-                        id: person.id,
-                        name: person.name,
-                        photo: person.photo,
-                        country,
-                      })
-                    }
-                  />
-                );
-              })}
-
-              {listWithoutCarouselDupes.length === 0 &&
-              perfectMatches.length === 0 &&
-              extraUpdated.length === 0 ? (
+              {uniqueCalls.length === 0 ? (
                 <p className="yn-history-empty-sub py-10 text-center">No chats match this filter</p>
               ) : (
-                listWithoutCarouselDupes.map((u) => {
-                  const updated = updatedRowIds.has(u.id);
+                uniqueCalls.map((u) => {
+                  const dur = displayDuration(u);
                   return (
                     <HistoryPersonCard
                       key={u.id}
@@ -661,11 +479,7 @@ export function HistoryScreen({
                       country={u.country || u.countryFlag}
                       showPhoto={hasOwnPhoto}
                       online={online[u.matchId]}
-                      timeLabel={formatTimeAgo(u.timestamp)}
-                      kind={updated ? "updated" : "chat"}
-                      description={
-                        updated ? "Recently updated their profile" : chatDescription(u)
-                      }
+                      durationLabel={dur && dur !== "—" ? dur : "Call"}
                       following={followingIds.has(u.matchId)}
                       busy={busyId === u.matchId || !me.id}
                       tone="outline"
@@ -713,9 +527,7 @@ export function HistoryScreen({
                   country={country}
                   showPhoto={hasOwnPhoto}
                   online={online[view.viewerId] || false}
-                  timeLabel={formatTimeAgo(view.at)}
-                  description=""
-                  viewed
+                  durationLabel="Viewed you"
                   following={following}
                   busy={busyId === view.viewerId || !me.id}
                   tone="fill"

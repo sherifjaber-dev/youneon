@@ -3541,11 +3541,6 @@ html.yn-profile-open {
 
 .yn-history-head h1 {
   margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #fff;
-  text-shadow: 0 0 18px rgba(192, 132, 252, 0.28);
 }
 
 .yn-history-tabs {
@@ -3719,11 +3714,19 @@ html.yn-profile-open {
   color: #9a8aaa;
 }
 
+.yn-history-duration {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f0abfc;
+  letter-spacing: 0.01em;
+}
+
 .yn-history-aside {
   display: flex;
   flex-shrink: 0;
   flex-direction: column;
   align-items: flex-end;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -3977,7 +3980,8 @@ html.yn-profile-open {
 }
 
 html.youneon-signed-in .yn-lounge h1.yn-lounge-title,
-.yn-lounge .yn-lounge-title {
+.yn-lounge .yn-lounge-title,
+.yn-history-head h1.yn-lounge-title {
   font-size: 36px;
   font-weight: 800;
   letter-spacing: -0.045em;

@@ -54,7 +54,7 @@ export function formatCallDuration(seconds?: number | null): string {
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
   if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
-  if (m > 0) return `${m}m`;
+  if (m > 0) return s > 0 ? `${m}m ${s}s` : `${m}m`;
   return `${s}s`;
 }
 
