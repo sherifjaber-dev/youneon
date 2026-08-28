@@ -2933,6 +2933,7 @@ html.yn-profile-open {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   color: #fff6fb;
   padding: 4px 2px 0;
 }
