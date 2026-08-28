@@ -2284,6 +2284,33 @@ html.yn-profile-open {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: visible;
+  isolation: isolate;
+}
+
+.yn-topbar-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  height: var(--yn-topbar-inner);
+  column-gap: 8px;
+  min-width: 0;
+}
+
+.yn-topbar-left {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.yn-topbar-brand {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
 }
 
 .yn-chrome-icon {
@@ -2298,6 +2325,7 @@ html.yn-profile-open {
 
 .yn-topbar-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
 }
@@ -2313,6 +2341,11 @@ html.yn-profile-open {
   overflow: visible;
   border-radius: 999px;
   cursor: pointer;
+}
+
+.yn-topbar-icon-btn--bag .yn-chrome-icon {
+  color: #67e8f9;
+  filter: drop-shadow(0 0 0.8px rgba(94, 200, 255, 0.75));
 }
 
 .yn-chrome-count {
@@ -2345,11 +2378,12 @@ html.yn-profile-open {
 
 .yn-topbar-neon-chip {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 5px;
-  max-width: min(42vw, 168px);
   height: 36px;
-  padding: 0 10px 0 12px;
+  max-width: none;
+  padding: 0 8px 0 11px;
   border-radius: 999px;
   border: 1px solid rgba(245, 215, 110, 0.55);
   background: rgba(245, 215, 110, 0.1);
@@ -2360,6 +2394,13 @@ html.yn-profile-open {
     0 0 8px rgba(245, 215, 110, 0.85),
     0 0 16px rgba(212, 175, 55, 0.45);
   box-shadow: 0 0 14px rgba(212, 175, 55, 0.18);
+}
+
+.yn-topbar-neon-chip-amt {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .yn-topbar-neon-chip:active {
@@ -2409,18 +2450,27 @@ html.yn-profile-open {
 
 .yn-topbar .yn-script-logo {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
+  justify-content: center;
+  background: transparent;
   line-height: 0;
 }
 
 .yn-topbar .yn-script-logo-img {
-  height: 48px;
-  max-width: min(168px, 38vw);
+  display: block;
+  height: 42px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
   object-position: center center;
+  background: transparent;
   mix-blend-mode: normal;
+  box-shadow: none;
   filter:
-    drop-shadow(0 0 6px color-mix(in srgb, var(--pink) 70%, transparent))
-    drop-shadow(0 0 14px rgba(94, 200, 255, 0.45));
+    drop-shadow(0 0 5px color-mix(in srgb, var(--pink) 55%, transparent))
+    drop-shadow(0 0 10px rgba(94, 200, 255, 0.35));
 }
 
 .yn-script-logo-img {
@@ -2430,8 +2480,29 @@ html.yn-profile-open {
   max-width: min(172px, 48vw);
   object-fit: contain;
   object-position: left center;
-  mix-blend-mode: screen;
+  background: transparent;
+  mix-blend-mode: normal;
+  box-shadow: none;
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--pink) 28%, transparent));
+}
+
+@media (max-width: 400px) {
+  .yn-topbar-row {
+    column-gap: 4px;
+  }
+
+  .yn-topbar-actions {
+    gap: 2px;
+  }
+
+  .yn-topbar-icon-btn {
+    height: 36px;
+    width: 34px;
+  }
+
+  .yn-topbar .yn-script-logo-img {
+    height: 32px;
+  }
 }
 
 .yn-discover {

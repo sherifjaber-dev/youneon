@@ -19,6 +19,18 @@ function NeonStrokeDefs({ uid }: { uid: string }) {
   );
 }
 
+function CyanStrokeDefs({ uid }: { uid: string }) {
+  return (
+    <defs>
+      <linearGradient id={`${uid}-stroke`} x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#67e8f9" />
+        <stop offset="48%" stopColor="#22d3ee" />
+        <stop offset="100%" stopColor="#3b9eff" />
+      </linearGradient>
+    </defs>
+  );
+}
+
 /** Outline notification bell — neon pink → purple stroke, matching the header chrome. */
 export function YouNeonBellIcon({ size = 28, className }: ChromeIconProps) {
   const uid = useId().replace(/:/g, "");
@@ -42,7 +54,7 @@ export function YouNeonBellIcon({ size = 28, className }: ChromeIconProps) {
   );
 }
 
-/** Outline shopping bag — two arched handles, neon pink → purple stroke. */
+/** Outline shopping bag — two arched handles, neon cyan stroke. */
 export function YouNeonBagIconNeon({ size = 28, className }: ChromeIconProps) {
   const uid = useId().replace(/:/g, "");
   const stroke = `url(#${uid}-stroke)`;
@@ -56,7 +68,7 @@ export function YouNeonBagIconNeon({ size = 28, className }: ChromeIconProps) {
       overflow="visible"
       className={className}
     >
-      <NeonStrokeDefs uid={uid} />
+      <CyanStrokeDefs uid={uid} />
       <g stroke={stroke} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round">
         <path d="M5.35 8.85h13.3a1.35 1.35 0 0 1 1.34 1.5l-.95 9.35A1.55 1.55 0 0 1 17.52 21.4H6.48a1.55 1.55 0 0 1-1.52-1.7l-.95-9.35a1.35 1.35 0 0 1 1.34-1.5Z" />
         <path d="M9.1 8.85V6.35a2.9 2.9 0 0 1 5.8 0v2.5" />

@@ -17,6 +17,7 @@ export function YouNeonScriptLogo({
         alt=""
         className="yn-script-logo-img"
         draggable={false}
+        decoding="async"
       />
     </span>
   );

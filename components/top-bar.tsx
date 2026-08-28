@@ -56,8 +56,8 @@ export function TopBar({
   return (
     <>
       <div className="yn-chrome yn-topbar fixed top-0 left-0 right-0 z-50 border-b px-3 pt-[env(safe-area-inset-top)] sm:px-4">
-        <div className="relative flex h-[60px] items-center">
-          <div className="relative z-10 flex shrink-0 items-center">
+        <div className="yn-topbar-row">
+          <div className="yn-topbar-left">
             <button
               type="button"
               onClick={onProfileClick}
@@ -81,11 +81,11 @@ export function TopBar({
             </button>
           </div>
 
-          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+          <div className="yn-topbar-brand">
             <YouNeonScriptLogo />
           </div>
 
-          <div className="yn-topbar-actions relative z-10 ml-auto">
+          <div className="yn-topbar-actions">
             <button
               type="button"
               onClick={openPanel}
@@ -101,7 +101,7 @@ export function TopBar({
             <button
               type="button"
               onClick={() => setItemsOpen(true)}
-              className="yn-chrome-neon yn-topbar-icon-btn active:scale-95"
+              className="yn-chrome-neon yn-topbar-icon-btn yn-topbar-icon-btn--bag active:scale-95"
               title={
                 bagActive
                   ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} today`
@@ -128,11 +128,8 @@ export function TopBar({
               data-testid="topbar-neon-balance"
             >
               <span className="text-[13px] font-semibold leading-none">◆</span>
-              <span className="min-w-0 truncate text-[13px] font-semibold leading-none">
-                <span className="min-[400px]:hidden">Neon {neonBalance.toLocaleString()}</span>
-                <span className="hidden min-[400px]:inline">
-                  Neon Balance {neonBalance.toLocaleString()}
-                </span>
+              <span className="yn-topbar-neon-chip-amt">
+                Neon {neonBalance.toLocaleString()}
               </span>
               <ChevronRight size={14} strokeWidth={2.4} className="shrink-0 opacity-90" aria-hidden />
             </button>
