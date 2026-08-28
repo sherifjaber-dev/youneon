@@ -23,6 +23,8 @@ export const PI_SDK_UNAVAILABLE = "PI_SDK_UNAVAILABLE";
 export const PI_AUTH_SCOPES: PiScope[] = ["username", "payments"];
 export const PI_SDK_WAIT_MS = 3000;
 export const PI_INIT_TIMEOUT_MS = 3000;
+/** Canonical server approve URL — must run immediately on onReadyForServerApproval. */
+export const PI_APPROVE_API_PATH = "/api/pi/payment/approve";
 /** Canonical server complete URL. Alias: /api/pi/complete */
 export const PI_COMPLETE_API_PATH = "/api/pi/payment/complete";
 
@@ -467,20 +469,76 @@ function readPaymentIdAndTxid(
   return { paymentId, txid };
 }
 
+function sameOriginApiUrl(path: string): string {
+  if (!path.startsWith("/") || typeof window === "undefined") return path;
+  try {
+    return `${window.location.origin}${path}`;
+  } catch {
+    return path;
+  }
+}
+
+function postPaymentActionXhr(
+  url: string,
+  payload: string
+): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+  return new Promise((resolve, reject) => {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.withCredentials = true;
+      xhr.timeout = 15000;
+      xhr.onload = () => {
+        let data: Record<string, unknown> = {};
+        try {
+          data = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
+        } catch {
+          data = {};
+        }
+        resolve({
+          ok: xhr.status >= 200 && xhr.status < 300,
+          status: xhr.status,
+          data,
+        });
+      };
+      xhr.onerror = () => reject(new Error("Payment request network error"));
+      xhr.ontimeout = () => reject(new Error("Payment request timed out"));
+      xhr.send(payload);
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(errorMessage(error)));
+    }
+  });
+}
+
 async function postPaymentAction(
   path: string,
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
+  options?: { urgent?: boolean }
 ): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
   const lite = readLiteSession();
-  const res = await fetch(path, {
+  const payload = JSON.stringify({
+    ...body,
+    username: lite?.username || undefined,
+    uid: lite?.uid || undefined,
+  });
+  const url = sameOriginApiUrl(path);
+
+  if (options?.urgent) {
+    try {
+      return await postPaymentActionXhr(url, payload);
+    } catch (xhrError) {
+      logError(xhrError);
+    }
+  }
+
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({
-      ...body,
-      username: lite?.username || undefined,
-      uid: lite?.uid || undefined,
-    }),
+    cache: "no-store",
+    keepalive: options?.urgent === true,
+    body: payload,
   });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   return { ok: res.ok, status: res.status, data };
@@ -609,23 +667,37 @@ export async function createPiPayment(
 
     Pi.createPayment(paymentData, {
       onReadyForServerApproval: async (paymentId) => {
-        extraCallbacks?.onReadyForServerApproval?.(paymentId);
-        const id = typeof paymentId === "string" ? paymentId.trim() : readPaymentIdAndTxid(paymentId, "").paymentId;
+        const id =
+          typeof paymentId === "string"
+            ? paymentId.trim()
+            : readPaymentIdAndTxid(paymentId, "").paymentId;
         if (id) lastPaymentId = id;
-        emitPurchaseFeedback({ type: "waiting", message: "Waiting for Pi payment…" });
+        const approveId = id || (typeof paymentId === "string" ? paymentId : "");
+        const sandbox = getPiInitOptions().sandbox;
+        // Always approve immediately — including Open App sandbox:false.
+        // Wallet expires if this POST is skipped or delayed.
+        console.log("[Pi] approve request", { paymentId: approveId, sandbox });
         try {
-          const result = await postPaymentAction("/api/pi/payment/approve", { paymentId: id || paymentId });
+          const result = await postPaymentAction(
+            PI_APPROVE_API_PATH,
+            { paymentId: approveId || paymentId },
+            { urgent: true }
+          );
+          const piStatus =
+            typeof result.data.piStatus === "number" ? result.data.piStatus : result.status;
           console.log("[Pi] approve response", {
-            paymentId: id || paymentId,
+            paymentId: approveId || paymentId,
             status: result.status,
-            sandbox: getPiInitOptions().sandbox,
+            piStatus,
+            sandbox,
             apiKeyPresent: result.data.apiKeyPresent === true,
           });
           if (!result.ok) {
-            const authFail = isPiAuthFailureStatus(result.status);
+            const authFail =
+              isPiAuthFailureStatus(result.status) || isPiAuthFailureStatus(piStatus);
             const error = new Error(
               authFail
-                ? wrongPiApiKeyMessage(getPiInitOptions().sandbox)
+                ? wrongPiApiKeyMessage(sandbox)
                 : (typeof result.data.error === "string" && result.data.error) ||
                   `Payment approval failed (${result.status})`
             );
@@ -641,6 +713,12 @@ export async function createPiPayment(
           finishWith(() => reject(err));
           throw err;
         }
+        try {
+          extraCallbacks?.onReadyForServerApproval?.(paymentId);
+        } catch (callbackError) {
+          logError(callbackError);
+        }
+        emitPurchaseFeedback({ type: "waiting", message: "Waiting for Pi payment…" });
       },
       onReadyForServerCompletion: async (paymentIdArg, txidArg) => {
         extraCallbacks?.onReadyForServerCompletion?.(

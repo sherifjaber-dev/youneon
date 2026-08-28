@@ -16,6 +16,7 @@ import {
   completePiPayment,
   describePiApiFailure,
   getPiPayment,
+  isAlreadyApprovedPayload,
   isAlreadyCompletedPayload,
   parsePaymentId,
   parseTxid,
@@ -81,27 +82,56 @@ export async function approvePaymentById(paymentIdRaw: unknown): Promise<Payment
     return { ok: false, status: 400, payment: null, error: "paymentId is required" };
   }
 
-  const current = await getPiPayment(paymentId);
-  if (current.ok && current.data?.status?.developer_approved) {
-    return { ok: true, status: 200, payment: current.data, approved: true };
-  }
-
+  // Always POST /approve immediately. Do not GET first — Open App with
+  // Pi.init sandbox:false expires the wallet if approve is delayed.
+  // Client sandbox must never skip this call. Testnet is PI_API_KEY.
+  console.info("[Pi] approve start", { paymentId, ...piPaymentDebugMeta() });
   const approved = await approvePiPayment(paymentId);
-  if (!approved.ok) {
-    const already = await getPiPayment(paymentId);
-    if (already.ok && already.data?.status?.developer_approved) {
-      return { ok: true, status: 200, payment: already.data, approved: true, piStatus: approved.status };
-    }
+  console.info("[Pi] approve HTTP", {
+    paymentId,
+    status: approved.status,
+    ...piPaymentDebugMeta(),
+  });
+
+  if (
+    approved.ok ||
+    approved.data?.status?.developer_approved ||
+    isAlreadyApprovedPayload(approved.data)
+  ) {
     return {
-      ok: false,
-      status: approved.status || 502,
+      ok: true,
+      status: 200,
       payment: approved.data,
+      approved: true,
       piStatus: approved.status,
-      error: describePiApiFailure("approve", approved.status || 502, approved.data),
     };
   }
 
-  return { ok: true, status: 200, payment: approved.data, approved: true, piStatus: approved.status };
+  try {
+    const already = await getPiPayment(paymentId);
+    if (already.ok && already.data?.status?.developer_approved) {
+      return {
+        ok: true,
+        status: 200,
+        payment: already.data,
+        approved: true,
+        piStatus: approved.status,
+      };
+    }
+  } catch (error) {
+    console.warn("[Pi] approve: follow-up get failed", {
+      paymentId,
+      message: error instanceof Error ? error.message : "get failed",
+    });
+  }
+
+  return {
+    ok: false,
+    status: approved.status || 502,
+    payment: approved.data,
+    piStatus: approved.status,
+    error: describePiApiFailure("approve", approved.status || 502, approved.data),
+  };
 }
 
 export async function completePaymentById(
@@ -118,31 +148,34 @@ export async function completePaymentById(
     return { ok: false, status: 400, payment: null, error: "txid is required" };
   }
 
-  const current = await getPiPayment(paymentId);
   console.info("[Pi] complete start", {
     paymentId,
     txidLength: txid.length,
-    getStatus: current.status,
     ...piPaymentDebugMeta(),
   });
-  if (!current.ok) {
-    console.warn("[Pi] complete: get payment failed, still posting complete with paymentId+txid", {
-      paymentId,
-      status: current.status,
-      ...piPaymentDebugMeta(),
-    });
-  }
 
   // Official order: approve (no txid), then complete with txid.
-  if (!current.data?.status?.developer_approved) {
+  // Do not GET first — that extra round-trip expired Open App wallets
+  // after Pi.init sandbox:false. Approve is idempotent.
+  try {
     const approved = await approvePiPayment(paymentId);
-    if (!approved.ok && !current.data?.status?.developer_approved) {
+    if (
+      !approved.ok &&
+      !approved.data?.status?.developer_approved &&
+      !isAlreadyApprovedPayload(approved.data)
+    ) {
       console.warn("[Pi] complete: approve before complete failed", {
         paymentId,
         status: approved.status,
         ...piPaymentDebugMeta(),
       });
     }
+  } catch (error) {
+    console.warn("[Pi] complete: approve before complete failed", {
+      paymentId,
+      message: error instanceof Error ? error.message : "approve failed",
+      ...piPaymentDebugMeta(),
+    });
   }
 
   // Always POST /complete with { txid } — even if get/approve failed or Neon was already granted.
@@ -173,7 +206,6 @@ export async function completePaymentById(
     const payment =
       completed.data ||
       (await getPiPayment(paymentId)).data ||
-      current.data ||
       null;
     const grant = await grantFromPayment(payment, usernameHint);
     return {

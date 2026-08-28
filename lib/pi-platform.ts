@@ -29,7 +29,9 @@ export function isPiSandbox(): boolean {
 
 /**
  * Platform API base for approve/complete.
- * Sandbox vs production is the Server API Key (Developer Portal), not a different host.
+ * Always api.minepi.com/v2 — never sandbox.minepi.com (that is the desktop UI).
+ * Client Pi.init sandbox (Studio vs Open App) must not change this host.
+ * Testnet vs Mainnet is selected by PI_API_KEY, not by skipping approve.
  * Override with PI_PLATFORM_API_BASE only if Pi documents a different base.
  */
 export function getPiPlatformBase(): string {
@@ -120,6 +122,21 @@ export function isAlreadyCompletedPayload(data: unknown): boolean {
   return false;
 }
 
+export function isAlreadyApprovedPayload(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const rec = data as Record<string, unknown>;
+  const err = typeof rec.error === "string" ? rec.error : "";
+  if (/already[_ ]?approved/i.test(err)) return true;
+  const status = rec.status as { developer_approved?: boolean } | undefined;
+  if (status?.developer_approved) return true;
+  const nested = rec.payment;
+  if (nested && typeof nested === "object") {
+    const paymentStatus = (nested as { status?: { developer_approved?: boolean } }).status;
+    if (paymentStatus?.developer_approved) return true;
+  }
+  return false;
+}
+
 export function describePiApiFailure(action: string, status: number, data: unknown): string {
   const body = data && typeof data === "object" ? (data as Record<string, unknown>) : {};
   const piError = typeof body.error === "string" ? body.error : "";
@@ -167,6 +184,8 @@ export async function piApi<T = unknown>(
     cache: "no-store",
   });
 
+  console.info("[Pi] platform HTTP", { method, url, status: res.status });
+
   const data = (await res.json().catch(() => null)) as T | null;
   return { ok: res.ok, status: res.status, data };
 }
@@ -176,12 +195,18 @@ export async function getPiPayment(paymentId: string) {
 }
 
 export async function approvePiPayment(paymentId: string) {
-  const result = await piApi<PiPaymentDTO>(`/payments/${paymentId}/approve`, {
-    method: "POST",
-    body: {},
-  });
-  logPiPaymentAction("approve", { paymentId, status: result.status });
-  return result;
+  try {
+    const result = await piApi<PiPaymentDTO>(`/payments/${paymentId}/approve`, {
+      method: "POST",
+      body: {},
+    });
+    logPiPaymentAction("approve", { paymentId, status: result.status });
+    return result;
+  } catch (error) {
+    const status = error instanceof PiPlatformError ? error.status : 0;
+    logPiPaymentAction("approve", { paymentId, status });
+    throw error;
+  }
 }
 
 export async function completePiPayment(paymentId: string, txid: string) {

@@ -3,6 +3,7 @@ import { approvePaymentById } from "@/lib/pi-payment-server";
 import { PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   let body: { paymentId?: unknown } = {};
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
   try {
     const result = await approvePaymentById(body?.paymentId);
     console.info("[Pi] approve route", {
+      paymentId: typeof body?.paymentId === "string" ? body.paymentId : undefined,
       ok: result.ok,
       status: result.status,
       piStatus: result.piStatus || result.status,
