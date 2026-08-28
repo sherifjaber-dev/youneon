@@ -18,6 +18,7 @@ import {
   getPiPayment,
   isAlreadyApprovedPayload,
   isAlreadyCompletedPayload,
+  listIncompletePaymentsWithProductionKey,
   parsePaymentId,
   parseTxid,
   piPaymentDebugMeta,
@@ -98,6 +99,7 @@ export async function approvePaymentById(
   const debug = piPaymentDebugMeta(sandbox);
   if (deadApprovePaymentIds.has(paymentId)) {
     console.warn("[Pi] approve skipped (dead paymentId)", { paymentId, ...debug });
+    await listIncompletePaymentsWithProductionKey(paymentId, sandbox);
     return {
       ok: false,
       status: 404,

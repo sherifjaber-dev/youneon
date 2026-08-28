@@ -496,6 +496,7 @@ function extractIncompletePaymentIds(data: unknown): string[] {
   } else if (data && typeof data === "object") {
     const rec = data as Record<string, unknown>;
     if (Array.isArray(rec.incomplete_payments)) items = rec.incomplete_payments;
+    else if (Array.isArray(rec.incomplete_server_payments)) items = rec.incomplete_server_payments;
     else if (Array.isArray(rec.payments)) items = rec.payments;
     else if (Array.isArray(rec.data)) items = rec.data;
   }
@@ -515,26 +516,53 @@ function extractIncompletePaymentIds(data: unknown): string[] {
   return ids;
 }
 
+function logIncompleteListVsPaymentId(info: {
+  paymentId: string;
+  inIncompleteList: boolean;
+  incompleteCount: number;
+  incompleteIds: string[];
+  status: number;
+  keyPrefix: string;
+  sandbox: boolean;
+  getError?: string;
+}): void {
+  console.info("[Pi] incomplete list vs Open App paymentId", {
+    paymentId: info.paymentId,
+    inIncompleteList: info.inIncompleteList,
+    incompleteCount: info.incompleteCount,
+    incompleteIds: info.incompleteIds,
+    status: info.status,
+    keyPrefix: info.keyPrefix,
+    keySource: "PI_API_KEY_PRODUCTION",
+    sandbox: info.sandbox,
+    ...(info.getError ? { getError: info.getError } : {}),
+  });
+}
+
 /**
- * After Open App approve 404: GET /payments/incomplete with PI_API_KEY_PRODUCTION only
- * (Authorization: Key). Never retry PI_API_KEY. Logs whether this Open App paymentId
- * is IN that list (count + ids, no keys). keyPrefix is PRODUCTION (xjae8e).
- * Pi Apps pinet wrapper (youneonbq9219.pinet.com) ≠ Vercel Develop URL;
- * createPayment is scoped to the app that wrapped Open App — a 404 here means
- * this paymentId is not in the Develop app that owns xjae8e.
+ * After Open App approve 404: always GET /payments/incomplete with PI_API_KEY_PRODUCTION
+ * only (Authorization: Key). Never retry PI_API_KEY. Logs even if the list is empty or
+ * GET fails (HTTP status, or 0 on throw). keyPrefix is PRODUCTION (xjae8e).
  */
-async function listIncompletePaymentsWithProductionKey(
+export async function listIncompletePaymentsWithProductionKey(
   paymentId: string,
   sandbox: boolean
 ): Promise<void> {
   const key = productionApiKey();
   const keyPrefix = productionKeyPrefix();
+  const emptyLog = {
+    paymentId,
+    inIncompleteList: false,
+    incompleteCount: 0,
+    incompleteIds: [] as string[],
+    keyPrefix,
+    sandbox,
+  };
   if (!key) {
-    console.info("[Pi] skip incomplete list — PI_API_KEY_PRODUCTION missing", {
-      paymentId,
-      keyPrefix,
-      keySource: "PI_API_KEY_PRODUCTION",
-      sandbox,
+    logIncompleteListVsPaymentId({
+      ...emptyLog,
+      status: 0,
+      getError: "PI_API_KEY_PRODUCTION missing",
     });
     return;
   }
@@ -546,28 +574,31 @@ async function listIncompletePaymentsWithProductionKey(
       apiKey: key,
       keySource: "PI_API_KEY_PRODUCTION",
     });
-    const ids = extractIncompletePaymentIds(listed.data);
-    const inIncompleteList = ids.includes(paymentId);
-    console.info("[Pi] incomplete list vs Open App paymentId", {
+    let ids: string[] = [];
+    try {
+      ids = extractIncompletePaymentIds(listed.data);
+    } catch (parseError) {
+      logIncompleteListVsPaymentId({
+        ...emptyLog,
+        status: listed.status,
+        getError: parseError instanceof Error ? parseError.message : "parse failed",
+      });
+      return;
+    }
+    logIncompleteListVsPaymentId({
       paymentId,
-      inIncompleteList,
+      inIncompleteList: ids.includes(paymentId),
       incompleteCount: ids.length,
       incompleteIds: ids,
       status: listed.status,
       keyPrefix,
-      keySource: "PI_API_KEY_PRODUCTION",
       sandbox,
     });
   } catch (error) {
-    console.info("[Pi] incomplete list failed", {
-      paymentId,
-      inIncompleteList: false,
-      incompleteCount: 0,
-      incompleteIds: [] as string[],
-      message: error instanceof Error ? error.message : "list failed",
-      keyPrefix,
-      keySource: "PI_API_KEY_PRODUCTION",
-      sandbox,
+    logIncompleteListVsPaymentId({
+      ...emptyLog,
+      status: error instanceof PiPlatformError ? error.status : 0,
+      getError: error instanceof Error ? error.message : "list failed",
     });
   }
 }
@@ -702,6 +733,9 @@ export async function approvePiPayment(paymentId: string, sandbox = false) {
     return result;
   } catch (error) {
     const status = error instanceof PiPlatformError ? error.status : 0;
+    if (status === 404) {
+      await listIncompletePaymentsWithProductionKey(paymentId, sandbox);
+    }
     logPiAuthAttempt("approve", sandbox, "Key", status, "", { paymentId });
     logPiPaymentAction("approve", { paymentId, status, sandbox, authScheme: "Key", headerMode: "Key" });
     throw error;

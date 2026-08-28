@@ -86,7 +86,13 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not approve payment";
     const status = error instanceof PiPlatformError ? error.status : 502;
-    console.warn("[Pi] approve route error", { message, status, ...debug });
+    console.warn("[Pi] approve route error", {
+      message,
+      status,
+      hostname: clientHostname || undefined,
+      requestHostname: requestHostname || undefined,
+      ...debug,
+    });
     return NextResponse.json({ error: message, ...debug }, { status });
   }
 }
