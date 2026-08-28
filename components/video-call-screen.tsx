@@ -848,7 +848,8 @@ function VideoCallScreen({
               attachVideoEl(waitCamRef.current, track, true);
             } else {
               attachVideoEl(remoteVideoRef.current, track, true);
-            } else if (track?.kind === "audio" && !local) {
+            }
+          } else if (track?.kind === "audio" && !local) {
             attachAudioEl(remoteAudioRef.current, track);
           }
           refresh();
