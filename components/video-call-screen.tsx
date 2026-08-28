@@ -290,16 +290,8 @@ function CallIcon({
   );
 }
 
-function WaitSilhouette({ face }: { face: "left" | "right" }) {
-  return (
-    <svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true">
-      <circle cx="24" cy="24" r="24" fill="#161022" />
-      <g transform={face === "right" ? "translate(48 0) scale(-1 1)" : undefined} fill="#7a6a92">
-        <ellipse cx="24" cy="18.5" rx="7.4" ry="8.2" />
-        <path d="M9 42.5c1.6-9.4 7.2-14.2 15-14.2S38.4 33.1 40 42.5" />
-      </g>
-    </svg>
-  );
+function WaitSticker({ src }: { src: string }) {
+  return <img src={src} alt="" width={52} height={52} draggable={false} />;
 }
 
 function WaitingMatchPanel({
@@ -307,11 +299,13 @@ function WaitingMatchPanel({
   subtitle,
   premium,
   videoRef,
+  camOn = true,
 }: {
   title: string;
   subtitle: string;
   premium?: boolean;
   videoRef?: RefObject<HTMLVideoElement | null>;
+  camOn?: boolean;
 }) {
   return (
     <div className="yn-wait-overlay">
@@ -343,10 +337,10 @@ function WaitingMatchPanel({
           <span className="yn-wait-pulse" />
           <span className="yn-wait-pulse yn-wait-pulse-2" />
           <span className="yn-wait-pulse yn-wait-pulse-3" />
-          <span className="yn-wait-sat yn-wait-sat-1"><WaitSilhouette face="right" /></span>
-          <span className="yn-wait-sat yn-wait-sat-2"><WaitSilhouette face="left" /></span>
-          <span className="yn-wait-sat yn-wait-sat-3"><WaitSilhouette face="right" /></span>
-          <span className="yn-wait-sat yn-wait-sat-4"><WaitSilhouette face="left" /></span>
+          <span className="yn-wait-sat yn-wait-sat-1"><WaitSticker src="/wait/heart.png" /></span>
+          <span className="yn-wait-sat yn-wait-sat-2"><WaitSticker src="/wait/bolt.png" /></span>
+          <span className="yn-wait-sat yn-wait-sat-3"><WaitSticker src="/wait/star.png" /></span>
+          <span className="yn-wait-sat yn-wait-sat-4"><WaitSticker src="/wait/flame.png" /></span>
           <div className="yn-wait-self">
             <span className="yn-wait-self-fallback">
               <CallIcon name="cam" uid="wait-hero" size={36} />
@@ -356,7 +350,7 @@ function WaitingMatchPanel({
               autoPlay
               playsInline
               muted
-              className="yn-wait-self-video"
+              className={`yn-wait-self-video${camOn ? "" : " is-off"}`}
             />
             <span className="yn-wait-self-ring" />
           </div>
@@ -1504,6 +1498,7 @@ function VideoCallScreen({
             title="Finding someone"
             subtitle="Looking for someone in the same room"
             videoRef={waitCamRef}
+            camOn={camOn}
           />
         </div>
       )}
@@ -1514,6 +1509,7 @@ function VideoCallScreen({
             subtitle={isPremium ? "You skip ahead in the queue." : "Stay here — the next person joins this room."}
             premium={isPremium}
             videoRef={waitCamRef}
+            camOn={camOn}
           />
         </div>
       )}
@@ -1523,6 +1519,7 @@ function VideoCallScreen({
             title="Connecting"
             subtitle="Opening your camera and microphone."
             videoRef={waitCamRef}
+            camOn={camOn}
           />
         </div>
       )}
