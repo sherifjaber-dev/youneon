@@ -128,12 +128,59 @@ function watchTrackEnded(track: MediaStreamTrack | undefined | null) {
   });
 }
 
-function attachVideoEl(el: HTMLVideoElement | null, track: MediaStreamTrack | undefined) {
-  if (!el || !isLiveTrack(track, "video")) return;
+function participantTrack(p: DailyParticipant | undefined, kind: "video" | "audio"): MediaStreamTrack | undefined {
+  try {
+    const info = p?.tracks?.[kind];
+    const state = info?.state;
+    if (state === "off" || state === "blocked") return undefined;
+    const track =
+      (state === "playable" && info?.track) || info?.persistentTrack || info?.track;
+    return isLiveTrack(track, kind) ? track : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function primeVideoEl(el: HTMLVideoElement, muted: boolean) {
+  el.autoplay = true;
+  el.playsInline = true;
+  el.setAttribute("autoplay", "");
+  el.setAttribute("playsinline", "");
+  el.setAttribute("webkit-playsinline", "");
+  if (muted) {
+    el.muted = true;
+    el.defaultMuted = true;
+    el.setAttribute("muted", "");
+  }
+}
+
+function playMedia(el: HTMLMediaElement) {
+  const play = el.play();
+  if (play && typeof play.catch === "function") play.catch(() => {});
+}
+
+function attachVideoEl(el: HTMLVideoElement | null, track: MediaStreamTrack | undefined, muted = true) {
+  if (!el || !isLiveTrack(track, "video")) return false;
   watchTrackEnded(track);
+  primeVideoEl(el, muted);
   const cur = el.srcObject as MediaStream | null;
-  if (cur?.getVideoTracks()[0] === track) return;
-  el.srcObject = new MediaStream([track]);
+  if (cur?.getVideoTracks()[0] !== track) {
+    el.srcObject = new MediaStream([track]);
+  }
+  playMedia(el);
+  return true;
+}
+
+function attachAudioEl(el: HTMLAudioElement | null, track: MediaStreamTrack | undefined) {
+  if (!el || !isLiveTrack(track, "audio")) return false;
+  el.autoplay = true;
+  el.setAttribute("autoplay", "");
+  const cur = el.srcObject as MediaStream | null;
+  if (cur?.getAudioTracks()[0] !== track) {
+    el.srcObject = new MediaStream([track]);
+  }
+  playMedia(el);
+  return true;
 }
 
 function setTrackEnabled(track: MediaStreamTrack | undefined, enabled: boolean) {
@@ -606,11 +653,17 @@ function VideoCallScreen({
     let remoteCount = 0;
     Object.values(participants).forEach((p: DailyParticipant) => {
       if (p.local) {
-        const videoTrack = p.tracks.video?.persistentTrack;
-        const audioTrack = p.tracks.audio?.persistentTrack;
+        const videoTrack = participantTrack(p, "video") || localDailyTrack(call, "video");
+        const audioTrack = participantTrack(p, "audio") || localDailyTrack(call, "audio");
         setTrackEnabled(videoTrack, camOnRef.current);
         setTrackEnabled(audioTrack, micOnRef.current);
-        attachVideoEl(localVideoRef.current, videoTrack);
+        attachVideoEl(localVideoRef.current, videoTrack, true);
+        if (camOnRef.current && p.tracks?.video?.state === "off") {
+          void call.setLocalVideo(true).catch(() => {});
+        }
+        if (micOnRef.current && p.tracks?.audio?.state === "off") {
+          void call.setLocalAudio(true).catch(() => {});
+        }
       } else {
         remoteCount++;
         setRemoteName((prev) => {
@@ -628,20 +681,21 @@ function VideoCallScreen({
             };
           });
         }
-        const videoTrack = p.tracks.video?.persistentTrack;
-        const audioTrack = p.tracks.audio?.persistentTrack;
-        if (videoTrack && remoteVideoRef.current) {
-          const cur = remoteVideoRef.current.srcObject as MediaStream | null;
-          if (!cur || cur.getVideoTracks()[0] !== videoTrack) {
-            remoteVideoRef.current.srcObject = new MediaStream([videoTrack]);
+        const videoState = p.tracks?.video?.state;
+        if (
+          p.tracks?.video?.subscribed === false ||
+          p.tracks?.audio?.subscribed === false ||
+          videoState === "loading" ||
+          videoState === "interrupted"
+        ) {
+          try {
+            call.updateParticipant(p.session_id, { setSubscribedTracks: true });
+          } catch {
+            /* older daily-js */
           }
         }
-        if (audioTrack && remoteAudioRef.current) {
-          const cur = remoteAudioRef.current.srcObject as MediaStream | null;
-          if (!cur || cur.getAudioTracks()[0] !== audioTrack) {
-            remoteAudioRef.current.srcObject = new MediaStream([audioTrack]);
-          }
-        }
+        attachVideoEl(remoteVideoRef.current, participantTrack(p, "video"), true);
+        attachAudioEl(remoteAudioRef.current, participantTrack(p, "audio"));
       }
     });
     if (remoteCount > 0) {
@@ -737,10 +791,11 @@ function VideoCallScreen({
         const audioTrack = liveTrackFromStream(previewStreamRef.current, "audio")
           || localDailyTrack(callRef.current, "audio");
         if (videoTrack) {
-          console.log("[cam] startCamera skipped (reusing live track)", "daily-join", videoTrack.id);
+          console.log("[cam] reusing live track for Daily", "daily-join", videoTrack.id);
         }
 
         const callObject = DailyIframe.createCallObject({
+          subscribeToTracksAutomatically: true,
           audioSource: audioTrack || true,
           videoSource: videoTrack || true,
           ...(videoTrack
@@ -756,6 +811,8 @@ function VideoCallScreen({
         callObject.on("joined-meeting", () => {
           meetingJoinedRef.current = true;
           console.log("[cam] meeting joined");
+          void callObject.setLocalVideo(camOnRef.current).catch(() => {});
+          void callObject.setLocalAudio(micOnRef.current).catch(() => {});
           refresh();
         });
         callObject.on("left-meeting", () => {
@@ -766,8 +823,13 @@ function VideoCallScreen({
         callObject.on("participant-updated", refresh);
         callObject.on("participant-left", refresh);
         callObject.on("track-started", (ev: { track?: MediaStreamTrack; participant?: { local?: boolean } }) => {
-          if (ev?.track?.kind === "video" && ev?.participant?.local) {
-            watchTrackEnded(ev.track);
+          const track = ev?.track;
+          const local = !!ev?.participant?.local;
+          if (track?.kind === "video") {
+            watchTrackEnded(track);
+            attachVideoEl(local ? localVideoRef.current : remoteVideoRef.current, track, true);
+          } else if (track?.kind === "audio" && !local) {
+            attachAudioEl(remoteAudioRef.current, track);
           }
           refresh();
         });
@@ -786,7 +848,10 @@ function VideoCallScreen({
             || liveTrackFromStream(previewStreamRef.current, "video");
           if (live) {
             console.log("[cam] startCamera skipped (track live)", "reconnect", live.id);
-            attachVideoEl(localVideoRef.current, live);
+            attachVideoEl(localVideoRef.current, live, true);
+            void callObject.setLocalVideo(camOnRef.current).catch(() => {});
+            void callObject.setLocalAudio(micOnRef.current).catch(() => {});
+            refresh();
             return;
           }
         });
@@ -813,15 +878,33 @@ function VideoCallScreen({
           }
         });
 
-        if (!videoTrack) {
-          await startCamera("daily-join", callObject);
+        try {
+          await callObject.startCamera({
+            startVideoOff: false,
+            startAudioOff: false,
+            audioSource: audioTrack || true,
+            videoSource: videoTrack || true,
+          } as Parameters<DailyCall["startCamera"]>[0]);
+        } catch (camErr) {
+          console.warn("[cam] daily startCamera", camErr);
+          if (!videoTrack) {
+            await startCamera("daily-join", callObject);
+          }
         }
 
         await callObject.join({
           url,
           userName: opts.currentUserName || "Me",
           userData: { userId },
+          startVideoOff: false,
+          startAudioOff: false,
         });
+        try {
+          await callObject.setLocalVideo(true);
+          await callObject.setLocalAudio(true);
+        } catch (mediaErr) {
+          console.warn("[cam] setLocal media", mediaErr);
+        }
         refresh();
       } catch (err: any) {
         console.error("Daily start failed:", err);
@@ -846,6 +929,17 @@ function VideoCallScreen({
       meetingJoinedRef.current = false;
     };
   }, [permission, sessionId, updateMediaElements, startCamera, stopCamera]);
+
+  useEffect(() => {
+    if (callStatus === "idle" || callStatus === "preview") return;
+    const tick = () => {
+      const call = callRef.current;
+      if (call) updateMediaElements(call);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [callStatus, updateMediaElements]);
 
   useEffect(() => {
     return () => stopCamera("unmount");
@@ -1028,7 +1122,7 @@ function VideoCallScreen({
       setFacingMode(applied);
       if (isLiveTrack(flipped, "video")) {
         watchTrackEnded(flipped);
-        attachVideoEl(localVideoRef.current, flipped);
+        attachVideoEl(localVideoRef.current, flipped, true);
         if (!camOnRef.current) setTrackEnabled(flipped, false);
       }
     } catch (err) {
@@ -1222,6 +1316,7 @@ function VideoCallScreen({
         ref={remoteVideoRef}
         autoPlay
         playsInline
+        muted
         className={`absolute inset-0 h-full w-full bg-[#1a0a24] object-cover transition-all duration-300 ${nsfwBlur ? "scale-110 blur-3xl" : ""}`}
         data-testid="remote-video"
       />
