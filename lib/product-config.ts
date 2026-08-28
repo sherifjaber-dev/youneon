@@ -15,32 +15,32 @@ export const CHAT_UNLOCK_NEON = 50;
 
 export const PREMIUM_BENEFITS = [
   {
-    title: "2 free chat unlocks a day",
-    detail: "Message two new people each day — then chat with them forever.",
+    title: "Two chat unlocks a day",
+    detail: "Start two new conversations each day. They stay open.",
   },
   {
-    title: "Free gender & country filters",
-    detail: "Match with who you want — no extra Neon.",
+    title: "Gender and country filters",
+    detail: "Match on your terms, included with membership.",
   },
   {
     title: "Priority matching",
-    detail: "Jump ahead in the matching queue.",
+    detail: "Skip ahead in the queue.",
   },
   {
     title: "Ad-free",
-    detail: "No banners or interstitials while Premium is active.",
+    detail: "No banners while your membership is active.",
   },
   {
     title: "Premium badge",
-    detail: "A crown on your profile, top bar, and chats.",
+    detail: "A crown on your profile, header, and chats.",
   },
   {
-    title: "2,000 Neon on subscribe",
-    detail: "Granted immediately on every subscribe or renew.",
+    title: "2,000 Neon included",
+    detail: "Added to your balance on every subscribe or renew.",
   },
   {
-    title: "Front and rear camera during calls",
-    detail: "Flip between cameras while you are in a video call.",
+    title: "Front and rear camera",
+    detail: "Switch cameras during a live call.",
   },
 ] as const;
 

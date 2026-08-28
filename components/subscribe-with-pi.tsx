@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Crown } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { subscribeWithPi } from "@/lib/pi-sdk";
 import { PREMIUM_BENEFITS, PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
@@ -25,7 +25,6 @@ type SubscribeWithPiProps = {
 };
 
 export function SubscribeWithPi({
-  variant = "shop",
   isPremium = false,
   premiumUntil: premiumUntilProp = null,
 }: SubscribeWithPiProps) {
@@ -89,80 +88,47 @@ export function SubscribeWithPi({
     }
   };
 
-  const isShop = variant === "shop";
-  const titleClass = "text-[15px] font-semibold text-yn-text";
-  const bodyClass = "text-[12px] leading-relaxed text-yn-muted";
-  const benefitText = "text-[13px] text-yn-text";
-
   return (
-    <div
-      className={
-        isShop
-          ? "mx-4 mt-4 mb-1 rounded-2xl border border-pink-200 bg-gradient-to-b from-fuchsia-50 to-pink-50 p-4"
-          : "w-full rounded-2xl border border-purple-400/40 bg-gradient-to-r from-purple-50 to-pink-50 p-4"
-      }
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className={
-            isShop
-              ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-purple-600"
-              : "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white"
-          }
+    <div className="yn-premium-interstitial-card mx-4 mt-4 mb-1">
+      <div className="yn-premium-sheet">
+        <p className="yn-premium-sheet-kicker">YouNeon</p>
+        <div className="yn-premium-sheet-title">Premium</div>
+        <p className="yn-premium-sheet-price">
+          <span className="yn-premium-sheet-amount">{SUBSCRIPTION_PLAN.amount} π</span>
+          <span className="yn-premium-sheet-term">/ {SUBSCRIPTION_PLAN.days} days</span>
+        </p>
+        {active && premiumUntil ? (
+          <p className="yn-premium-sheet-status">Active until {formatUntil(premiumUntil)}</p>
+        ) : null}
+
+        <ul className="yn-premium-sheet-list">
+          {PREMIUM_BENEFITS.map((benefit) => (
+            <li key={benefit.title} className="yn-premium-sheet-item">
+              <span className="yn-premium-sheet-check" aria-hidden>
+                <Check size={12} strokeWidth={2.5} />
+              </span>
+              <span>
+                <span className="yn-premium-sheet-benefit">{benefit.title}</span>
+                <span className="yn-premium-sheet-detail">{benefit.detail}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <Button
+          onClick={handleSubscribe}
+          disabled={status === "loading"}
+          className="yn-gold-cta yn-premium-sheet-cta w-full"
         >
-          <Crown size={18} className="text-white" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className={titleClass}>{SUBSCRIPTION_PLAN.name}</div>
-          <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 leading-none">
-            <span className="text-[26px] font-bold tabular-nums tracking-tight text-yn-gold">
-              {SUBSCRIPTION_PLAN.amount} π
-            </span>
-            <span className="text-[13px] font-semibold text-yn-muted">/ {SUBSCRIPTION_PLAN.days} days</span>
-          </p>
-          {active && premiumUntil && (
-            <p className={isShop ? "mt-1 text-[11px] text-emerald-700" : "mt-1 text-[11px] text-emerald-700"}>
-              Active until {formatUntil(premiumUntil)}
-            </p>
-          )}
-        </div>
+          {status === "loading"
+            ? "Processing Pi payment..."
+            : active
+              ? "Renew with Pi"
+              : "Subscribe with Pi"}
+        </Button>
+
+        {status === "loading" && message ? <p className="yn-premium-sheet-wait">{message}</p> : null}
       </div>
-
-      <ul className="mt-4 space-y-2.5">
-        {PREMIUM_BENEFITS.map((benefit) => (
-          <li key={benefit.title} className="flex items-start gap-2.5">
-            <span
-              className={
-                isShop
-                ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"
-                : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"
-              }
-            >
-              <Check size={12} strokeWidth={2.5} />
-            </span>
-            <span>
-              <span className={`block font-medium ${benefitText}`}>{benefit.title}</span>
-              <span className={bodyClass}>{benefit.detail}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      <Button
-        onClick={handleSubscribe}
-        disabled={status === "loading"}
-        className="yn-gold-cta mt-4 h-[52px] w-full rounded-xl bg-gradient-to-r from-[#C9A227] to-[#D4AF37] text-[17px] font-bold text-[#1a1408] shadow-[0_4px_18px_rgba(201,162,39,0.42)] hover:from-[#D4AF37] hover:to-[#C9A227] hover:bg-transparent"
-      >
-        {status === "loading"
-          ? "Processing Pi payment..."
-          : active
-            ? "Renew with Pi"
-            : "Subscribe with Pi"}
-      </Button>
-
-      {status === "loading" && message && (
-        <p className="mt-2 text-xs font-medium text-purple-700">{message}</p>
-      )}
     </div>
   );
 }

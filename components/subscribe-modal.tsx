@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Crown, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -123,73 +123,60 @@ export function SubscribeModal({
         onMouseDown={stopOverlayTheft}
         onTouchStart={stopOverlayTheft}
         onClick={stopOverlayTheft}
-        className="z-[2147483646] max-h-[90vh] max-w-[360px] gap-0 overflow-y-auto border-0 bg-transparent p-0 shadow-none"
+        className="z-[2147483646] max-h-[90dvh] max-w-[360px] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none"
         data-testid="subscribe-modal"
       >
-        <div className="yn-premium-interstitial-card px-5 pb-5 pt-4 text-white">
-          <div className="relative mb-3 pr-8">
+        <div className="yn-premium-interstitial-card">
+          <div className="yn-premium-sheet">
             <button
               type="button"
               onClick={onClose}
               disabled={busy}
-              className="absolute -right-1 -top-0.5 flex h-8 w-8 items-center justify-center rounded-full text-[#f5d76e] drop-shadow-[0_0_8px_rgba(245,215,110,0.7)] transition hover:bg-white/8 disabled:opacity-40"
+              className="yn-premium-sheet-close"
               aria-label="Close"
             >
-              <X size={18} strokeWidth={2.2} />
+              <X size={18} strokeWidth={2} />
             </button>
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#C9A227] to-purple-600 shadow-[0_0_16px_rgba(201,162,39,0.45)]">
-                <Crown size={18} className="text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <DialogTitle className="yn-premium-interstitial-title text-left text-[26px]">
-                  YouNeon Premium
-                </DialogTitle>
-                <DialogDescription className="sr-only">
-                  Subscribe to YouNeon Premium for {SUBSCRIPTION_PLAN.amount} π every {SUBSCRIPTION_PLAN.days} days.
-                </DialogDescription>
-                <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 leading-none">
-                  <span className="text-[26px] font-bold tabular-nums tracking-tight text-[#f5d76e] drop-shadow-[0_0_8px_rgba(245,215,110,0.7)]">
-                    {SUBSCRIPTION_PLAN.amount} π
+
+            <p className="yn-premium-sheet-kicker">YouNeon</p>
+            <DialogTitle className="yn-premium-sheet-title">Premium</DialogTitle>
+            <DialogDescription className="sr-only">
+              Subscribe to YouNeon Premium for {SUBSCRIPTION_PLAN.amount} π every {SUBSCRIPTION_PLAN.days} days.
+            </DialogDescription>
+
+            <p className="yn-premium-sheet-price">
+              <span className="yn-premium-sheet-amount">{SUBSCRIPTION_PLAN.amount} π</span>
+              <span className="yn-premium-sheet-term">/ {SUBSCRIPTION_PLAN.days} days</span>
+            </p>
+
+            {active && premiumUntil ? (
+              <p className="yn-premium-sheet-status">Active until {formatUntil(premiumUntil)}</p>
+            ) : null}
+
+            <ul className="yn-premium-sheet-list">
+              {PREMIUM_BENEFITS.map((benefit) => (
+                <li key={benefit.title} className="yn-premium-sheet-item">
+                  <span className="yn-premium-sheet-check" aria-hidden>
+                    <Check size={12} strokeWidth={2.5} />
                   </span>
-                  <span className="text-[13px] font-semibold text-white/70">
-                    / {SUBSCRIPTION_PLAN.days} days
+                  <span>
+                    <span className="yn-premium-sheet-benefit">{benefit.title}</span>
+                    <span className="yn-premium-sheet-detail">{benefit.detail}</span>
                   </span>
-                </p>
-                {active && premiumUntil && (
-                  <p className="mt-1.5 text-[11px] font-medium text-emerald-300">
-                    Active until {formatUntil(premiumUntil)}
-                  </p>
-                )}
-              </div>
-            </div>
+                </li>
+              ))}
+            </ul>
+
+            <Button
+              onClick={handleSubscribe}
+              disabled={busy}
+              className="yn-gold-cta yn-premium-sheet-cta w-full"
+            >
+              {busy ? "Processing Pi payment..." : active ? "Renew with Pi" : "Subscribe with Pi"}
+            </Button>
+
+            {busy && message ? <p className="yn-premium-sheet-wait">{message}</p> : null}
           </div>
-
-          <ul className="space-y-2.5">
-            {PREMIUM_BENEFITS.map((benefit) => (
-              <li key={benefit.title} className="flex items-start gap-2.5">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-300">
-                  <Check size={12} strokeWidth={2.5} />
-                </span>
-                <span>
-                  <span className="block text-[13px] font-medium text-white">{benefit.title}</span>
-                  <span className="text-[12px] leading-relaxed text-white/60">{benefit.detail}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <Button
-            onClick={handleSubscribe}
-            disabled={busy}
-            className="yn-gold-cta mt-4 h-[52px] w-full rounded-xl bg-gradient-to-r from-[#C9A227] to-[#D4AF37] text-[17px] font-bold text-[#1a1408] shadow-[0_4px_18px_rgba(201,162,39,0.42)] hover:from-[#D4AF37] hover:to-[#C9A227] hover:bg-transparent"
-          >
-            {busy ? "Processing Pi payment..." : active ? "Renew with Pi" : "Subscribe with Pi"}
-          </Button>
-
-          {busy && message && (
-            <p className="mt-2 text-center text-xs font-medium text-[#e9d5ff]">{message}</p>
-          )}
         </div>
       </DialogContent>
     </Dialog>
