@@ -46,7 +46,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               aria-current={active ? "page" : undefined}
             >
               <span className="yn-nav-icon">
-                <Icon size={30} className="yn-nav-svg" />
+                <Icon size={38} className="yn-nav-svg" filled={active} />
               </span>
               <span className="yn-nav-label">{label}</span>
             </button>

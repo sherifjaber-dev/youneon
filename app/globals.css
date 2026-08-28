@@ -150,7 +150,7 @@
   --yn-gold: #C9A227;
   --yn-gold-bright: #D4AF37;
   --yn-topbar-inner: 60px;
-  --yn-bottomnav-inner: 68px;
+  --yn-bottomnav-inner: 76px;
 }
 
 html.youneon-signed-in,
@@ -2858,15 +2858,15 @@ html.yn-profile-open {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 52px;
-  padding: 6px 4px 8px;
+  gap: 5px;
+  min-height: 58px;
+  padding: 8px 4px 10px;
   background: none;
   border: none;
   box-shadow: none;
   overflow: visible;
-  color: #b7a8c9;
-  transition: color 0.15s ease, transform 0.12s ease;
+  color: #c4b5d6;
+  transition: color 0.18s ease, transform 0.12s ease;
 }
 
 .yn-nav-slot:active {
@@ -2874,9 +2874,10 @@ html.yn-profile-open {
 }
 
 .yn-nav-icon {
+  position: relative;
   display: flex;
-  height: 32px;
-  width: 32px;
+  height: 42px;
+  width: 42px;
   align-items: center;
   justify-content: center;
   overflow: visible;
@@ -2884,29 +2885,42 @@ html.yn-profile-open {
   border: none;
   border-radius: 0;
   box-shadow: none;
+  z-index: 1;
+}
+
+.yn-nav-slot.is-on .yn-nav-icon::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--pink) 48%, transparent) 0%, transparent 72%);
+  animation: yn-nav-halo 1.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .yn-nav-svg {
   display: block;
   overflow: visible;
-  opacity: 0.55;
-  filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.4));
-  transition: opacity 0.15s ease, filter 0.15s ease;
+  opacity: 0.72;
+  filter: none;
+  transition: opacity 0.18s ease, filter 0.18s ease, transform 0.18s ease;
 }
 
 .yn-nav-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
-  color: #8b8098;
+  color: #9a8aaa;
+  transition: color 0.18s ease, text-shadow 0.18s ease;
 }
 
 .yn-nav-slot.is-on .yn-nav-svg {
   opacity: 1;
+  transform: translateY(-1px);
   filter:
-    drop-shadow(0 0 4px color-mix(in srgb, var(--pink) 100%, transparent))
-    drop-shadow(0 0 10px color-mix(in srgb, var(--pink) 85%, transparent))
-    drop-shadow(0 0 18px var(--pink-soft));
+    drop-shadow(0 0 3px color-mix(in srgb, var(--pink) 90%, transparent))
+    drop-shadow(0 0 10px color-mix(in srgb, var(--pink) 55%, transparent));
 }
 
 .yn-nav-slot.is-on .yn-nav-icon {
@@ -2928,21 +2942,35 @@ html.yn-profile-open {
 }
 
 .yn-nav-slot.is-on .yn-nav-label {
-  color: var(--pink-text);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--pink) 90%, transparent);
+  color: #fff;
+  font-weight: 800;
+  text-shadow:
+    0 0 8px color-mix(in srgb, var(--pink) 100%, transparent),
+    0 0 16px color-mix(in srgb, var(--pink) 70%, transparent);
 }
 
 .yn-nav-slot.is-on::after {
   content: "";
   position: absolute;
-  bottom: 3px;
+  bottom: 4px;
   left: 50%;
-  width: 22px;
-  height: 1.5px;
+  width: 28px;
+  height: 3px;
   border-radius: 99px;
-  background: var(--pink);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--pink) 95%, transparent);
+  background: linear-gradient(90deg, var(--pink), #c084fc);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--pink) 90%, transparent);
   transform: translateX(-50%);
+}
+
+@keyframes yn-nav-halo {
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yn-nav-slot.is-on .yn-nav-icon::before {
+    animation: none;
+  }
 }
 
 .yn-messages [class*="border-black"] {
