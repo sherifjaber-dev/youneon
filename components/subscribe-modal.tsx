@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, X } from "lucide-react";
+import { Check, Crown, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -138,8 +138,16 @@ export function SubscribeModal({
               <X size={18} strokeWidth={2} />
             </button>
 
+            <div className="yn-premium-sheet-mark" aria-hidden>
+              <Crown size={22} strokeWidth={1.75} />
+            </div>
             <p className="yn-premium-sheet-kicker">YouNeon</p>
-            <DialogTitle className="yn-premium-sheet-title">Premium</DialogTitle>
+            <DialogTitle
+              className="yn-premium-sheet-title text-white"
+              style={{ color: "#FFFFFF", WebkitTextFillColor: "#FFFFFF" }}
+            >
+              Premium
+            </DialogTitle>
             <DialogDescription className="sr-only">
               Subscribe to YouNeon Premium for {SUBSCRIPTION_PLAN.amount} π every {SUBSCRIPTION_PLAN.days} days.
             </DialogDescription>

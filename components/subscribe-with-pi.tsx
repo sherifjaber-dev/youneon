@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check } from "lucide-react";
+import { Check, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { subscribeWithPi } from "@/lib/pi-sdk";
 import { PREMIUM_BENEFITS, PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
@@ -91,8 +91,16 @@ export function SubscribeWithPi({
   return (
     <div className="yn-premium-interstitial-card mx-4 mt-4 mb-1">
       <div className="yn-premium-sheet">
+        <div className="yn-premium-sheet-mark" aria-hidden>
+          <Crown size={22} strokeWidth={1.75} />
+        </div>
         <p className="yn-premium-sheet-kicker">YouNeon</p>
-        <div className="yn-premium-sheet-title">Premium</div>
+        <div
+          className="yn-premium-sheet-title text-white"
+          style={{ color: "#FFFFFF", WebkitTextFillColor: "#FFFFFF" }}
+        >
+          Premium
+        </div>
         <p className="yn-premium-sheet-price">
           <span className="yn-premium-sheet-amount">{SUBSCRIPTION_PLAN.amount} π</span>
           <span className="yn-premium-sheet-term">/ {SUBSCRIPTION_PLAN.days} days</span>
