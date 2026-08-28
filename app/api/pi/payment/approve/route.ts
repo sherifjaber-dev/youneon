@@ -22,7 +22,11 @@ export async function POST(request: Request) {
       ok: result.ok,
       status: result.status,
       piStatus: result.piStatus || result.status,
-      ...debug,
+      hasProductionKey: debug.hasProductionKey,
+      keyLength: debug.keyLength,
+      keyStartsWithSkLive: debug.keyStartsWithSkLive,
+      headerMode: result.headerMode,
+      sandbox: debug.sandbox,
     });
     if (!result.ok) {
       return NextResponse.json(
@@ -30,12 +34,18 @@ export async function POST(request: Request) {
           error: result.error || "Approve failed",
           payment: result.payment,
           piStatus: result.piStatus || result.status,
+          headerMode: result.headerMode,
           ...debug,
         },
         { status: result.status }
       );
     }
-    return NextResponse.json({ ok: true, payment: result.payment, ...debug });
+    return NextResponse.json({
+      ok: true,
+      payment: result.payment,
+      headerMode: result.headerMode,
+      ...debug,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not approve payment";
     const status = error instanceof PiPlatformError ? error.status : 502;

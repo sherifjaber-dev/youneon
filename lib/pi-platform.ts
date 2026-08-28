@@ -37,8 +37,17 @@ function stripApiKey(raw: string): string {
   return raw.replace(/^(Key|Bearer)\s+/i, "").trim();
 }
 
+/** Trim Vercel env noise (newlines, wrapping quotes, BOM) that otherwise 401 Key auth. */
 function envKey(name: string): string {
-  return stripApiKey(process.env[name] || "");
+  let raw = String(process.env[name] ?? "").replace(/^\uFEFF/, "").trim();
+  if (
+    (raw.startsWith('"') && raw.endsWith('"') && raw.length >= 2) ||
+    (raw.startsWith("'") && raw.endsWith("'") && raw.length >= 2)
+  ) {
+    raw = raw.slice(1, -1).trim();
+  }
+  raw = raw.replace(/[\r\n]+/g, "").trim();
+  return stripApiKey(raw);
 }
 
 /**
@@ -95,28 +104,37 @@ export const PI_PLATFORM_BASE = PI_PLATFORM_BASE_DEFAULT;
 export type PiPaymentDebugMeta = {
   sandbox: boolean;
   apiKeyPresent: boolean;
+  hasProductionKey: boolean;
   keyPrefix: string;
   keyLength: number;
   keySource: PiKeySource;
   piUrl: string;
   looksLikeStripe: boolean;
+  keyStartsWithSkLive: boolean;
 };
 
 function looksLikeStripeKey(key: string): boolean {
   return key.startsWith("sk_live") || key.startsWith("sk_test");
 }
 
+function clipPiBodyText(text: string): string {
+  return text.length > 800 ? `${text.slice(0, 800)}…` : text;
+}
+
 /** Safe-to-log flags only — never the full API key. */
 export function piPaymentDebugMeta(sandbox = false): PiPaymentDebugMeta {
   const info = getPiServerApiKeyInfo(sandbox);
+  const production = envKey("PI_API_KEY_PRODUCTION");
   return {
     sandbox,
     apiKeyPresent: info.key.length > 0,
+    hasProductionKey: production.length > 0,
     keyPrefix: info.key.slice(0, 6),
     keyLength: info.key.length,
     keySource: info.source,
     piUrl: getPiPlatformBase(),
     looksLikeStripe: looksLikeStripeKey(info.key),
+    keyStartsWithSkLive: info.key.startsWith("sk_live"),
   };
 }
 
@@ -196,19 +214,30 @@ export function logPiPaymentAction(
     status: number;
     sandbox: boolean;
     authScheme?: PiAuthScheme;
+    headerMode?: PiAuthScheme;
     piUrl?: string;
     piBody?: unknown;
+    piBodyText?: string;
   }
 ): void {
   const debug = piPaymentDebugMeta(info.sandbox);
+  const headerMode = info.headerMode || info.authScheme || "Key";
   console.info("[Pi]", action, {
     paymentId: info.paymentId,
     txidLength: info.txidLength ?? 0,
     status: info.status,
-    authScheme: info.authScheme || "Key",
+    headerMode,
+    authScheme: headerMode,
     piUrl: info.piUrl || debug.piUrl,
     piBody: safePiResponseBody(info.piBody),
-    ...debug,
+    piBodyText: info.piBodyText,
+    hasProductionKey: debug.hasProductionKey,
+    keyLength: debug.keyLength,
+    keyStartsWithSkLive: debug.keyStartsWithSkLive,
+    sandbox: debug.sandbox,
+    keySource: debug.keySource,
+    apiKeyPresent: debug.apiKeyPresent,
+    piUrlBase: debug.piUrl,
   });
 }
 
@@ -273,7 +302,37 @@ type PiApiOptions = {
   authScheme?: PiAuthScheme;
 };
 
-export type PiApiResult<T = unknown> = { ok: boolean; status: number; data: T | null; url: string; authScheme: PiAuthScheme };
+export type PiApiResult<T = unknown> = {
+  ok: boolean;
+  status: number;
+  data: T | null;
+  url: string;
+  authScheme: PiAuthScheme;
+  headerMode: PiAuthScheme;
+  bodyText: string;
+};
+
+function logPiAuthAttempt(
+  action: string,
+  sandbox: boolean,
+  headerMode: PiAuthScheme,
+  status: number,
+  bodyText: string,
+  extra?: Record<string, unknown>
+): void {
+  const debug = piPaymentDebugMeta(sandbox);
+  console.info("[Pi]", action, {
+    hasProductionKey: debug.hasProductionKey,
+    keyLength: debug.keyLength,
+    keyStartsWithSkLive: debug.keyStartsWithSkLive,
+    headerMode,
+    status,
+    piBodyText: clipPiBodyText(bodyText),
+    sandbox: debug.sandbox,
+    keySource: debug.keySource,
+    ...extra,
+  });
+}
 
 export async function piApi<T = unknown>(
   path: string,
@@ -281,7 +340,7 @@ export async function piApi<T = unknown>(
 ): Promise<PiApiResult<T>> {
   const sandbox = options.sandbox === true;
   const info = getPiServerApiKeyInfo(sandbox);
-  const apiKey = info.key;
+  const apiKey = info.key.trim();
   if (!apiKey) {
     throw new PiPlatformError(missingPiApiKeyMessage(sandbox), 503);
   }
@@ -312,22 +371,60 @@ export async function piApi<T = unknown>(
     cache: "no-store",
   });
 
-  const data = (await res.json().catch(() => null)) as T | null;
+  const bodyText = await res.text();
+  let data: T | null = null;
+  if (bodyText) {
+    try {
+      data = JSON.parse(bodyText) as T;
+    } catch {
+      data = null;
+    }
+  }
   const debug = piPaymentDebugMeta(sandbox);
   console.info("[Pi] platform HTTP", {
     method,
     url,
     status: res.status,
     paymentId: options.paymentId,
+    headerMode: authScheme,
     authScheme,
+    hasProductionKey: debug.hasProductionKey,
+    keyLength: debug.keyLength,
+    keyStartsWithSkLive: debug.keyStartsWithSkLive,
+    piBodyText: clipPiBodyText(bodyText),
     piBody: safePiResponseBody(data),
-    ...debug,
+    sandbox: debug.sandbox,
+    keySource: debug.keySource,
+    apiKeyPresent: debug.apiKeyPresent,
   });
-  return { ok: res.ok, status: res.status, data, url, authScheme };
+  return {
+    ok: res.ok,
+    status: res.status,
+    data,
+    url,
+    authScheme,
+    headerMode: authScheme,
+    bodyText,
+  };
+}
+
+/** Try Key, then Bearer. Stop at the first Pi response that is not 401. */
+async function piApiKeyThenBearer<T = unknown>(
+  path: string,
+  options: Omit<PiApiOptions, "authScheme"> = {}
+): Promise<PiApiResult<T>> {
+  const schemes: PiAuthScheme[] = ["Key", "Bearer"];
+  let last: PiApiResult<T> | null = null;
+  for (const headerMode of schemes) {
+    const result = await piApi<T>(path, { ...options, authScheme: headerMode });
+    last = result;
+    if (result.status !== 401) return result;
+  }
+  return last!;
 }
 
 export async function getPiPayment(paymentId: string, sandbox = false) {
-  return piApi<PiPaymentDTO>(`/payments/${paymentId}`, {
+  return piApiKeyThenBearer<PiPaymentDTO>(`/payments/${paymentId}`, {
     method: "GET",
     sandbox,
     paymentId,
@@ -337,58 +434,45 @@ export async function getPiPayment(paymentId: string, sandbox = false) {
 export async function approvePiPayment(paymentId: string, sandbox = false) {
   const path = `/payments/${paymentId}/approve`;
   try {
-    const keyResult = await piApi<PiPaymentDTO>(path, {
-      method: "POST",
-      body: {},
-      sandbox,
-      paymentId,
-      authScheme: "Key",
-    });
-    logPiPaymentAction("approve", {
-      paymentId,
-      status: keyResult.status,
-      sandbox,
-      authScheme: "Key",
-      piUrl: keyResult.url,
-      piBody: keyResult.data,
-    });
-
-    if (keyResult.status !== 404) return keyResult;
-
-    const bearerResult = await piApi<PiPaymentDTO>(path, {
-      method: "POST",
-      body: {},
-      sandbox,
-      paymentId,
-      authScheme: "Bearer",
-    });
-    logPiPaymentAction("approve", {
-      paymentId,
-      status: bearerResult.status,
-      sandbox,
-      authScheme: "Bearer",
-      piUrl: bearerResult.url,
-      piBody: bearerResult.data,
-    });
-    console.info("[Pi] approve Key vs Bearer", {
-      paymentId,
-      keyStatus: keyResult.status,
-      keyBody: safePiResponseBody(keyResult.data),
-      bearerStatus: bearerResult.status,
-      bearerBody: safePiResponseBody(bearerResult.data),
-      ...piPaymentDebugMeta(sandbox),
-    });
-    if (bearerResult.ok || bearerResult.status !== 404) return bearerResult;
-    return keyResult;
+    const schemes: PiAuthScheme[] = ["Key", "Bearer"];
+    let last: PiApiResult<PiPaymentDTO> | null = null;
+    for (const headerMode of schemes) {
+      const result = await piApi<PiPaymentDTO>(path, {
+        method: "POST",
+        body: {},
+        sandbox,
+        paymentId,
+        authScheme: headerMode,
+      });
+      last = result;
+      logPiAuthAttempt("approve", sandbox, headerMode, result.status, result.bodyText, {
+        paymentId,
+        piUrl: result.url,
+      });
+      logPiPaymentAction("approve", {
+        paymentId,
+        status: result.status,
+        sandbox,
+        authScheme: headerMode,
+        headerMode,
+        piUrl: result.url,
+        piBody: result.data,
+        piBodyText: clipPiBodyText(result.bodyText),
+      });
+      // 401 = invalid key / wrong scheme. Try Bearer next. 404 = wrong app — stop.
+      if (result.status !== 401) return result;
+    }
+    return last!;
   } catch (error) {
     const status = error instanceof PiPlatformError ? error.status : 0;
-    logPiPaymentAction("approve", { paymentId, status, sandbox, authScheme: "Key" });
+    logPiAuthAttempt("approve", sandbox, "Key", status, "", { paymentId });
+    logPiPaymentAction("approve", { paymentId, status, sandbox, authScheme: "Key", headerMode: "Key" });
     throw error;
   }
 }
 
 export async function completePiPayment(paymentId: string, txid: string, sandbox = false) {
-  const result = await piApi<PiPaymentDTO>(`/payments/${paymentId}/complete`, {
+  const result = await piApiKeyThenBearer<PiPaymentDTO>(`/payments/${paymentId}/complete`, {
     method: "POST",
     body: { txid },
     sandbox,
@@ -400,14 +484,16 @@ export async function completePiPayment(paymentId: string, txid: string, sandbox
     status: result.status,
     sandbox,
     authScheme: result.authScheme,
+    headerMode: result.headerMode,
     piUrl: result.url,
     piBody: result.data,
+    piBodyText: clipPiBodyText(result.bodyText),
   });
   return { ...result, ok: result.status === 200 };
 }
 
 export async function cancelPiPayment(paymentId: string, sandbox = false) {
-  const result = await piApi<PiPaymentDTO>(`/payments/${paymentId}/cancel`, {
+  const result = await piApiKeyThenBearer<PiPaymentDTO>(`/payments/${paymentId}/cancel`, {
     method: "POST",
     body: {},
     sandbox,
@@ -418,8 +504,10 @@ export async function cancelPiPayment(paymentId: string, sandbox = false) {
     status: result.status,
     sandbox,
     authScheme: result.authScheme,
+    headerMode: result.headerMode,
     piUrl: result.url,
     piBody: result.data,
+    piBodyText: clipPiBodyText(result.bodyText),
   });
   return result;
 }

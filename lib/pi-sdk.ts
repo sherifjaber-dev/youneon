@@ -716,9 +716,11 @@ export async function createPiPayment(
             status: result.status,
             piStatus,
             sandbox,
-            apiKeyPresent: result.data.apiKeyPresent === true,
-            keyPrefix: typeof result.data.keyPrefix === "string" ? result.data.keyPrefix : undefined,
+            hasProductionKey: result.data.hasProductionKey === true,
             keyLength: typeof result.data.keyLength === "number" ? result.data.keyLength : undefined,
+            keyStartsWithSkLive: result.data.keyStartsWithSkLive === true,
+            headerMode:
+              typeof result.data.headerMode === "string" ? result.data.headerMode : undefined,
           });
           if (!result.ok) {
             const authFail =

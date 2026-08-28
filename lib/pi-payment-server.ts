@@ -34,6 +34,7 @@ export type PaymentActionResult = {
   cancelled?: boolean;
   waiting?: boolean;
   piStatus?: number;
+  headerMode?: "Key" | "Bearer";
 };
 
 async function sessionUsername(): Promise<string | null> {
@@ -106,14 +107,25 @@ export async function approvePaymentById(
 
   // Always POST /approve immediately. Do not GET first — Open App with
   // Pi.init sandbox:false expires the wallet if approve is delayed.
-  console.info("[Pi] approve start", { paymentId, ...debug });
+  console.info("[Pi] approve start", {
+    paymentId,
+    hasProductionKey: debug.hasProductionKey,
+    keyLength: debug.keyLength,
+    keyStartsWithSkLive: debug.keyStartsWithSkLive,
+    sandbox: debug.sandbox,
+    keySource: debug.keySource,
+  });
   const approved = await approvePiPayment(paymentId, sandbox);
   console.info("[Pi] approve HTTP", {
     paymentId,
+    hasProductionKey: debug.hasProductionKey,
+    keyLength: debug.keyLength,
+    keyStartsWithSkLive: debug.keyStartsWithSkLive,
+    headerMode: approved.headerMode,
     status: approved.status,
-    authScheme: approved.authScheme,
+    piBodyText: approved.bodyText,
+    sandbox: debug.sandbox,
     piUrl: approved.url,
-    ...debug,
   });
 
   if (
@@ -127,11 +139,20 @@ export async function approvePaymentById(
       payment: approved.data,
       approved: true,
       piStatus: approved.status,
+      headerMode: approved.headerMode,
     };
   }
 
   if (isDeadApproveStatus(approved.status)) {
     deadApprovePaymentIds.add(paymentId);
+    return {
+      ok: false,
+      status: approved.status || 502,
+      payment: approved.data,
+      piStatus: approved.status,
+      headerMode: approved.headerMode,
+      error: describePiApiFailure("approve", approved.status || 502, approved.data, sandbox),
+    };
   }
 
   try {
@@ -143,13 +164,17 @@ export async function approvePaymentById(
         payment: already.data,
         approved: true,
         piStatus: approved.status,
+        headerMode: approved.headerMode,
       };
     }
   } catch (error) {
     console.warn("[Pi] approve: follow-up get failed", {
       paymentId,
       message: error instanceof Error ? error.message : "get failed",
-      ...debug,
+      hasProductionKey: debug.hasProductionKey,
+      keyLength: debug.keyLength,
+      keyStartsWithSkLive: debug.keyStartsWithSkLive,
+      sandbox: debug.sandbox,
     });
   }
 
@@ -158,6 +183,7 @@ export async function approvePaymentById(
     status: approved.status || 502,
     payment: approved.data,
     piStatus: approved.status,
+    headerMode: approved.headerMode,
     error: describePiApiFailure("approve", approved.status || 502, approved.data, sandbox),
   };
 }
