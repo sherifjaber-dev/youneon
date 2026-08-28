@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       status: result.status,
       piStatus: result.piStatus || result.status,
       hasProductionKey: debug.hasProductionKey,
+      keyPrefix: debug.keyPrefix,
       keyLength: debug.keyLength,
       keyStartsWithSkLive: debug.keyStartsWithSkLive,
       headerMode: result.headerMode,

@@ -1,4 +1,8 @@
-import { isPiAuthFailureStatus, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
+import {
+  isPiAuthFailureStatus,
+  WRONG_PI_APP_PAYMENT,
+  wrongPiApiKeyMessage,
+} from "@/lib/pi-network-copy";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 import { resolvePiSandboxFromHost } from "@/lib/system-config";
 
@@ -61,8 +65,8 @@ export function getPiServerApiKeyInfo(_sandbox: boolean): { key: string; source:
 }
 
 /**
- * Unique keys to try for approve/complete. PRODUCTION first (Open App listing),
- * then trimmed PI_API_KEY (Studio / Develop). Same value is not tried twice.
+ * Unique keys to try for approve/complete. PRODUCTION first (Open App listing).
+ * On PRODUCTION 404, PI_API_KEY is retried only if it looks like a 64-char Server API Key.
  */
 export function getPiApproveKeyAttempts(): { key: string; source: PiKeySource }[] {
   const production = envKey("PI_API_KEY_PRODUCTION");
@@ -131,24 +135,59 @@ function looksLikeStripeKey(key: string): boolean {
   return key.startsWith("sk_live") || key.startsWith("sk_test");
 }
 
+/** Pi Develop Server API Keys are 64-char (not Stripe sk_live / sk_test). */
+export function looksLikePiServerApiKey(key: string): boolean {
+  const k = key.trim();
+  if (k.length !== 64) return false;
+  if (looksLikeStripeKey(k)) return false;
+  return /^[A-Za-z0-9_-]+$/.test(k);
+}
+
+function productionApiKey(): string {
+  return envKey("PI_API_KEY_PRODUCTION");
+}
+
+/** First 6 chars of PI_API_KEY_PRODUCTION so logs can be matched in Pi Develop. Never the full key. */
+function productionKeyPrefix(): string {
+  return productionApiKey().slice(0, 6);
+}
+
+/** 401 bodies that mean this value is not a Server API Key — never follow with Bearer. */
+function isInvalidServerApiKeyResponse(status: number, bodyText: string, data: unknown): boolean {
+  if (status !== 401) return false;
+  const err =
+    data && typeof data === "object" && typeof (data as { error?: unknown }).error === "string"
+      ? String((data as { error: string }).error)
+      : "";
+  const msg =
+    data && typeof data === "object" && typeof (data as { error_message?: unknown }).error_message === "string"
+      ? String((data as { error_message: string }).error_message)
+      : "";
+  const text = `${err} ${msg} ${bodyText}`;
+  return (
+    /invalid\/missing api key/i.test(text) ||
+    /requires a server api key authorization/i.test(text)
+  );
+}
+
 function clipPiBodyText(text: string): string {
   return text.length > 800 ? `${text.slice(0, 800)}…` : text;
 }
 
-/** Safe-to-log flags only — never the full API key. */
+/** Safe-to-log flags only — never the full API key. keyPrefix is PI_API_KEY_PRODUCTION. */
 export function piPaymentDebugMeta(sandbox = false): PiPaymentDebugMeta {
   const info = getPiServerApiKeyInfo(sandbox);
-  const production = envKey("PI_API_KEY_PRODUCTION");
+  const production = productionApiKey();
   return {
     sandbox,
     apiKeyPresent: info.key.length > 0,
     hasProductionKey: production.length > 0,
-    keyPrefix: info.key.slice(0, 6),
+    keyPrefix: (production || info.key).slice(0, 6),
     keyLength: info.key.length,
     keySource: info.source,
     piUrl: getPiPlatformBase(),
-    looksLikeStripe: looksLikeStripeKey(info.key),
-    keyStartsWithSkLive: info.key.startsWith("sk_live"),
+    looksLikeStripe: looksLikeStripeKey(production || info.key),
+    keyStartsWithSkLive: (production || info.key).startsWith("sk_live"),
   };
 }
 
@@ -257,6 +296,7 @@ export function logPiPaymentAction(
     piBody: safePiResponseBody(info.piBody),
     piBodyText: info.piBodyText,
     hasProductionKey: debug.hasProductionKey,
+    keyPrefix: debug.keyPrefix,
     keyLength: debug.keyLength,
     keyStartsWithSkLive: debug.keyStartsWithSkLive,
     sandbox: debug.sandbox,
@@ -311,9 +351,7 @@ export function describePiApiFailure(
     return detail ? `${hint} ${detail}` : hint;
   }
   if (status === 404) {
-    const hint =
-      "Payment not found after trying PI_API_KEY_PRODUCTION and PI_API_KEY. The paymentId is not visible to this Testnet app (wrong app, or Pi.init sandbox:false created a Mainnet payment).";
-    return `Pi ${action} failed (404): ${hint}${detail ? ` ${detail}` : ""}`;
+    return WRONG_PI_APP_PAYMENT;
   }
   return `Pi ${action} failed (${status})${detail ? `: ${detail}` : ""}`;
 }
@@ -350,6 +388,7 @@ function logPiAuthAttempt(
   const debug = piPaymentDebugMeta(sandbox);
   console.info("[Pi]", action, {
     hasProductionKey: debug.hasProductionKey,
+    keyPrefix: debug.keyPrefix,
     keyLength: debug.keyLength,
     keyStartsWithSkLive: debug.keyStartsWithSkLive,
     headerMode,
@@ -414,7 +453,9 @@ export async function piApi<T = unknown>(
     headerMode: authScheme,
     authScheme,
     hasProductionKey: debug.hasProductionKey,
+    keyPrefix: productionKeyPrefix() || apiKey.slice(0, 6),
     keyLength: apiKey.length,
+    looksLikeStripe: looksLikeStripeKey(apiKey),
     keyStartsWithSkLive: apiKey.startsWith("sk_live"),
     piBodyText: clipPiBodyText(bodyText),
     piBody: safePiResponseBody(data),
@@ -434,24 +475,21 @@ export async function piApi<T = unknown>(
   };
 }
 
-/** Try Key, then Bearer for one API key. Stop at the first response that is not 401. */
-async function piApiKeyThenBearer<T = unknown>(
+/**
+ * Server API Key endpoints: Authorization: Key only.
+ * Never Bearer — Key 401 Invalid/missing or "requires a Server API Key authorization" means the key is wrong, not the scheme.
+ */
+async function piApiWithServerKey<T = unknown>(
   path: string,
   options: Omit<PiApiOptions, "authScheme"> = {}
 ): Promise<PiApiResult<T>> {
-  const schemes: PiAuthScheme[] = ["Key", "Bearer"];
-  let last: PiApiResult<T> | null = null;
-  for (const headerMode of schemes) {
-    const result = await piApi<T>(path, { ...options, authScheme: headerMode });
-    last = result;
-    if (result.status !== 401) return result;
-  }
-  return last!;
+  return piApi<T>(path, { ...options, authScheme: "Key" });
 }
 
 /**
- * Try PI_API_KEY_PRODUCTION first. On 404, retry once with trimmed PI_API_KEY.
- * Stop at the first 200. 401 still tries Bearer on the same key only.
+ * Try PI_API_KEY_PRODUCTION first (Key). On 404, retry once with PI_API_KEY only if that
+ * value looks like a 64-char Server API Key. Do not Bearer-retry after 401 Invalid/missing.
+ * If PRODUCTION Key 404s and the fallback key is invalid, keep the 404 (wrong Pi app).
  */
 async function piApiWithKey404Fallback<T = unknown>(
   path: string,
@@ -464,29 +502,62 @@ async function piApiWithKey404Fallback<T = unknown>(
   }
 
   let last: PiApiResult<T> | null = null;
+  let production404: PiApiResult<T> | null = null;
+
   for (let i = 0; i < attempts.length; i++) {
     const attempt = attempts[i];
-    last = await piApiKeyThenBearer<T>(path, {
+    last = await piApiWithServerKey<T>(path, {
       ...options,
       apiKey: attempt.key,
       keySource: attempt.source,
     });
+
     if (last.status === 200 || last.ok) {
       console.info("[Pi] platform succeeded", {
         keySource: attempt.source,
         status: last.status,
+        headerMode: last.headerMode,
         path,
         paymentId: options.paymentId,
+        keyPrefix: productionKeyPrefix() || attempt.key.slice(0, 6),
       });
       return last;
     }
-    if (last.status === 404 && i + 1 < attempts.length) {
-      console.info("[Pi] 404 with", attempt.source, "- retrying once with", attempts[i + 1].source, {
+
+    if (isInvalidServerApiKeyResponse(last.status, last.bodyText, last.data)) {
+      console.info("[Pi] Key 401 Invalid/missing — not retrying Bearer", {
+        keySource: attempt.source,
+        status: last.status,
         paymentId: options.paymentId,
         path,
+        keyPrefix: productionKeyPrefix() || attempt.key.slice(0, 6),
       });
-      continue;
+      if (production404) return production404;
+      return last;
     }
+
+    if (last.status === 404 && attempt.source === "PI_API_KEY_PRODUCTION") {
+      production404 = last;
+      const next = attempts[i + 1];
+      if (next && looksLikePiServerApiKey(next.key)) {
+        console.info("[Pi] 404 with PI_API_KEY_PRODUCTION - retrying once with", next.source, {
+          paymentId: options.paymentId,
+          path,
+          keyPrefix: productionKeyPrefix(),
+          nextKeyLength: next.key.length,
+        });
+        continue;
+      }
+      console.info("[Pi] 404 with PI_API_KEY_PRODUCTION - not retrying PI_API_KEY (not a 64-char Server API Key)", {
+        paymentId: options.paymentId,
+        path,
+        keyPrefix: productionKeyPrefix(),
+        nextKeyLength: next?.key.length ?? 0,
+        nextKeySource: next?.source || "",
+      });
+      return last;
+    }
+
     return last;
   }
   return last!;

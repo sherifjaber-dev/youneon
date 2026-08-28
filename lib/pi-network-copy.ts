@@ -9,6 +9,10 @@ export const WRONG_PI_API_KEY_MAINNET =
 export const WRONG_PI_API_KEY_OPEN_APP =
   "Wrong Pi API key for Open App. Set PI_API_KEY_PRODUCTION on Vercel to the Develop Testnet Server API Key of the SAME Pi app that Open App uses (not Studio, not Stripe, not a sandbox-only key).";
 
+/** 404 payment_not_found with a valid PI_API_KEY_PRODUCTION Server API Key = this paymentId is not in that Pi app. */
+export const WRONG_PI_APP_PAYMENT =
+  "This payment belongs to a different Pi app than PI_API_KEY_PRODUCTION. In Pi Develop, paste the Server API Key from the same app as Open App (youneon-app.vercel.app).";
+
 export function wrongPiApiKeyMessage(sandbox?: boolean): string {
   if (sandbox === false) return WRONG_PI_API_KEY_OPEN_APP;
   return WRONG_PI_API_KEY_TESTNET;

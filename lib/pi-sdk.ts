@@ -8,7 +8,7 @@ import {
 } from "@/lib/purchase-feedback";
 import { getPiInitOptions, isPiStudioHost, resolvePiSandboxFromHost } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk, readLiteSession } from "@/lib/pi-client-session";
-import { isPiAuthFailureStatus, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
+import { isPiAuthFailureStatus, WRONG_PI_APP_PAYMENT, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
 import type {
   PiAuthResult,
   PiPaymentCallbacks,
@@ -717,6 +717,8 @@ export async function createPiPayment(
             piStatus,
             sandbox,
             hasProductionKey: result.data.hasProductionKey === true,
+            keyPrefix:
+              typeof result.data.keyPrefix === "string" ? result.data.keyPrefix : undefined,
             keyLength: typeof result.data.keyLength === "number" ? result.data.keyLength : undefined,
             keyStartsWithSkLive: result.data.keyStartsWithSkLive === true,
             headerMode:
@@ -729,11 +731,15 @@ export async function createPiPayment(
               isPiAuthFailureStatus(result.status) || isPiAuthFailureStatus(piStatus);
             const dead =
               isDeadApproveStatus(result.status) || isDeadApproveStatus(piStatus);
+            const isWrongApp404 = result.status === 404 || piStatus === 404;
             const error = new Error(
-              authFail
-                ? wrongPiApiKeyMessage(sandbox)
-                : (typeof result.data.error === "string" && result.data.error) ||
-                  `Payment approval failed (${result.status})`
+              isWrongApp404
+                ? (typeof result.data.error === "string" && result.data.error) ||
+                  WRONG_PI_APP_PAYMENT
+                : authFail
+                  ? wrongPiApiKeyMessage(sandbox)
+                  : (typeof result.data.error === "string" && result.data.error) ||
+                    `Payment approval failed (${result.status})`
             );
             if (dead && approveId) {
               deadApprovePaymentIds.add(approveId);
@@ -751,7 +757,8 @@ export async function createPiPayment(
           logError(err);
           emitPurchaseFeedback({ type: "error", message: err.message });
           finishWith(() => reject(err));
-          throw err;
+          // Never reject the Pi SDK callback after we settled — it retries approve ~every 10s.
+          return;
         }
         try {
           extraCallbacks?.onReadyForServerApproval?.(paymentId);

@@ -111,6 +111,7 @@ export async function approvePaymentById(
   console.info("[Pi] approve start", {
     paymentId,
     hasProductionKey: debug.hasProductionKey,
+    keyPrefix: debug.keyPrefix,
     keyLength: debug.keyLength,
     keyStartsWithSkLive: debug.keyStartsWithSkLive,
     sandbox: debug.sandbox,
@@ -120,6 +121,7 @@ export async function approvePaymentById(
   console.info("[Pi] approve HTTP", {
     paymentId,
     hasProductionKey: debug.hasProductionKey,
+    keyPrefix: debug.keyPrefix,
     keyLength: debug.keyLength,
     keyStartsWithSkLive: debug.keyStartsWithSkLive,
     headerMode: approved.headerMode,
@@ -178,6 +180,7 @@ export async function approvePaymentById(
       paymentId,
       message: error instanceof Error ? error.message : "get failed",
       hasProductionKey: debug.hasProductionKey,
+      keyPrefix: debug.keyPrefix,
       keyLength: debug.keyLength,
       keyStartsWithSkLive: debug.keyStartsWithSkLive,
       sandbox: debug.sandbox,
