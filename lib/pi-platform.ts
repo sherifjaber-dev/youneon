@@ -681,6 +681,11 @@ async function piApiWithKey404Fallback<T = unknown>(
   return last!;
 }
 
+/**
+ * GET /payments/{id}. Never call this before or after approve — Open App ids from
+ * youneonbq9219.pinet.com always 404 against the Develop key (xjae8e). After approve
+ * 404, use listIncompletePaymentsWithProductionKey instead.
+ */
 export async function getPiPayment(paymentId: string, sandbox = false) {
   return piApiWithKey404Fallback<PiPaymentDTO>(`/payments/${paymentId}`, {
     method: "GET",
@@ -695,6 +700,7 @@ export async function approvePiPayment(paymentId: string, sandbox = false) {
   if (!key) {
     throw new PiPlatformError(MISSING_PI_API_KEY_PRODUCTION, 503);
   }
+  // POST /approve immediately with Key + PI_API_KEY_PRODUCTION. Never GET-by-id first.
   try {
     const result = await piApiWithServerKey<PiPaymentDTO>(path, {
       method: "POST",
@@ -712,6 +718,7 @@ export async function approvePiPayment(paymentId: string, sandbox = false) {
         keySource: "PI_API_KEY_PRODUCTION",
         sandbox,
       });
+      // After Open App 404: only GET /payments/incomplete (never GET /payments/{id}).
       await listIncompletePaymentsWithProductionKey(paymentId, sandbox);
     }
     logPiAuthAttempt("approve", sandbox, result.headerMode, result.status, result.bodyText, {

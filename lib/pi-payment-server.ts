@@ -152,6 +152,7 @@ export async function approvePaymentById(
 
   if (isDeadApproveStatus(approved.status)) {
     // Confirmed 404/401/403 with PRODUCTION — do not retry this paymentId every 10s.
+    // Do not GET /payments/{id}: Open App ids from the pinet wrapper always 404 here.
     deadApprovePaymentIds.add(paymentId);
     return {
       ok: false,
@@ -164,31 +165,8 @@ export async function approvePaymentById(
     };
   }
 
-  try {
-    const already = await getPiPayment(paymentId, sandbox);
-    if (already.ok && already.data?.status?.developer_approved) {
-      return {
-        ok: true,
-        status: 200,
-        payment: already.data,
-        approved: true,
-        piStatus: approved.status,
-        headerMode: approved.headerMode,
-        keySource: already.keySource || approved.keySource,
-      };
-    }
-  } catch (error) {
-    console.warn("[Pi] approve: follow-up get failed", {
-      paymentId,
-      message: error instanceof Error ? error.message : "get failed",
-      hasProductionKey: debug.hasProductionKey,
-      keyPrefix: debug.keyPrefix,
-      keyLength: debug.keyLength,
-      keyStartsWithSkLive: debug.keyStartsWithSkLive,
-      sandbox: debug.sandbox,
-    });
-  }
-
+  // Do not GET /v2/payments/{paymentId} after approve — it delays the wallet and
+  // always 404s for Open App payments created on youneonbq9219.pinet.com.
   return {
     ok: false,
     status: approved.status || 502,
