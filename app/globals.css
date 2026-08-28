@@ -2373,6 +2373,22 @@ html.yn-profile-open {
   letter-spacing: 0.01em;
 }
 
+.yn-neon-shop-title.yn-script-logo {
+  display: block;
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+}
+
+.yn-neon-shop-sub {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.68);
+}
+
 .yn-script-you {
   color: var(--pink-text);
   text-shadow:

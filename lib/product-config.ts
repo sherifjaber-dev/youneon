@@ -67,9 +67,21 @@ export const NEON_PACK_METADATA_TYPE = "neon_pack" as const;
 
 export const NEON_PACKAGES = [
   {
+    id: "neon_starter",
+    neon: 500,
+    price: 0.19,
+    badge: null,
+  },
+  {
     id: "neon_small",
     neon: 1000,
     price: 0.31,
+    badge: null,
+  },
+  {
+    id: "neon_2k",
+    neon: 2000,
+    price: 0.55,
     badge: null,
   },
   {
@@ -83,6 +95,12 @@ export const NEON_PACKAGES = [
     neon: 5000,
     price: 0.99,
     badge: "Best Value",
+  },
+  {
+    id: "neon_xl",
+    neon: 10000,
+    price: 1.79,
+    badge: null,
   },
 ] as const;
 
