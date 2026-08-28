@@ -7,32 +7,27 @@
   }
 
   // Official Pi.init only. Never pass clientId — unofficial and breaks Pi Browser.
-  // sandbox follows NEXT_PUBLIC_PI_SANDBOX (injected as window.__YOUNEON_PI_SANDBOX__).
-  // Do not infer Testnet vs Mainnet from hostname.
-  function configuredSandbox() {
+  // sandbox is hostname-based: true on Studio/local, false in Ecosystem / production URL.
+  // Testnet vs Mainnet is the Developer Portal registration, not this flag.
+  function isSandboxHost() {
     try {
-      if (window.__YOUNEON_PI_SANDBOX__ === false) return false;
-    } catch (e) {}
-    return true;
+      var host = String((location && location.hostname) || "");
+      return host.indexOf("sandbox.minepi.com") !== -1 || host === "localhost" || host === "127.0.0.1";
+    } catch (e) {
+      return false;
+    }
   }
 
+  try { window.__YOUNEON_PI_SANDBOX__ = isSandboxHost(); } catch (sbx) {}
+
   function piInitOptions() {
-    var sandbox = configuredSandbox();
+    var sandbox = isSandboxHost();
     console.log("[Pi] init options", { sandbox: sandbox });
     return { version: "2.0", sandbox: sandbox };
   }
 
   var PI_WAIT_MS = 3000;
   var PI_AUTH_HANG_MS = 12000;
-
-  function onPinetHost() {
-    try {
-      var h = String((location && location.hostname) || "");
-      return h.indexOf("pinet.com") !== -1;
-    } catch (e) {
-      return false;
-    }
-  }
 
   function safePiInit(P, onOk) {
     if (!P || !P.init) {
@@ -441,7 +436,8 @@
     "function wireAuth(p){try{if(p&&typeof p.then==='function'){var st={done:false};p.then(function(r){st.done=true;unlockAuth();setBtnBusy(false);try{if(typeof window.__youneonMarkPiAuthOk==='function')window.__youneonMarkPiAuthOk(r);}catch(m){}},function(e){st.done=true;unlockAuth();setBtnBusy(false);console.log('[Pi] error: '+errMsg(e));showMsg(failText(e));try{window.__YOUNEON_PI_LAST__='Last: '+errMsg(e);}catch(sl){}});try{if(typeof Promise!=='undefined'&&typeof Promise.race==='function'){Promise.race([p,new Promise(function(res,rej){setTimeout(function(){rej({message:'authenticate timed out'});}," +
     PI_AUTH_HANG_MS +
     ");})]).then(function(){},function(){if(!st.done&&!window.__PI_AUTH_OK)resetHang();});}else{armHangTimer(st);}}catch(tm){armHangTimer(st);}}else if(!p){setBtnBusy(false);}}catch(w2){setBtnBusy(false);console.log('[Pi] error: '+errMsg(w2));showMsg(failText(w2));}}" +
-    "function runAuth(sdk){if(!sdk||typeof sdk.authenticate!=='function'){showMsg('Open this app in Pi Browser to sign in');try{window.__YOUNEON_PI_LAST__='Last: window.Pi missing';}catch(sl){}console.log('[Pi] error: no window.Pi');return;}try{if(sdk.init)sdk.init({version:'2.0',sandbox:window.__YOUNEON_PI_SANDBOX__!==false});}catch(ie){console.log('[Pi] error: '+errMsg(ie));}setBtnBusy(true);showMsg('');console.log('[Pi] authenticate start');try{window.__YOUNEON_PI_LAST__='Last: authenticate called';}catch(ls){}var pr=null;try{pr=sdk.authenticate(['username','payments'],function(payment){return new Promise(function(done){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.onload=function(){done();};x.onerror=function(){done();};x.send(JSON.stringify({paymentId:payment&&payment.identifier,txid:payment&&payment.transaction&&payment.transaction.txid,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);done();}});});wireAuth(pr);}catch(c){console.log('[Pi] error: '+errMsg(c));try{window.__YOUNEON_PI_LAST__='Last: '+errMsg(c);}catch(cl){}}if(!pr){try{pr=sdk.authenticate({scopes:['username','payments']});wireAuth(pr);}catch(o){console.log('[Pi] error: '+errMsg(o));setBtnBusy(false);showMsg(failText(o));}}if(!pr){setBtnBusy(false);showMsg('Could not start Pi sign-in. Try again.');}}" +
+    "function sandboxFlag(){try{var h=String((location&&location.hostname)||'');return h.indexOf('sandbox.minepi.com')!==-1||h==='localhost'||h==='127.0.0.1';}catch(e){return false;}}" +
+    "function runAuth(sdk){if(!sdk||typeof sdk.authenticate!=='function'){showMsg('Open this app in Pi Browser to sign in');try{window.__YOUNEON_PI_LAST__='Last: window.Pi missing';}catch(sl){}console.log('[Pi] error: no window.Pi');return;}try{if(sdk.init)sdk.init({version:'2.0',sandbox:sandboxFlag()});}catch(ie){console.log('[Pi] error: '+errMsg(ie));}setBtnBusy(true);showMsg('');console.log('[Pi] authenticate start');try{window.__YOUNEON_PI_LAST__='Last: authenticate called';}catch(ls){}var pr=null;try{pr=sdk.authenticate(['username','payments'],function(payment){return new Promise(function(done){try{var x=new XMLHttpRequest();x.open('POST','/api/pi/payment/incomplete',true);x.setRequestHeader('Content-Type','application/json');x.withCredentials=true;x.onload=function(){done();};x.onerror=function(){done();};x.send(JSON.stringify({paymentId:payment&&payment.identifier,txid:payment&&payment.transaction&&payment.transaction.txid,payment:payment}));}catch(ie){console.log('[Pi] error: '+ie);done();}});});wireAuth(pr);}catch(c){console.log('[Pi] error: '+errMsg(c));try{window.__YOUNEON_PI_LAST__='Last: '+errMsg(c);}catch(cl){}}if(!pr){try{pr=sdk.authenticate({scopes:['username','payments']});wireAuth(pr);}catch(o){console.log('[Pi] error: '+errMsg(o));setBtnBusy(false);showMsg(failText(o));}}if(!pr){setBtnBusy(false);showMsg('Could not start Pi sign-in. Try again.');}}" +
     "var evType='click';try{evType=String((typeof event!=='undefined'&&event&&event.type)||'click');}catch(et){evType='click';}" +
     "if(evType==='touchstart'){try{window.__YOUNEON_PI_TOUCH_AT__=(new Date()).getTime();}catch(ta){}try{setTimeout(function(){var clickAt=window.__YOUNEON_PI_CLICK_AT__||0;var touchAt=window.__YOUNEON_PI_TOUCH_AT__||0;if(!clickAt||clickAt<touchAt){var Q=P;if(!Q){try{Q=window.Pi;}catch(w){}}runAuth(Q);}},400);}catch(st){runAuth(P);}}" +
     "else{try{window.__YOUNEON_PI_CLICK_AT__=(new Date()).getTime();}catch(ca){}if(!P||typeof P.authenticate!=='function'){showMsg('Open this app in Pi Browser to sign in');try{window.__YOUNEON_PI_LAST__='Last: window.Pi missing';}catch(sl2){}console.log('[Pi] error: no window.Pi');if(!window.__YOUNEON_PI_DELAY_AUTH__){window.__YOUNEON_PI_DELAY_AUTH__=1;try{setTimeout(function(){var Q=null;try{Q=window.Pi;}catch(w){}if(!Q){try{Q=window.parent.Pi;}catch(p){}}if(!Q){try{Q=window.top.Pi;}catch(t){}}if(Q&&typeof Q.authenticate==='function')runAuth(Q);else window.__YOUNEON_PI_DELAY_AUTH__=0;},800);}catch(d){}}}else{runAuth(P);}}" +
@@ -663,7 +659,6 @@
 
   function loadOfficialSdkIfMissing() {
     if (findPi()) return;
-    if (onPinetHost()) return;
     if (document.querySelector("script[data-youneon-pi-sdk]")) return;
     var nativePi = null;
     try { nativePi = findPi(); } catch (pe) { console.log("[Pi] error: " + errMsg(pe)); }
@@ -680,6 +675,14 @@
     }
     function abortSdk(reason) {
       if (finished) return;
+      if (findPi()) {
+        finished = true;
+        stopWatch();
+        if (nativePi) {
+          try { window.Pi = nativePi; } catch (re) { console.log("[Pi] error: " + errMsg(re)); }
+        }
+        return;
+      }
       finished = true;
       stopWatch();
       try { s.onload = null; s.onerror = null; } catch (h) {}
@@ -769,7 +772,6 @@
         renderStatus();
         return;
       }
-      if (onPinetHost()) return;
       loadOfficialSdkIfMissing();
     }
     function afterPaint() {

@@ -6,7 +6,7 @@ import {
   purchaseErrorMessage,
   purchaseSummaryFromPayment,
 } from "@/lib/purchase-feedback";
-import { getPiInitOptions } from "@/lib/system-config";
+import { getPiInitOptions, resolvePiSandboxFromHost } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk, readLiteSession } from "@/lib/pi-client-session";
 import { isPiAuthFailureStatus, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
 import type {
@@ -93,14 +93,6 @@ export function isPiAvailable(): boolean {
   return typeof resolvePiSdk() !== "undefined";
 }
 
-function isPinetHost(): boolean {
-  try {
-    return typeof location !== "undefined" && location.hostname.includes("pinet.com");
-  } catch {
-    return false;
-  }
-}
-
 export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean> {
   if (typeof window === "undefined") {
     return false;
@@ -118,7 +110,7 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
       logSdkLoaded();
       return true;
     }
-    if (!requestedSdk && Date.now() - started >= 800 && !isPinetHost()) {
+    if (!requestedSdk && Date.now() - started >= 800) {
       requestedSdk = true;
       loadOfficialSdkIfMissing();
     }
@@ -127,19 +119,44 @@ export async function waitForPiSdk(timeoutMs = PI_SDK_WAIT_MS): Promise<boolean>
   return !!resolvePiSdk();
 }
 
-/** Load sdk.minepi.com only if Pi is still missing. Never on pinet.com (hangs the iframe). */
+/** Load sdk.minepi.com only if Pi is still missing. Never overwrite an injected window.Pi. */
 function loadOfficialSdkIfMissing(): void {
   if (typeof document === "undefined") return;
   if (resolvePiSdk()) return;
-  if (isPinetHost()) return;
   if (document.querySelector("script[data-youneon-pi-sdk]")) return;
   const s = document.createElement("script");
   s.async = true;
   s.setAttribute("data-youneon-pi-sdk", "1");
+  let nativePi: ReturnType<typeof resolvePiSdk> | undefined;
+  try {
+    nativePi = resolvePiSdk();
+  } catch {
+    nativePi = undefined;
+  }
+  const watch = window.setInterval(() => {
+    try {
+      if (window.Pi && !nativePi) nativePi = window.Pi;
+    } catch {
+      /* ignore */
+    }
+  }, 40);
   let finished = false;
   const abort = (reason: string) => {
     if (finished) return;
+    if (resolvePiSdk()) {
+      finished = true;
+      window.clearInterval(watch);
+      if (nativePi) {
+        try {
+          window.Pi = nativePi;
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
     finished = true;
+    window.clearInterval(watch);
     try {
       s.onload = null;
       s.onerror = null;
@@ -160,6 +177,14 @@ function loadOfficialSdkIfMissing(): void {
   };
   s.onload = () => {
     finished = true;
+    window.clearInterval(watch);
+    if (nativePi) {
+      try {
+        window.Pi = nativePi;
+      } catch (error) {
+        logError(error);
+      }
+    }
   };
   s.onerror = () => {
     abort("failed to load sdk.minepi.com");
@@ -176,6 +201,21 @@ export function resetPiSdkInit(): void {
     window.__YOUNEON_PI_AUTH_PROMISE__ = undefined;
     window.__YOUNEON_PI_INIT_PROMISE__ = undefined;
   }
+}
+
+/**
+ * Official Pi.init. sandbox is true only on Studio / local hosts.
+ * Testnet vs Mainnet is the Developer Portal registration, not this flag.
+ */
+export async function initPi(): Promise<boolean> {
+  if (typeof window === "undefined" || !window.Pi) {
+    throw new Error("Pi SDK not loaded");
+  }
+  const isSandbox = resolvePiSandboxFromHost();
+  console.log("[Pi] init start", { sandbox: isSandbox });
+  await window.Pi.init({ version: "2.0", sandbox: isSandbox });
+  console.log("[Pi] init success");
+  return isSandbox;
 }
 
 /**
@@ -205,11 +245,9 @@ export async function initPiSdk(): Promise<void> {
       }
 
       logSdkLoaded();
-      const initOptions = getPiInitOptions();
-      console.log("[Pi] init start", { sandbox: initOptions.sandbox });
       try {
         await Promise.race([
-          Promise.resolve(Pi.init(initOptions)),
+          initPi(),
           new Promise<void>((resolve) => {
             window.setTimeout(resolve, PI_INIT_TIMEOUT_MS);
           }),
@@ -218,7 +256,6 @@ export async function initPiSdk(): Promise<void> {
         logError(error);
       }
       initSucceeded = true;
-      console.log("[Pi] init success");
     })().catch((error) => {
       initPromise = null;
       initSucceeded = false;

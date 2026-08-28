@@ -9,7 +9,7 @@ if (typeof window !== "undefined") {
 export const PI_PLATFORM_BASE_DEFAULT = "https://api.minepi.com/v2";
 
 export const MISSING_PI_API_KEY =
-  "Pi Server API Key is missing. Set PI_API_KEY on Vercel to the Sandbox Server API Key from Pi Develop → your app → API Keys. Until that is set, purchases cannot be approved or completed.";
+  "Pi Server API Key is missing. Set PI_API_KEY on Vercel to the Develop Testnet / Sandbox Server API Key for this Testnet app (Connected App Wallet). Do not use old App Studio keys or a Production Mainnet key. Until that is set, purchases cannot be approved or completed.";
 
 export class PiPlatformError extends Error {
   status: number;
@@ -21,8 +21,10 @@ export class PiPlatformError extends Error {
 }
 
 export function isPiSandbox(): boolean {
-  // Never infer Testnet vs Mainnet from hostname. Env is the only switch.
-  return process.env.NEXT_PUBLIC_PI_SANDBOX !== "false";
+  // This app is registered Testnet in the Developer Portal.
+  // Client Pi.init sandbox is hostname-based (Studio vs Ecosystem) and does
+  // not switch networks. Server approve/complete always use the Testnet key.
+  return true;
 }
 
 /**

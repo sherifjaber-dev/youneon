@@ -33,12 +33,69 @@ const CRITICAL_CSS =
   "html.youneon-signed-in #youneon-app-tree,html.youneon-legal #youneon-app-tree{pointer-events:auto !important;z-index:1}";
 
 /**
+ * Load sdk.minepi.com in <head> BEFORE all other Pi code.
+ * If Studio already injected window.Pi, skip the script so we never overwrite it.
+ * Timeout aborts a hung sdk.minepi.com load (pinet.com must not freeze forever).
+ * If Pi is already present, never wait on the script.
+ */
+const PI_SDK_HEAD_SCRIPT =
+  "(function youneonPiSdkHead() {" +
+  "function errMsg(e) {" +
+  "if (!e) return 'unknown';" +
+  "if (typeof e === 'string') return e;" +
+  "if (e.message) return e.message;" +
+  "try { return JSON.stringify(e); } catch (x) { return String(e); }" +
+  "}" +
+  "function findPi() {" +
+  "var found = null;" +
+  "try { if (window.Pi) found = window.Pi; } catch (w) {}" +
+  "if (!found) { try { if (window.parent && window.parent.Pi) found = window.parent.Pi; } catch (p) {} }" +
+  "if (!found) { try { if (window.top && window.top.Pi) found = window.top.Pi; } catch (t) {} }" +
+  "if (found && !window.Pi) { try { window.Pi = found; } catch (cp) { console.log('[Pi] error: ' + errMsg(cp)); } }" +
+  "try { return window.Pi || found; } catch (r) { return found; }" +
+  "}" +
+  "if (findPi()) return;" +
+  "if (document.querySelector('script[data-youneon-pi-sdk]')) return;" +
+  "var nativePi = null;" +
+  "try { nativePi = findPi(); } catch (pe) { console.log('[Pi] error: ' + errMsg(pe)); }" +
+  "if (nativePi) return;" +
+  "var finished = false;" +
+  "var watch = setInterval(function () { try { if (window.Pi && !nativePi) nativePi = window.Pi; } catch (we) {} }, 40);" +
+  "var s = document.createElement('script');" +
+  "s.async = false;" +
+  "s.setAttribute('data-youneon-pi-sdk', '1');" +
+  "function stopWatch() { try { clearInterval(watch); } catch (cw) {} }" +
+  "function abort(reason) {" +
+  "if (finished) return;" +
+  "if (findPi()) { finished = true; stopWatch(); if (nativePi) { try { window.Pi = nativePi; } catch (re) { console.log('[Pi] error: ' + errMsg(re)); } } return; }" +
+  "finished = true;" +
+  "stopWatch();" +
+  "try { s.onload = null; s.onerror = null; } catch (h) {}" +
+  "try { s.src = 'about:blank'; } catch (b) {}" +
+  "try { if (s.parentNode) s.parentNode.removeChild(s); } catch (r) {}" +
+  "console.log('[Pi] error: ' + reason);" +
+  "}" +
+  "s.onload = function () {" +
+  "if (finished) return;" +
+  "finished = true;" +
+  "stopWatch();" +
+  "if (nativePi) { try { window.Pi = nativePi; } catch (re) { console.log('[Pi] error: ' + errMsg(re)); } }" +
+  "};" +
+  "s.onerror = function () { abort('failed to load sdk.minepi.com'); };" +
+  "try { setTimeout(function () { abort('SDK script timeout'); }, 3000); } catch (st) {}" +
+  "s.src = 'https://sdk.minepi.com/pi-sdk.js';" +
+  "(document.head || document.documentElement).appendChild(s);" +
+  "})();";
+
+/**
  * Vanilla ES5 boot script. No async/await, no arrow functions, no template
  * literals in the output — old Pi App Studio webviews throw on those.
- * Never loads sdk.minepi.com if App Studio / Pi Browser already injected window.Pi,
- * and never on pinet.com (that URL hangs the ecosystem iframe). Remote SDK load is
- * timed out at 3s. Pi.init is official only: { version: "2.0", sandbox } from
- * NEXT_PUBLIC_PI_SANDBOX. Never auto-switch Testnet vs Mainnet from hostname.
+ * Never loads sdk.minepi.com if App Studio / Pi Browser already injected window.Pi.
+ * Head already starts sdk.minepi.com; fallback load is timed out at 3s so a hung
+ * script cannot freeze pinet.com. If Pi is already present, never wait on it.
+ * Pi.init is official only: { version: "2.0", sandbox } from hostname
+ * (true on sandbox.minepi.com / localhost / 127.0.0.1; false in Ecosystem).
+ * Testnet vs Mainnet is the Developer Portal registration, not this flag.
  * Classic Pi.authenticate(scopesArray, cb) runs FIRST so Studio can hook it.
  * Authenticate is raced against 12s so a hanging stub Pi on pinet.com Chrome
  * cannot leave Sign in stuck on Signing in... If auth later succeeds, hide overlay.
@@ -48,26 +105,26 @@ const PI_BOOT_SCRIPT =
   "try { window.__YOUNEON_PI_CLIENT_ID__ = " +
   JSON.stringify(PI_NETWORK_CONFIG.CLIENT_ID || "") +
   "; } catch (cid) {}" +
-  "try { window.__YOUNEON_PI_SANDBOX__ = " +
-  JSON.stringify(PI_NETWORK_CONFIG.SANDBOX) +
-  "; } catch (sbx) {}" +
   "function errMsg(e) {" +
   "if (!e) return 'unknown';" +
   "if (typeof e === 'string') return e;" +
   "if (e.message) return e.message;" +
   "try { return JSON.stringify(e); } catch (x) { return String(e); }" +
   "}" +
+  "function isSandboxHost() {" +
+  "try {" +
+  "var host = String((location && location.hostname) || '');" +
+  "return host.indexOf('sandbox.minepi.com') !== -1 || host === 'localhost' || host === '127.0.0.1';" +
+  "} catch (e) { return false; }" +
+  "}" +
+  "try { window.__YOUNEON_PI_SANDBOX__ = isSandboxHost(); } catch (sbx) {}" +
   "function piInitOptions() {" +
-  "var sandbox = true;" +
-  "try { if (window.__YOUNEON_PI_SANDBOX__ === false) sandbox = false; } catch (s) {}" +
+  "var sandbox = isSandboxHost();" +
   "console.log('[Pi] init options', { sandbox: sandbox });" +
   "return { version: '2.0', sandbox: sandbox };" +
   "}" +
   "var PI_WAIT_MS = 3000;" +
   "var PI_AUTH_HANG_MS = 12000;" +
-  "function onPinetHost() {" +
-  "try { var h = String((location && location.hostname) || ''); return h.indexOf('pinet.com') !== -1; } catch (e) { return false; }" +
-  "}" +
   "function safePiInit(P, onOk) {" +
   "if (!P || !P.init) { if (onOk) onOk(); return; }" +
   "console.log('[Pi] init start');" +
@@ -232,6 +289,7 @@ const PI_BOOT_SCRIPT =
   "if (!window.__YOUNEON_PI_SDK_LOAD_SCHEDULED__) {" +
   "window.__YOUNEON_PI_SDK_LOAD_SCHEDULED__ = true;" +
   "function abortSdkScript(s, watch, reason) {" +
+  "if (findPi()) { try { clearInterval(watch); } catch (cw) {} return; }" +
   "try { clearInterval(watch); } catch (cw) {}" +
   "try { s.onload = null; s.onerror = null; } catch (h) {}" +
   "try { s.src = 'about:blank'; } catch (b) {}" +
@@ -239,7 +297,7 @@ const PI_BOOT_SCRIPT =
   "console.log('[Pi] error: ' + reason); setLast('Last: ' + reason); showPiMissing();" +
   "}" +
   "function loadOfficialSdkIfMissing() {" +
-  "if (findPi() || onPinetHost()) return;" +
+  "if (findPi()) return;" +
   "if (document.querySelector('script[data-youneon-pi-sdk]')) return;" +
   "var nativePi = null; try { nativePi = findPi(); } catch (pe) { console.log('[Pi] error: ' + errMsg(pe)); }" +
   "if (nativePi) return;" +
@@ -254,7 +312,7 @@ const PI_BOOT_SCRIPT =
   "s.src = 'https://sdk.minepi.com/pi-sdk.js';" +
   "(document.head || document.documentElement).appendChild(s);" +
   "}" +
-  "function tryLoadSdk() { if (findPi()) { renderStatus(); return; } if (onPinetHost()) return; loadOfficialSdkIfMissing(); }" +
+  "function tryLoadSdk() { if (findPi()) { renderStatus(); return; } loadOfficialSdkIfMissing(); }" +
   "function afterPaint() { try { setTimeout(tryLoadSdk, 0); } catch (e) { tryLoadSdk(); } }" +
   "if (document.readyState === 'complete') afterPaint();" +
   "else { try { window.addEventListener('load', afterPaint); } catch (le) { setTimeout(tryLoadSdk, PI_WAIT_MS); } }" +
@@ -371,6 +429,7 @@ export default async function RootLayout({
       }}
     >
       <head>
+        <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_SDK_HEAD_SCRIPT }} />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
         <meta charSet="utf-8" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -398,7 +457,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=sandbox-key-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=sandbox-host-1"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"
