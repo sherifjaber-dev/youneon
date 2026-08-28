@@ -4108,8 +4108,8 @@ html.youneon-signed-in .yn-lounge h2.yn-lounge-live-title,
   overflow: hidden;
   border-radius: 999px;
   padding: 3px;
-  background: linear-gradient(135deg, var(--pink), #a855f7 55%, #38bdf8);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--pink) 55%, transparent), 0 0 22px rgba(168, 85, 247, 0.35);
+  background: linear-gradient(135deg, var(--pink) 0%, #c084fc 48%, #7c3aed 100%);
+  box-shadow: 0 0 8px var(--pink-soft), 0 0 16px rgba(168, 85, 247, 0.5);
 }
 
 .yn-lounge-live-ring img,
@@ -4158,21 +4158,26 @@ html.youneon-signed-in .yn-lounge h2.yn-lounge-live-title,
   min-width: 0;
   width: 100%;
   aspect-ratio: 4 / 5;
-  border-radius: 20px;
-  border: 1.5px solid var(--pink-soft);
-  background: #0b0014;
-  box-shadow: 0 0 16px color-mix(in srgb, var(--pink) 32%, transparent), 0 0 28px rgba(168, 85, 247, 0.2);
+  border-radius: 22px;
+  border: 0;
+  padding: 0;
+  background: linear-gradient(135deg, var(--pink) 0%, #c084fc 48%, #7c3aed 100%);
+  box-shadow:
+    0 0 8px var(--pink-soft),
+    0 0 18px rgba(168, 85, 247, 0.5);
 }
 
 .yn-lounge-card-photo {
   position: absolute;
-  inset: 0;
+  inset: 3px;
   z-index: 0;
   display: block;
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
   padding: 0;
   border: 0;
+  border-radius: 19px;
+  overflow: hidden;
   background: #0b0014;
 }
 
@@ -4181,6 +4186,7 @@ html.youneon-signed-in .yn-lounge h2.yn-lounge-live-title,
   height: 100%;
   width: 100%;
   object-fit: cover;
+  border-radius: inherit;
 }
 
 .yn-lounge-photo-fallback {
@@ -4200,8 +4206,8 @@ html.youneon-signed-in .yn-lounge h2.yn-lounge-live-title,
 .yn-lounge-card-top {
   pointer-events: none;
   position: absolute;
-  left: 8px;
-  top: 8px;
+  left: 11px;
+  top: 11px;
   z-index: 2;
 }
 
@@ -4239,9 +4245,11 @@ html.youneon-signed-in .yn-lounge h2.yn-lounge-live-title,
 .yn-lounge-card-meta {
   pointer-events: none;
   position: absolute;
-  inset: auto 0 0;
+  inset: auto 3px 3px;
   z-index: 2;
   padding: 28px 10px 10px;
+  border-radius: 0 0 19px 19px;
+  overflow: hidden;
   background: linear-gradient(180deg, transparent, rgba(7, 0, 16, 0.92) 46%);
 }
 
