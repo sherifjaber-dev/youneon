@@ -19,6 +19,7 @@ interface DiscoverScreenProps {
   onUpdateBalance: (newBalance: number) => void;
   currentUserId?: string;
   onOpenNeonShop?: () => void;
+  onOpenSubscribe?: () => void;
   isPremium?: boolean;
   announcements?: Announcement[];
 }
@@ -29,6 +30,7 @@ export function DiscoverScreen({
   onUpdateBalance,
   currentUserId,
   onOpenNeonShop,
+  onOpenSubscribe,
   isPremium = false,
   announcements = [],
 }: DiscoverScreenProps) {
@@ -227,7 +229,7 @@ export function DiscoverScreen({
         </p>
         <button
           type="button"
-          onClick={() => onOpenNeonShop?.()}
+          onClick={() => onOpenSubscribe?.()}
           className="yn-premium-card mt-2.5 w-full flex-shrink-0 text-left"
           data-testid="sponsored-premium-card"
           aria-label="See Premium"
@@ -255,7 +257,7 @@ export function DiscoverScreen({
       </div>
 
       {!isPremium && privacy.advertising && (
-        <AdInterstitial ads={adItems} onSubscribe={onOpenNeonShop} />
+        <AdInterstitial ads={adItems} onSubscribe={onOpenSubscribe} />
       )}
 
       {showInsufficientModal && (

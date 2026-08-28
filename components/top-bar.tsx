@@ -14,6 +14,7 @@ interface TopBarProps {
   onProfileClick: () => void;
   neonBalance: number;
   onNeonClick?: () => void;
+  onOpenSubscribe?: () => void;
   isPremium?: boolean;
   premiumUntil?: string | null;
   announcements?: Announcement[];
@@ -30,6 +31,7 @@ export function TopBar({
   onProfileClick,
   neonBalance,
   onNeonClick,
+  onOpenSubscribe,
   isPremium = false,
   premiumUntil = null,
   announcements = [],
@@ -145,6 +147,7 @@ export function TopBar({
         isPremium={isPremium}
         premiumUntil={premiumUntil}
         onOpenShop={onNeonClick}
+        onOpenSubscribe={onOpenSubscribe}
         onOpenChat={onOpenChat}
         onOpenMessages={onOpenMessages}
       />

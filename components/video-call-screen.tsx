@@ -75,7 +75,28 @@ interface VideoCallScreenProps {
   roomKey?: string;
 }
 
-type PermissionState = "checking" | "granted" | "denied" | "not-found" | "in-use" | "error";
+type FacingMode = "user" | "environment";
+
+type DailyCameraCall = DailyCall & {
+  cycleCamera?: () => Promise<unknown>;
+  updateInputSettings?: (settings: {
+    video?: { settings?: { facingMode?: FacingMode } };
+  }) => Promise<unknown>;
+  setInputDevicesAsync?: (opts: {
+    videoDeviceId?: string | { exact?: string };
+    videoSource?: boolean | MediaStreamTrack | { facingMode?: FacingMode | { ideal?: FacingMode } };
+  }) => Promise<unknown>;
+};
+
+function readFacingMode(track: MediaStreamTrack | undefined | null): FacingMode | null {
+  try {
+    const mode = track?.getSettings?.()?.facingMode;
+    if (mode === "user" || mode === "environment") return mode;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 type CallStatus = "idle" | "preview" | "joining" | "waiting" | "joined";
 
 interface ChatMsg { id: string; from: "me" | "partner"; text: string; timestamp: number; }
@@ -125,7 +146,7 @@ const NSFW_HENTAI_THRESHOLD = 0.7;
 const NSFW_SEXY_THRESHOLD = 0.85;
 const NSFW_CHECK_INTERVAL_MS = 2000;
 
-type CallIconName = "mic" | "micOff" | "cam" | "camOff" | "chat" | "gift" | "skip" | "end";
+type CallIconName = "mic" | "micOff" | "cam" | "camOff" | "chat" | "gift" | "skip" | "end" | "flip";
 
 function CallIcon({
   name,
@@ -207,6 +228,14 @@ function CallIcon({
           <>
             <path d="M7.2 14.8c3.2 2.15 6.4 2.15 9.6 0" strokeWidth="2.05" />
             <path d="M5.5 12.55c.2.85.95 1.45 1.9 1.45h1.05M18.5 12.55c-.2.85-.95 1.45-1.9 1.45h-1.05" strokeWidth="2.05" />
+          </>
+        )}
+        {name === "flip" && (
+          <>
+            <path d="M16.6 5.2 19.2 7.6 16.6 10" />
+            <path d="M19.2 7.6H9.4a4.4 4.4 0 0 0-4.2 5.7" />
+            <path d="M7.4 18.8 4.8 16.4 7.4 14" />
+            <path d="M4.8 16.4h9.8a4.4 4.4 0 0 0 4.2-5.7" />
           </>
         )}
       </g>
@@ -302,6 +331,8 @@ function VideoCallScreen({
   const giftLogRef = useRef<Array<{ giftId: string; emoji?: string; direction: "sent" | "received"; timestamp: number }>>([]);
   const previewStreamRef = useRef<MediaStream | null>(null);
   const cameraStartLockRef = useRef(false);
+  const facingModeRef = useRef<FacingMode>("user");
+  const flipLockRef = useRef(false);
   const meetingJoinedRef = useRef(false);
   const nsfwModelRef = useRef<any>(null);
   const nsfwIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -335,6 +366,7 @@ function VideoCallScreen({
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+  const [facingMode, setFacingMode] = useState<FacingMode>("user");
   const camOnRef = useRef(true);
   const micOnRef = useRef(true);
   const [remoteName, setRemoteName] = useState<string>("");
@@ -401,6 +433,9 @@ function VideoCallScreen({
     if (existing) {
       console.log("[cam] startCamera skipped (track live)", reason, existing.id);
       watchTrackEnded(existing);
+      const facing = readFacingMode(existing) || facingModeRef.current;
+      facingModeRef.current = facing;
+      setFacingMode(facing);
       return existing;
     }
     if (cameraStartLockRef.current) {
@@ -413,13 +448,25 @@ function VideoCallScreen({
       if (call) {
         await call.startCamera();
         const fromDaily = localDailyTrack(call, "video");
-        if (fromDaily) watchTrackEnded(fromDaily);
+        if (fromDaily) {
+          watchTrackEnded(fromDaily);
+          const facing = readFacingMode(fromDaily) || facingModeRef.current;
+          facingModeRef.current = facing;
+          setFacingMode(facing);
+        }
         return fromDaily;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "user" } },
+        audio: true,
+      });
       previewStreamRef.current = stream;
       stream.getTracks().forEach((t) => watchTrackEnded(t));
-      return liveTrackFromStream(stream, "video");
+      const video = liveTrackFromStream(stream, "video");
+      const facing = readFacingMode(video) || "user";
+      facingModeRef.current = facing;
+      setFacingMode(facing);
+      return video;
     } catch (err) {
       console.error("[cam] startCamera failed", reason, err);
       throw err;
@@ -696,7 +743,14 @@ function VideoCallScreen({
         const callObject = DailyIframe.createCallObject({
           audioSource: audioTrack || true,
           videoSource: videoTrack || true,
-        });
+          ...(videoTrack
+            ? {}
+            : {
+                inputSettings: {
+                  video: { settings: { facingMode: "user" as const } },
+                },
+              }),
+        } as Parameters<typeof DailyIframe.createCallObject>[0]);
         callRef.current = callObject;
         const refresh = () => updateMediaElements(callObject);
         callObject.on("joined-meeting", () => {
@@ -939,6 +993,51 @@ function VideoCallScreen({
     setMicOn(next);
   };
 
+  const flipCamera = async () => {
+    if (!isPremium || flipLockRef.current) return;
+    const call = callRef.current as DailyCameraCall | null;
+    const currentTrack =
+      localDailyTrack(call, "video") || liveTrackFromStream(previewStreamRef.current, "video");
+    const current = readFacingMode(currentTrack) || facingModeRef.current;
+    const next: FacingMode = current === "user" ? "environment" : "user";
+    if (current === next) {
+      console.log("[cam] startCamera skipped (already facing)", next);
+      return;
+    }
+
+    flipLockRef.current = true;
+    console.log("[cam] startCamera", "flip", next);
+    try {
+      if (call && typeof call.cycleCamera === "function") {
+        await call.cycleCamera();
+      } else if (call && typeof call.updateInputSettings === "function") {
+        await call.updateInputSettings({ video: { settings: { facingMode: next } } });
+      } else if (call && typeof call.setInputDevicesAsync === "function") {
+        await call.setInputDevicesAsync({
+          videoSource: { facingMode: { ideal: next } },
+        });
+      } else {
+        console.log("[cam] startCamera skipped (no flip API)", "flip");
+        return;
+      }
+
+      const flipped =
+        localDailyTrack(call, "video") || liveTrackFromStream(previewStreamRef.current, "video");
+      const applied = readFacingMode(flipped) || next;
+      facingModeRef.current = applied;
+      setFacingMode(applied);
+      if (isLiveTrack(flipped, "video")) {
+        watchTrackEnded(flipped);
+        attachVideoEl(localVideoRef.current, flipped);
+        if (!camOnRef.current) setTrackEnabled(flipped, false);
+      }
+    } catch (err) {
+      console.error("[cam] startCamera failed", "flip", err);
+    } finally {
+      flipLockRef.current = false;
+    }
+  };
+
   const skipToNext = () => {
     if (skipRemaining > 0) return;
     if (callStatus !== "joined" && callStatus !== "waiting") return;
@@ -1162,12 +1261,30 @@ function VideoCallScreen({
       )}
 
       <div className={`yn-call-pip${callStatus === "joined" ? "" : " yn-call-pip-hidden"}`}>
-        <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover scale-x-[-1]" data-testid="local-video" />
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`h-full w-full object-cover${facingMode === "environment" ? "" : " scale-x-[-1]"}`}
+          data-testid="local-video"
+        />
         {!camOn && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-[#1f1228]/90 text-xs text-white/80">
             <CallIcon name="camOff" uid="pip-cam" />
             <span>Camera off</span>
           </div>
+        )}
+        {isPremium && callStatus === "joined" && (
+          <button
+            type="button"
+            onClick={() => void flipCamera()}
+            className="absolute left-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-fuchsia-300/40 bg-black/70 text-white backdrop-blur-md active:scale-95"
+            aria-label="Switch camera"
+            data-testid="flip-camera-btn"
+          >
+            <CallIcon name="flip" uid="pip-flip" size={14} tone="plain" />
+          </button>
         )}
         {!micOn && (
           <div className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full border border-pink-400/40 bg-black/70 text-pink-200">

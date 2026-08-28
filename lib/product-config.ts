@@ -38,6 +38,10 @@ export const PREMIUM_BENEFITS = [
     title: "2,000 Neon on subscribe",
     detail: "Granted immediately on every subscribe or renew.",
   },
+  {
+    title: "Front and rear camera during calls",
+    detail: "Flip between cameras while you are in a video call.",
+  },
 ] as const;
 
 export const SUBSCRIPTION_METADATA = {

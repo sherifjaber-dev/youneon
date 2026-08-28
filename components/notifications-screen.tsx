@@ -38,6 +38,7 @@ type NotificationsScreenProps = {
   isPremium?: boolean;
   premiumUntil?: string | null;
   onOpenShop?: () => void;
+  onOpenSubscribe?: () => void;
   onOpenChat?: (user: { id: string; name: string; avatar: string; photo?: string }) => void;
   onOpenMessages?: () => void;
 };
@@ -102,6 +103,7 @@ export function NotificationsScreen({
   markAllRead,
   isPremium = false,
   onOpenShop,
+  onOpenSubscribe,
   onOpenChat,
   onOpenMessages,
 }: NotificationsScreenProps) {
@@ -158,6 +160,11 @@ export function NotificationsScreen({
   const openShop = () => {
     onClose();
     onOpenShop?.();
+  };
+
+  const openSubscribe = () => {
+    onClose();
+    onOpenSubscribe?.();
   };
 
   if (!visible) return null;
@@ -224,7 +231,7 @@ export function NotificationsScreen({
               <p className="mt-1.5 text-[13px] leading-relaxed text-white/80">{banner.body}</p>
               <button
                 type="button"
-                onClick={openShop}
+                onClick={banner.cta === "See more" ? openShop : openSubscribe}
                 className="mt-4 inline-flex h-11 min-w-[132px] items-center justify-center rounded-full bg-white px-5 text-[14px] font-semibold text-[#5b21b6] shadow-[0_8px_24px_rgba(15,1,23,0.25)] active:scale-[0.98]"
               >
                 {banner.cta} ›
@@ -277,7 +284,7 @@ export function NotificationsScreen({
           {(filter === "all" || filter === "events") && (
             <button
               type="button"
-              onClick={openShop}
+              onClick={openSubscribe}
               className="mb-2 mt-3 flex w-full items-center gap-3 rounded-2xl border border-pink-200 bg-gradient-to-br from-fuchsia-50 to-pink-50 p-4 text-left active:scale-[0.99]"
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 text-white">
@@ -314,7 +321,7 @@ export function NotificationsScreen({
               {!isPremium && (
                 <button
                   type="button"
-                  onClick={openShop}
+                  onClick={openSubscribe}
                   className="yn-gold-cta mx-auto mt-5 inline-flex min-w-[200px] items-center justify-center px-5 text-[#1a1408]"
                 >
                   Subscribe with Pi

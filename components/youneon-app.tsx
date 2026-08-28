@@ -10,6 +10,7 @@ import { BottomNav, type AppTab } from "@/components/bottom-nav";
 import { TopBar } from "@/components/top-bar";
 import { ProfileEditModal, type ProfileSavePayload } from "@/components/profile-edit-modal";
 import { NeonShopModal } from "@/components/neon-shop-modal";
+import { SubscribeModal } from "@/components/subscribe-modal";
 import {
   saveUserProfile,
   loadOrCreateUserProfile,
@@ -206,6 +207,7 @@ export function YouNeonApp() {
   const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNeonShop, setShowNeonShop] = useState(false);
+  const [showSubscribe, setShowSubscribe] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
   const [chatUnlocks, setChatUnlocks] = useState<ChatUnlocks | null>(null);
   const [unlockedChats, setUnlockedChats] = useState<string[]>([]);
@@ -878,6 +880,7 @@ export function YouNeonApp() {
           onProfileClick={openEditor}
           neonBalance={neonBalance}
           onNeonClick={() => setShowNeonShop(true)}
+          onOpenSubscribe={() => setShowSubscribe(true)}
           isPremium={isPremium}
           premiumUntil={premiumUntil}
           announcements={announcements}
@@ -905,6 +908,7 @@ export function YouNeonApp() {
               onUpdateBalance={updateNeonBalance}
               currentUserId={currentUserId}
               onOpenNeonShop={() => setShowNeonShop(true)}
+              onOpenSubscribe={() => setShowSubscribe(true)}
               isPremium={isPremium}
               announcements={announcements}
             />
@@ -988,6 +992,12 @@ export function YouNeonApp() {
       <NeonShopModal
         isOpen={showNeonShop}
         onClose={() => setShowNeonShop(false)}
+        isPremium={isPremium}
+        premiumUntil={premiumUntil}
+      />
+      <SubscribeModal
+        open={showSubscribe}
+        onClose={() => setShowSubscribe(false)}
         isPremium={isPremium}
         premiumUntil={premiumUntil}
       />
