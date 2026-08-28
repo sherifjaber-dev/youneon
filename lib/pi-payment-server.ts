@@ -19,6 +19,7 @@ import {
   isAlreadyCompletedPayload,
   parsePaymentId,
   parseTxid,
+  piPaymentDebugMeta,
 } from "@/lib/pi-platform";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 
@@ -118,6 +119,19 @@ export async function completePaymentById(
   }
 
   const current = await getPiPayment(paymentId);
+  console.info("[Pi] complete start", {
+    paymentId,
+    txidLength: txid.length,
+    getStatus: current.status,
+    ...piPaymentDebugMeta(),
+  });
+  if (!current.ok) {
+    console.warn("[Pi] complete: get payment failed, still posting complete with paymentId+txid", {
+      paymentId,
+      status: current.status,
+      ...piPaymentDebugMeta(),
+    });
+  }
 
   // Official order: approve (no txid), then complete with txid.
   if (!current.data?.status?.developer_approved) {
@@ -126,12 +140,19 @@ export async function completePaymentById(
       console.warn("[Pi] complete: approve before complete failed", {
         paymentId,
         status: approved.status,
+        ...piPaymentDebugMeta(),
       });
     }
   }
 
-  // Always POST /complete with { txid } — even if Neon was already granted.
+  // Always POST /complete with { txid } — even if get/approve failed or Neon was already granted.
   const completed = await completePiPayment(paymentId, txid);
+  console.info("[Pi] complete HTTP", {
+    paymentId,
+    txidLength: txid.length,
+    status: completed.status,
+    ...piPaymentDebugMeta(),
+  });
   const alreadyDone =
     completed.status === 200 ||
     isAlreadyCompletedPayload(completed.data) ||

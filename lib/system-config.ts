@@ -1,5 +1,6 @@
 function resolvePiSandbox(): boolean {
   // This app is published on Pi Testnet. Only disable sandbox when explicitly set.
+  // Never auto-switch from hostname (Develop vs Ecosystem listing).
   return process.env.NEXT_PUBLIC_PI_SANDBOX !== "false";
 }
 

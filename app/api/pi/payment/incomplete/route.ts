@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveIncompletePayment } from "@/lib/pi-payment-server";
-import { parsePaymentId, parseTxid, PiPlatformError } from "@/lib/pi-platform";
+import { parsePaymentId, parseTxid, PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 
 export const runtime = "nodejs";
@@ -20,7 +20,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
     }
 
-    console.info("[pi/payment/incomplete]", paymentId);
+    const debug = piPaymentDebugMeta();
+    console.info("[pi/payment/incomplete]", { paymentId, txidLength: txid.length, ...debug });
     const result = await resolveIncompletePayment(paymentId, {
       txid,
       payment,
@@ -28,7 +29,13 @@ export async function POST(request: Request) {
     });
     if (!result.ok) {
       return NextResponse.json(
-        { ok: false, error: result.error || "Incomplete payment failed", payment: result.payment },
+        {
+          ok: false,
+          error: result.error || "Incomplete payment failed",
+          payment: result.payment,
+          piStatus: result.piStatus || result.status,
+          ...debug,
+        },
         { status: result.status }
       );
     }

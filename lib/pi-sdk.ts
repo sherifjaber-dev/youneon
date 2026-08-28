@@ -8,6 +8,7 @@ import {
 } from "@/lib/purchase-feedback";
 import { getPiInitOptions } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk, readLiteSession } from "@/lib/pi-client-session";
+import { isPiAuthFailureStatus, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
 import type {
   PiAuthResult,
   PiPaymentCallbacks,
@@ -204,10 +205,11 @@ export async function initPiSdk(): Promise<void> {
       }
 
       logSdkLoaded();
-      console.log("[Pi] init start");
+      const initOptions = getPiInitOptions();
+      console.log("[Pi] init start", { sandbox: initOptions.sandbox });
       try {
         await Promise.race([
-          Promise.resolve(Pi.init(getPiInitOptions())),
+          Promise.resolve(Pi.init(initOptions)),
           new Promise<void>((resolve) => {
             window.setTimeout(resolve, PI_INIT_TIMEOUT_MS);
           }),
@@ -251,9 +253,19 @@ export async function handleIncompletePayment(payment: PiPaymentDTO): Promise<vo
     });
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
-      const message =
-        (typeof data.error === "string" && data.error) ||
-        `Incomplete payment failed (${res.status})`;
+      const piStatus = typeof data.piStatus === "number" ? data.piStatus : res.status;
+      const message = isPiAuthFailureStatus(res.status) || isPiAuthFailureStatus(piStatus)
+        ? wrongPiApiKeyMessage(getPiInitOptions().sandbox)
+        : (typeof data.error === "string" && data.error) ||
+          `Incomplete payment failed (${res.status})`;
+      console.log("[Pi] incomplete response", {
+        paymentId,
+        txidLength: txid.length,
+        status: res.status,
+        piStatus,
+        sandbox: getPiInitOptions().sandbox,
+        apiKeyPresent: data.apiKeyPresent === true,
+      });
       logError(message);
       emitPurchaseFeedback({ type: "error", message });
       return;
@@ -488,9 +500,11 @@ export async function createPiPayment(
       paymentId: string,
       txid: string
     ): Promise<CreatePiPaymentResult> => {
+      const sandbox = getPiInitOptions().sandbox;
       console.log("[Pi] complete request", {
         paymentId,
         txidLength: txid.length,
+        sandbox,
       });
       const result = await postPaymentAction(PI_COMPLETE_API_PATH, {
         paymentId,
@@ -498,11 +512,22 @@ export async function createPiPayment(
       });
       const piStatus =
         typeof result.data.piStatus === "number" ? result.data.piStatus : result.status;
-      console.log("[Pi] complete response", { paymentId, txidLength: txid.length, status: result.status, piStatus });
+      console.log("[Pi] complete response", {
+        paymentId,
+        txidLength: txid.length,
+        status: result.status,
+        piStatus,
+        sandbox,
+        apiKeyPresent: result.data.apiKeyPresent === true,
+      });
       if (!result.ok || result.status !== 200) {
+        const authFail =
+          isPiAuthFailureStatus(result.status) || isPiAuthFailureStatus(piStatus);
         const error = new Error(
-          (typeof result.data.error === "string" && result.data.error) ||
-            `Pi complete failed: ${result.status}`
+          authFail
+            ? wrongPiApiKeyMessage(sandbox)
+            : (typeof result.data.error === "string" && result.data.error) ||
+              `Pi complete failed: ${result.status}`
         );
         emitPurchaseFeedback({ type: "error", message: error.message });
         throw error;
@@ -556,11 +581,16 @@ export async function createPiPayment(
           console.log("[Pi] approve response", {
             paymentId: id || paymentId,
             status: result.status,
+            sandbox: getPiInitOptions().sandbox,
+            apiKeyPresent: result.data.apiKeyPresent === true,
           });
           if (!result.ok) {
+            const authFail = isPiAuthFailureStatus(result.status);
             const error = new Error(
-              (typeof result.data.error === "string" && result.data.error) ||
-                `Payment approval failed (${result.status})`
+              authFail
+                ? wrongPiApiKeyMessage(getPiInitOptions().sandbox)
+                : (typeof result.data.error === "string" && result.data.error) ||
+                  `Payment approval failed (${result.status})`
             );
             logError(error);
             emitPurchaseFeedback({ type: "error", message: error.message });

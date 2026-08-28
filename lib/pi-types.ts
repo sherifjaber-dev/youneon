@@ -95,6 +95,7 @@ declare global {
     __YOUNEON_PI_DELAY_AUTH__?: number | boolean;
     __YOUNEON_PI_LAST__?: string;
     __YOUNEON_PI_CLIENT_ID__?: string;
+    __YOUNEON_PI_SANDBOX__?: boolean;
     __YOUNEON_PI_SDK_LOAD_SCHEDULED__?: boolean;
     __YOUNEON_PI_POLL_STARTED__?: boolean;
     __YOUNEON_PI_WAIT_DONE__?: boolean;

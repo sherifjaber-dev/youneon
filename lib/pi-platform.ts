@@ -1,3 +1,4 @@
+import { isPiAuthFailureStatus, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 
 if (typeof window !== "undefined") {
@@ -20,6 +21,7 @@ export class PiPlatformError extends Error {
 }
 
 export function isPiSandbox(): boolean {
+  // Never infer Testnet vs Mainnet from hostname. Env is the only switch.
   return process.env.NEXT_PUBLIC_PI_SANDBOX !== "false";
 }
 
@@ -48,6 +50,14 @@ export function getPiServerApiKey(): string {
 
 export function hasPiServerApiKey(): boolean {
   return getPiServerApiKey().length > 0;
+}
+
+/** Safe-to-log flags only — never the API key itself. */
+export function piPaymentDebugMeta(): { sandbox: boolean; apiKeyPresent: boolean } {
+  return {
+    sandbox: isPiSandbox(),
+    apiKeyPresent: hasPiServerApiKey(),
+  };
 }
 
 function unwrapId(value: unknown, keys: string[]): unknown {
@@ -113,11 +123,9 @@ export function describePiApiFailure(action: string, status: number, data: unkno
   const piError = typeof body.error === "string" ? body.error : "";
   const piMessage = typeof body.error_message === "string" ? body.error_message : "";
   const detail = [piError, piMessage].filter(Boolean).join(" — ");
-  if (status === 401 || status === 403) {
-    return (
-      `Pi ${action} failed (${status}). Use the Sandbox Server API Key from Pi Develop for this Testnet app, then set PI_API_KEY on Vercel.` +
-      (detail ? ` ${detail}` : "")
-    );
+  if (isPiAuthFailureStatus(status)) {
+    const hint = wrongPiApiKeyMessage(isPiSandbox());
+    return detail ? `${hint} ${detail}` : hint;
   }
   return `Pi ${action} failed (${status})${detail ? `: ${detail}` : ""}`;
 }

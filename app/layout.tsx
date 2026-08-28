@@ -37,7 +37,8 @@ const CRITICAL_CSS =
  * literals in the output — old Pi App Studio webviews throw on those.
  * Never loads sdk.minepi.com if App Studio / Pi Browser already injected window.Pi,
  * and never on pinet.com (that URL hangs the ecosystem iframe). Remote SDK load is
- * timed out at 3s. Pi.init is official only: { version: "2.0", sandbox: true }.
+ * timed out at 3s. Pi.init is official only: { version: "2.0", sandbox } from
+ * NEXT_PUBLIC_PI_SANDBOX. Never auto-switch Testnet vs Mainnet from hostname.
  * Classic Pi.authenticate(scopesArray, cb) runs FIRST so Studio can hook it.
  * Authenticate is raced against 12s so a hanging stub Pi on pinet.com Chrome
  * cannot leave Sign in stuck on Signing in... If auth later succeeds, hide overlay.
@@ -47,6 +48,9 @@ const PI_BOOT_SCRIPT =
   "try { window.__YOUNEON_PI_CLIENT_ID__ = " +
   JSON.stringify(PI_NETWORK_CONFIG.CLIENT_ID || "") +
   "; } catch (cid) {}" +
+  "try { window.__YOUNEON_PI_SANDBOX__ = " +
+  JSON.stringify(PI_NETWORK_CONFIG.SANDBOX) +
+  "; } catch (sbx) {}" +
   "function errMsg(e) {" +
   "if (!e) return 'unknown';" +
   "if (typeof e === 'string') return e;" +
@@ -54,7 +58,10 @@ const PI_BOOT_SCRIPT =
   "try { return JSON.stringify(e); } catch (x) { return String(e); }" +
   "}" +
   "function piInitOptions() {" +
-  "return { version: '2.0', sandbox: true };" +
+  "var sandbox = true;" +
+  "try { if (window.__YOUNEON_PI_SANDBOX__ === false) sandbox = false; } catch (s) {}" +
+  "console.log('[Pi] init options', { sandbox: sandbox });" +
+  "return { version: '2.0', sandbox: sandbox };" +
   "}" +
   "var PI_WAIT_MS = 3000;" +
   "var PI_AUTH_HANG_MS = 12000;" +
@@ -391,7 +398,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=pay-complete-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=sandbox-key-1"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"

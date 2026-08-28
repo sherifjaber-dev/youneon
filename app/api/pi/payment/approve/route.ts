@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { approvePaymentById } from "@/lib/pi-payment-server";
-import { PiPlatformError } from "@/lib/pi-platform";
+import { PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
 
 export const runtime = "nodejs";
 
@@ -12,19 +12,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const debug = piPaymentDebugMeta();
   try {
     const result = await approvePaymentById(body?.paymentId);
+    console.info("[Pi] approve route", {
+      ok: result.ok,
+      status: result.status,
+      piStatus: result.piStatus || result.status,
+      ...debug,
+    });
     if (!result.ok) {
       return NextResponse.json(
-        { error: result.error || "Approve failed", payment: result.payment },
+        {
+          error: result.error || "Approve failed",
+          payment: result.payment,
+          piStatus: result.piStatus || result.status,
+          ...debug,
+        },
         { status: result.status }
       );
     }
-    return NextResponse.json({ ok: true, payment: result.payment });
+    return NextResponse.json({ ok: true, payment: result.payment, ...debug });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not approve payment";
     const status = error instanceof PiPlatformError ? error.status : 502;
-    console.warn("[Pi] approve route error", message);
-    return NextResponse.json({ error: message }, { status });
+    console.warn("[Pi] approve route error", { message, status, ...debug });
+    return NextResponse.json({ error: message, ...debug }, { status });
   }
 }
