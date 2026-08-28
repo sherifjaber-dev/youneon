@@ -151,9 +151,7 @@ export function MessagesScreen({
   return (
     <div className="yn-messages">
       <div className="yn-messages-heading">
-        <span className="yn-messages-heading-line" />
-        <h1>MESSAGES</h1>
-        <span className="yn-messages-heading-line" />
+        <h1 className="yn-lounge-title">Messages</h1>
       </div>
 
       {!hasOwnPhoto && (

@@ -2469,23 +2469,23 @@ html.yn-profile-open {
   max-width: none;
   padding: 0 8px 0 11px;
   border-radius: 999px;
-  border: 1.5px solid #f5d76e;
-  background: #2a2108;
-  color: #ffe38a;
+  border: 1.5px solid #c9a227;
+  background: linear-gradient(180deg, #ffe38a 0%, #d4af37 100%);
+  color: #1a1404;
   cursor: pointer;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 800;
   text-shadow: none;
   box-shadow: none;
 }
 
 .yn-topbar-neon-chip-amt {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
   white-space: nowrap;
   letter-spacing: -0.01em;
-  color: #ffe38a;
+  color: #1a1404;
 }
 
 .yn-topbar-neon-chip:active {
@@ -3267,17 +3267,11 @@ html.yn-profile-open {
 .yn-messages-heading {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px 4px;
+  padding: 10px 16px 2px;
 }
 
 .yn-messages-heading h1 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.28em;
-  color: var(--pink-text);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--pink) 85%, transparent);
 }
 
 .yn-messages-heading-line {
@@ -3981,7 +3975,8 @@ html.yn-profile-open {
 
 html.youneon-signed-in .yn-lounge h1.yn-lounge-title,
 .yn-lounge .yn-lounge-title,
-.yn-history-head h1.yn-lounge-title {
+.yn-history-head h1.yn-lounge-title,
+.yn-messages-heading h1.yn-lounge-title {
   font-size: 36px;
   font-weight: 800;
   letter-spacing: -0.045em;

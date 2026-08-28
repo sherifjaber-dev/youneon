@@ -129,7 +129,7 @@ export function TopBar({
               aria-label={`Open Neon shop, balance ${neonBalance.toLocaleString()}`}
               data-testid="topbar-neon-balance"
             >
-              <span className="text-[13px] font-semibold leading-none">◆</span>
+              <span className="text-[13px] font-extrabold leading-none" style={{ color: "#1a1404" }}>◆</span>
               <span className="yn-topbar-neon-chip-amt">
                 Neon {neonBalance.toLocaleString()}
               </span>
