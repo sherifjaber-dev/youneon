@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { NotificationsScreen } from "@/components/notifications-screen";
 import { MyItemsSheet } from "@/components/my-items-sheet";
 import { YouNeonBagIconNeon, YouNeonBellIcon } from "@/components/icons/youneon-chrome-icons";
@@ -54,9 +55,9 @@ export function TopBar({
 
   return (
     <>
-      <div className="yn-chrome yn-topbar fixed top-0 left-0 right-0 z-50 border-b px-4 pt-[env(safe-area-inset-top)]">
-        <div className="relative flex h-14 items-center justify-between gap-3">
-          <div className="relative z-10 flex min-w-0 items-center">
+      <div className="yn-chrome yn-topbar fixed top-0 left-0 right-0 z-50 border-b px-3 pt-[env(safe-area-inset-top)] sm:px-4">
+        <div className="relative flex h-[60px] items-center">
+          <div className="relative z-10 flex shrink-0 items-center">
             <button
               type="button"
               onClick={onProfileClick}
@@ -73,7 +74,7 @@ export function TopBar({
                 <NeonAvatar
                   src={photoSrc}
                   name={profileName}
-                  size={32}
+                  size={46}
                   alt={profileName || "Your profile"}
                 />
               </span>
@@ -84,56 +85,56 @@ export function TopBar({
             <YouNeonScriptLogo />
           </div>
 
-          <div className="relative z-10 flex shrink-0 flex-col items-end gap-0.5">
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={openPanel}
-                className="yn-chrome-neon relative flex h-9 w-9 items-center justify-center rounded-full active:scale-95"
-                aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
-              >
-                <YouNeonBellIcon size={28} className="yn-chrome-icon" />
-                {unread > 0 && (
-                  <span className="yn-chrome-count is-bell">
-                    {unread > 9 ? "9+" : unread}
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setItemsOpen(true)}
-                className="yn-chrome-neon relative flex h-9 w-9 items-center justify-center rounded-full active:scale-95"
-                title={
-                  bagActive
-                    ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} today`
-                    : "No free chat unlocks left today"
-                }
-                aria-label={
-                  bagActive
-                    ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} remaining today`
-                    : "No free chat unlocks remaining today"
-                }
-                data-testid="free-message-bag"
-              >
-                <YouNeonBagIconNeon size={28} className="yn-chrome-icon" />
-                {bagActive && (
-                  <span className="yn-chrome-count is-bag">
-                    {bagCount > 9 ? "9+" : bagCount}
-                  </span>
-                )}
-              </button>
-            </div>
+          <div className="yn-topbar-actions relative z-10 ml-auto">
+            <button
+              type="button"
+              onClick={openPanel}
+              className="yn-chrome-neon yn-topbar-icon-btn active:scale-95"
+              aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+            >
+              <YouNeonBellIcon size={26} className="yn-chrome-icon" />
+              {unread > 0 && (
+                <span className="yn-chrome-count">{unread > 9 ? "9+" : unread}</span>
+              )}
+            </button>
 
             <button
-              onClick={onNeonClick}
-              className="yn-chrome-gold flex items-center gap-1 pr-0.5 transition-opacity active:scale-95"
-              aria-label="Open Neon shop"
+              type="button"
+              onClick={() => setItemsOpen(true)}
+              className="yn-chrome-neon yn-topbar-icon-btn active:scale-95"
+              title={
+                bagActive
+                  ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} today`
+                  : "No free chat unlocks left today"
+              }
+              aria-label={
+                bagActive
+                  ? `${bagCount} free chat ${bagCount === 1 ? "unlock" : "unlocks"} remaining today`
+                  : "No free chat unlocks remaining today"
+              }
+              data-testid="free-message-bag"
             >
-              <span className="text-[11px] leading-none">◆</span>
-              <span className="text-[11px] font-semibold leading-none">
-                Neon Balance: {neonBalance.toLocaleString()}
+              <YouNeonBagIconNeon size={26} className="yn-chrome-icon" />
+              {bagActive && (
+                <span className="yn-chrome-count">{bagCount > 9 ? "9+" : bagCount}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onNeonClick}
+              className="yn-topbar-neon-chip"
+              aria-label={`Open Neon shop, balance ${neonBalance.toLocaleString()}`}
+              data-testid="topbar-neon-balance"
+            >
+              <span className="text-[13px] font-semibold leading-none">◆</span>
+              <span className="min-w-0 truncate text-[13px] font-semibold leading-none">
+                <span className="min-[400px]:hidden">Neon {neonBalance.toLocaleString()}</span>
+                <span className="hidden min-[400px]:inline">
+                  Neon Balance {neonBalance.toLocaleString()}
+                </span>
               </span>
+              <ChevronRight size={14} strokeWidth={2.4} className="shrink-0 opacity-90" aria-hidden />
             </button>
           </div>
         </div>

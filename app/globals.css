@@ -149,7 +149,7 @@
   --yn-pink: var(--pink);
   --yn-gold: #C9A227;
   --yn-gold-bright: #D4AF37;
-  --yn-topbar-inner: 56px;
+  --yn-topbar-inner: 60px;
   --yn-bottomnav-inner: 68px;
 }
 
@@ -2283,6 +2283,7 @@ html.yn-profile-open {
   background: #05050d;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  overflow: visible;
 }
 
 .yn-chrome-icon {
@@ -2295,35 +2296,44 @@ html.yn-profile-open {
   overflow: visible;
 }
 
-.yn-chrome-count {
-  position: absolute;
+.yn-topbar-actions {
   display: flex;
-  min-width: 14px;
-  height: 14px;
+  align-items: center;
+  gap: 6px;
+}
+
+.yn-topbar-icon-btn {
+  position: relative;
+  display: flex;
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  padding: 0 3px;
+  overflow: visible;
   border-radius: 999px;
-  border: 1.4px solid #5ec8ff;
-  background: #080412;
-  color: #5ec8ff;
+  cursor: pointer;
+}
+
+.yn-chrome-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: flex;
+  min-width: 15px;
+  height: 15px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: none;
+  background: #3b9eff;
+  color: #061018;
   font-size: 9px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
-  box-shadow:
-    0 0 6px #5ec8ff,
-    0 0 12px rgba(94, 200, 255, 0.55);
-}
-
-.yn-chrome-count.is-bell {
-  right: -2px;
-  bottom: -1px;
-}
-
-.yn-chrome-count.is-bag {
-  right: -3px;
-  top: -2px;
+  box-shadow: 0 0 8px rgba(59, 158, 255, 0.85);
 }
 
 .yn-chrome-gold {
@@ -2331,6 +2341,29 @@ html.yn-profile-open {
   text-shadow:
     0 0 8px rgba(245, 215, 110, 0.85),
     0 0 16px rgba(212, 175, 55, 0.45);
+}
+
+.yn-topbar-neon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: min(42vw, 168px);
+  height: 36px;
+  padding: 0 10px 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 215, 110, 0.55);
+  background: rgba(245, 215, 110, 0.1);
+  color: #f5d76e;
+  cursor: pointer;
+  white-space: nowrap;
+  text-shadow:
+    0 0 8px rgba(245, 215, 110, 0.85),
+    0 0 16px rgba(212, 175, 55, 0.45);
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.18);
+}
+
+.yn-topbar-neon-chip:active {
+  transform: scale(0.97);
 }
 
 .yn-script-logo {
@@ -2365,7 +2398,13 @@ html.yn-profile-open {
 }
 
 .yn-topbar .yn-script-logo-img {
+  height: 48px;
+  max-width: min(168px, 38vw);
   object-position: center center;
+  mix-blend-mode: normal;
+  filter:
+    drop-shadow(0 0 6px color-mix(in srgb, var(--pink) 70%, transparent))
+    drop-shadow(0 0 14px rgba(94, 200, 255, 0.45));
 }
 
 .yn-script-logo-img {
