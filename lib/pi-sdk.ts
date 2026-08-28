@@ -6,7 +6,12 @@ import {
   purchaseErrorMessage,
   purchaseSummaryFromPayment,
 } from "@/lib/purchase-feedback";
-import { getPiInitOptions, isPiStudioHost, resolvePiSandboxFromHost } from "@/lib/system-config";
+import {
+  getPiInitOptions,
+  getPiPageOriginContext,
+  isPiStudioHost,
+  resolvePiSandboxFromHost,
+} from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk, readLiteSession } from "@/lib/pi-client-session";
 import { isPiAuthFailureStatus, WRONG_PI_APP_PAYMENT, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
 import type {
@@ -588,6 +593,9 @@ function resultFromComplete(
 /**
  * U2A payment via window.Pi.createPayment. Always awaits Pi.init first.
  * Resolves after server-side complete; rejects on cancel or error.
+ *
+ * Pi Apps pinet wrapper (youneonbq9219.pinet.com) ≠ Vercel Develop URL
+ * (youneon-app.vercel.app); createPayment is scoped to the app that wrapped Open App.
  */
 export async function createPiPayment(
   paymentData: PiPaymentData,
@@ -599,6 +607,15 @@ export async function createPiPayment(
     emitPurchaseFeedback({ type: "error", message: PI_SDK_UNAVAILABLE });
     throw new Error(PI_SDK_UNAVAILABLE);
   }
+
+  const pageOrigin = getPiPageOriginContext();
+  console.log("[Pi] createPayment page origin", {
+    hostname: pageOrigin.hostname,
+    inIframe: pageOrigin.inIframe,
+    parentAccessible: pageOrigin.parentAccessible,
+    parentHostname: pageOrigin.parentHostname || undefined,
+    studioHost: pageOrigin.studioHost,
+  });
 
   const summaryFrom = (payload?: CreatePiPaymentResult | null) =>
     purchaseSummaryFromPayment(payload?.payment) ||
@@ -702,11 +719,26 @@ export async function createPiPayment(
           return;
         }
         // Always approve immediately. Wallet expires if this POST is skipped or delayed.
-        console.log("[Pi] approve request", { paymentId: approveId, sandbox });
+        console.log("[Pi] approve request", {
+          paymentId: approveId,
+          sandbox,
+          hostname: pageOrigin.hostname,
+          inIframe: pageOrigin.inIframe,
+          parentAccessible: pageOrigin.parentAccessible,
+          parentHostname: pageOrigin.parentHostname || undefined,
+          studioHost: pageOrigin.studioHost,
+        });
         try {
           const result = await postPaymentAction(
             PI_APPROVE_API_PATH,
-            { paymentId: approveId || paymentId },
+            {
+              paymentId: approveId || paymentId,
+              hostname: pageOrigin.hostname,
+              inIframe: pageOrigin.inIframe,
+              parentAccessible: pageOrigin.parentAccessible,
+              parentHostname: pageOrigin.parentHostname || undefined,
+              studioHost: pageOrigin.studioHost,
+            },
             { urgent: true }
           );
           const piStatus =
@@ -716,6 +748,8 @@ export async function createPiPayment(
             status: result.status,
             piStatus,
             sandbox,
+            hostname: pageOrigin.hostname,
+            inIframe: pageOrigin.inIframe,
             hasProductionKey: result.data.hasProductionKey === true,
             keyPrefix:
               typeof result.data.keyPrefix === "string" ? result.data.keyPrefix : undefined,

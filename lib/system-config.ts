@@ -34,6 +34,49 @@ export function isPiStudioHost(hostname?: string): boolean {
   );
 }
 
+export type PiPageOriginContext = {
+  hostname: string;
+  inIframe: boolean;
+  parentAccessible: boolean;
+  parentHostname: string;
+  studioHost: boolean;
+};
+
+/**
+ * Where createPayment actually runs: page hostname vs a Pi Apps wrapper iframe.
+ * Pi Apps Open App (youneonbq9219.pinet.com) ≠ Vercel Develop (youneon-app.vercel.app).
+ * createPayment is scoped to the Pi app that wrapped Open App — not a new env var.
+ */
+export function getPiPageOriginContext(): PiPageOriginContext {
+  const hostname = pageHostname();
+  let inIframe = false;
+  let parentAccessible = false;
+  let parentHostname = "";
+  if (typeof window !== "undefined") {
+    try {
+      inIframe = window.self !== window.top;
+    } catch {
+      inIframe = true;
+    }
+    if (inIframe) {
+      try {
+        parentHostname = String(window.parent?.location?.hostname || "");
+        parentAccessible = Boolean(parentHostname);
+      } catch {
+        parentAccessible = false;
+        parentHostname = "";
+      }
+    }
+  }
+  return {
+    hostname,
+    inIframe,
+    parentAccessible,
+    parentHostname,
+    studioHost: isPiStudioHost(hostname),
+  };
+}
+
 /**
  * Pi.init sandbox is Pi SDK Testnet access for this registered Testnet app.
  * Studio vs Ecosystem is NOT sandbox:false — sandbox:false creates Mainnet

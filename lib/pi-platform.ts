@@ -516,8 +516,12 @@ function extractIncompletePaymentIds(data: unknown): string[] {
 }
 
 /**
- * After Open App approve 404: GET /payments/incomplete with PI_API_KEY_PRODUCTION only.
- * Logs count + payment ids (never keys). keyPrefix is PRODUCTION (xjae8e).
+ * After Open App approve 404: GET /payments/incomplete with PI_API_KEY_PRODUCTION only
+ * (Authorization: Key). Never retry PI_API_KEY. Logs whether this Open App paymentId
+ * is IN that list (count + ids, no keys). keyPrefix is PRODUCTION (xjae8e).
+ * Pi Apps pinet wrapper (youneonbq9219.pinet.com) ≠ Vercel Develop URL;
+ * createPayment is scoped to the app that wrapped Open App — a 404 here means
+ * this paymentId is not in the Develop app that owns xjae8e.
  */
 async function listIncompletePaymentsWithProductionKey(
   paymentId: string,
@@ -543,33 +547,23 @@ async function listIncompletePaymentsWithProductionKey(
       keySource: "PI_API_KEY_PRODUCTION",
     });
     const ids = extractIncompletePaymentIds(listed.data);
-    console.info("[Pi] incomplete payments (PI_API_KEY_PRODUCTION)", {
-      count: ids.length,
-      paymentIds: ids,
+    const inIncompleteList = ids.includes(paymentId);
+    console.info("[Pi] incomplete list vs Open App paymentId", {
+      paymentId,
+      inIncompleteList,
+      incompleteCount: ids.length,
+      incompleteIds: ids,
       status: listed.status,
       keyPrefix,
       keySource: "PI_API_KEY_PRODUCTION",
       sandbox,
     });
-    if (ids.includes(paymentId)) {
-      console.info("[Pi] incomplete list contains the paymentId we tried to approve", {
-        paymentId,
-        keyPrefix,
-        keySource: "PI_API_KEY_PRODUCTION",
-        sandbox,
-      });
-    } else {
-      console.info("[Pi] PRODUCTION key cannot see this Open App payment", {
-        paymentId,
-        incompleteCount: ids.length,
-        keyPrefix,
-        keySource: "PI_API_KEY_PRODUCTION",
-        sandbox,
-      });
-    }
   } catch (error) {
     console.info("[Pi] incomplete list failed", {
       paymentId,
+      inIncompleteList: false,
+      incompleteCount: 0,
+      incompleteIds: [] as string[],
       message: error instanceof Error ? error.message : "list failed",
       keyPrefix,
       keySource: "PI_API_KEY_PRODUCTION",

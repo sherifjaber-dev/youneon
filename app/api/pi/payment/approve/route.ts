@@ -5,8 +5,32 @@ import { parseClientSandbox, PiPlatformError, piPaymentDebugMeta } from "@/lib/p
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function parseClientHostname(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const host = value.trim().toLowerCase().slice(0, 253);
+  return /^[a-z0-9.-]+$/.test(host) ? host : "";
+}
+
+function requestOriginHostname(request: Request): string {
+  const origin = request.headers.get("origin") || request.headers.get("referer") || "";
+  if (!origin) return "";
+  try {
+    return new URL(origin).hostname || "";
+  } catch {
+    return "";
+  }
+}
+
 export async function POST(request: Request) {
-  let body: { paymentId?: unknown; sandbox?: unknown } = {};
+  let body: {
+    paymentId?: unknown;
+    sandbox?: unknown;
+    hostname?: unknown;
+    inIframe?: unknown;
+    parentAccessible?: unknown;
+    parentHostname?: unknown;
+    studioHost?: unknown;
+  } = {};
   try {
     body = await request.json();
   } catch {
@@ -15,6 +39,9 @@ export async function POST(request: Request) {
 
   const sandbox = parseClientSandbox(body, request);
   const debug = piPaymentDebugMeta(sandbox);
+  const clientHostname = parseClientHostname(body.hostname);
+  const parentHostname = parseClientHostname(body.parentHostname);
+  const requestHostname = requestOriginHostname(request);
   try {
     const result = await approvePaymentById(body?.paymentId, sandbox);
     console.info("[Pi] approve route", {
@@ -29,6 +56,12 @@ export async function POST(request: Request) {
       headerMode: result.headerMode,
       keySource: result.keySource,
       sandbox: debug.sandbox,
+      hostname: clientHostname || undefined,
+      inIframe: body.inIframe === true,
+      parentAccessible: body.parentAccessible === true,
+      parentHostname: parentHostname || undefined,
+      studioHost: body.studioHost === true,
+      requestHostname: requestHostname || undefined,
     });
     if (!result.ok) {
       return NextResponse.json(
