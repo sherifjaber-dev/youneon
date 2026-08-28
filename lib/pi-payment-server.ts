@@ -76,21 +76,44 @@ async function grantFromPayment(
   }
 }
 
-export async function approvePaymentById(paymentIdRaw: unknown): Promise<PaymentActionResult> {
+/** In-process: do not re-hit Pi approve for the same 404/401/403 paymentId. */
+const deadApprovePaymentIds = new Set<string>();
+
+function isDeadApproveStatus(status: number): boolean {
+  return status === 404 || status === 401 || status === 403;
+}
+
+export async function approvePaymentById(
+  paymentIdRaw: unknown,
+  sandbox = false
+): Promise<PaymentActionResult> {
   const paymentId = parsePaymentId(paymentIdRaw);
   if (!paymentId) {
     return { ok: false, status: 400, payment: null, error: "paymentId is required" };
   }
 
+  const debug = piPaymentDebugMeta(sandbox);
+  if (deadApprovePaymentIds.has(paymentId)) {
+    console.warn("[Pi] approve skipped (dead paymentId)", { paymentId, ...debug });
+    return {
+      ok: false,
+      status: 404,
+      payment: null,
+      piStatus: 404,
+      error: describePiApiFailure("approve", 404, null, sandbox),
+    };
+  }
+
   // Always POST /approve immediately. Do not GET first — Open App with
   // Pi.init sandbox:false expires the wallet if approve is delayed.
-  // Client sandbox must never skip this call. Testnet is PI_API_KEY.
-  console.info("[Pi] approve start", { paymentId, ...piPaymentDebugMeta() });
-  const approved = await approvePiPayment(paymentId);
+  console.info("[Pi] approve start", { paymentId, ...debug });
+  const approved = await approvePiPayment(paymentId, sandbox);
   console.info("[Pi] approve HTTP", {
     paymentId,
     status: approved.status,
-    ...piPaymentDebugMeta(),
+    authScheme: approved.authScheme,
+    piUrl: approved.url,
+    ...debug,
   });
 
   if (
@@ -107,8 +130,12 @@ export async function approvePaymentById(paymentIdRaw: unknown): Promise<Payment
     };
   }
 
+  if (isDeadApproveStatus(approved.status)) {
+    deadApprovePaymentIds.add(paymentId);
+  }
+
   try {
-    const already = await getPiPayment(paymentId);
+    const already = await getPiPayment(paymentId, sandbox);
     if (already.ok && already.data?.status?.developer_approved) {
       return {
         ok: true,
@@ -122,6 +149,7 @@ export async function approvePaymentById(paymentIdRaw: unknown): Promise<Payment
     console.warn("[Pi] approve: follow-up get failed", {
       paymentId,
       message: error instanceof Error ? error.message : "get failed",
+      ...debug,
     });
   }
 
@@ -130,14 +158,15 @@ export async function approvePaymentById(paymentIdRaw: unknown): Promise<Payment
     status: approved.status || 502,
     payment: approved.data,
     piStatus: approved.status,
-    error: describePiApiFailure("approve", approved.status || 502, approved.data),
+    error: describePiApiFailure("approve", approved.status || 502, approved.data, sandbox),
   };
 }
 
 export async function completePaymentById(
   paymentIdRaw: unknown,
   txidRaw: unknown,
-  usernameHint?: string | null
+  usernameHint?: string | null,
+  sandbox = false
 ): Promise<PaymentActionResult> {
   const paymentId = parsePaymentId(paymentIdRaw);
   const txid = parseTxid(txidRaw);
@@ -148,17 +177,18 @@ export async function completePaymentById(
     return { ok: false, status: 400, payment: null, error: "txid is required" };
   }
 
+  const debug = piPaymentDebugMeta(sandbox);
   console.info("[Pi] complete start", {
     paymentId,
     txidLength: txid.length,
-    ...piPaymentDebugMeta(),
+    ...debug,
   });
 
   // Official order: approve (no txid), then complete with txid.
   // Do not GET first — that extra round-trip expired Open App wallets
   // after Pi.init sandbox:false. Approve is idempotent.
   try {
-    const approved = await approvePiPayment(paymentId);
+    const approved = await approvePiPayment(paymentId, sandbox);
     if (
       !approved.ok &&
       !approved.data?.status?.developer_approved &&
@@ -167,24 +197,24 @@ export async function completePaymentById(
       console.warn("[Pi] complete: approve before complete failed", {
         paymentId,
         status: approved.status,
-        ...piPaymentDebugMeta(),
+        ...debug,
       });
     }
   } catch (error) {
     console.warn("[Pi] complete: approve before complete failed", {
       paymentId,
       message: error instanceof Error ? error.message : "approve failed",
-      ...piPaymentDebugMeta(),
+      ...debug,
     });
   }
 
   // Always POST /complete with { txid } — even if get/approve failed or Neon was already granted.
-  const completed = await completePiPayment(paymentId, txid);
+  const completed = await completePiPayment(paymentId, txid, sandbox);
   console.info("[Pi] complete HTTP", {
     paymentId,
     txidLength: txid.length,
     status: completed.status,
-    ...piPaymentDebugMeta(),
+    ...debug,
   });
   const alreadyDone =
     completed.status === 200 ||
@@ -205,7 +235,7 @@ export async function completePaymentById(
   if (alreadyDone) {
     const payment =
       completed.data ||
-      (await getPiPayment(paymentId)).data ||
+      (await getPiPayment(paymentId, sandbox)).data ||
       null;
     const grant = await grantFromPayment(payment, usernameHint);
     return {
@@ -222,17 +252,20 @@ export async function completePaymentById(
     status: completed.status || 502,
     piStatus: completed.status,
     payment: completed.data,
-    error: describePiApiFailure("complete", completed.status || 502, completed.data),
+    error: describePiApiFailure("complete", completed.status || 502, completed.data, sandbox),
   };
 }
 
-export async function cancelPaymentById(paymentIdRaw: unknown): Promise<PaymentActionResult> {
+export async function cancelPaymentById(
+  paymentIdRaw: unknown,
+  sandbox = false
+): Promise<PaymentActionResult> {
   const paymentId = parsePaymentId(paymentIdRaw);
   if (!paymentId) {
     return { ok: false, status: 400, payment: null, error: "paymentId is required" };
   }
 
-  const current = await getPiPayment(paymentId);
+  const current = await getPiPayment(paymentId, sandbox);
   if (current.data?.status?.developer_completed) {
     const grant = await grantFromPayment(current.data);
     return { ok: true, status: 200, payment: current.data, grant };
@@ -241,13 +274,13 @@ export async function cancelPaymentById(paymentIdRaw: unknown): Promise<PaymentA
     return { ok: true, status: 200, payment: current.data, cancelled: true };
   }
 
-  const cancelled = await cancelPiPayment(paymentId);
+  const cancelled = await cancelPiPayment(paymentId, sandbox);
   if (!cancelled.ok) {
     return {
       ok: false,
       status: cancelled.status || 502,
       payment: cancelled.data,
-      error: describePiApiFailure("cancel", cancelled.status || 502, cancelled.data),
+      error: describePiApiFailure("cancel", cancelled.status || 502, cancelled.data, sandbox),
     };
   }
   return { ok: true, status: 200, payment: cancelled.data, cancelled: true };
@@ -259,14 +292,15 @@ export async function cancelPaymentById(paymentIdRaw: unknown): Promise<PaymentA
  */
 export async function resolveIncompletePayment(
   paymentIdRaw: unknown,
-  extra?: { txid?: unknown; payment?: PiPaymentDTO | null; username?: string | null }
+  extra?: { txid?: unknown; payment?: PiPaymentDTO | null; username?: string | null; sandbox?: boolean }
 ): Promise<PaymentActionResult> {
   const paymentId = parsePaymentId(paymentIdRaw);
   if (!paymentId) {
     return { ok: false, status: 400, payment: null, error: "paymentId is required" };
   }
 
-  const current = await getPiPayment(paymentId);
+  const sandbox = extra?.sandbox === true;
+  const current = await getPiPayment(paymentId, sandbox);
   const payment = current.data || extra?.payment || null;
 
   if (!current.ok && !payment) {
@@ -274,7 +308,7 @@ export async function resolveIncompletePayment(
       ok: false,
       status: current.status || 502,
       payment: null,
-      error: describePiApiFailure("get payment", current.status || 502, current.data),
+      error: describePiApiFailure("get payment", current.status || 502, current.data, sandbox),
     };
   }
 
@@ -289,7 +323,7 @@ export async function resolveIncompletePayment(
 
   // Always complete when a real txid exists — even if the item was already delivered.
   if (txid) {
-    return completePaymentById(paymentId, txid, extra?.username);
+    return completePaymentById(paymentId, txid, extra?.username, sandbox);
   }
 
   if (payment?.status?.developer_completed) {
@@ -297,13 +331,13 @@ export async function resolveIncompletePayment(
     return { ok: true, status: 200, payment, grant };
   }
 
-  const cancelled = await cancelPaymentById(paymentId);
+  const cancelled = await cancelPaymentById(paymentId, sandbox);
   if (cancelled.ok) return cancelled;
 
-  const retry = await getPiPayment(paymentId);
+  const retry = await getPiPayment(paymentId, sandbox);
   const retryTxid = parseTxid(retry.data?.transaction?.txid);
   if (retryTxid) {
-    return completePaymentById(paymentId, retryTxid, extra?.username);
+    return completePaymentById(paymentId, retryTxid, extra?.username, sandbox);
   }
 
   return {

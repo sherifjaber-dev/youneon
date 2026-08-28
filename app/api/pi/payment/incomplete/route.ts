@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { resolveIncompletePayment } from "@/lib/pi-payment-server";
-import { parsePaymentId, parseTxid, PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
+import {
+  parseClientSandbox,
+  parsePaymentId,
+  parseTxid,
+  PiPlatformError,
+  piPaymentDebugMeta,
+} from "@/lib/pi-platform";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 
 export const runtime = "nodejs";
@@ -15,17 +21,19 @@ export async function POST(request: Request) {
       parsePaymentId(body?.paymentId) ||
       parsePaymentId(payment?.identifier);
     const txid = parseTxid(body?.txid) || parseTxid(payment?.transaction?.txid);
+    const sandbox = parseClientSandbox(body, request);
 
     if (!paymentId) {
       return NextResponse.json({ error: "paymentId is required" }, { status: 400 });
     }
 
-    const debug = piPaymentDebugMeta();
+    const debug = piPaymentDebugMeta(sandbox);
     console.info("[pi/payment/incomplete]", { paymentId, txidLength: txid.length, ...debug });
     const result = await resolveIncompletePayment(paymentId, {
       txid,
       payment,
       username: typeof body?.username === "string" ? body.username : null,
+      sandbox,
     });
     if (!result.ok) {
       return NextResponse.json(

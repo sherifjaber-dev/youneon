@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server";
 import { approvePaymentById } from "@/lib/pi-payment-server";
-import { PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
+import { parseClientSandbox, PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  let body: { paymentId?: unknown } = {};
+  let body: { paymentId?: unknown; sandbox?: unknown } = {};
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const debug = piPaymentDebugMeta();
+  const sandbox = parseClientSandbox(body, request);
+  const debug = piPaymentDebugMeta(sandbox);
   try {
-    const result = await approvePaymentById(body?.paymentId);
+    const result = await approvePaymentById(body?.paymentId, sandbox);
     console.info("[Pi] approve route", {
       paymentId: typeof body?.paymentId === "string" ? body.paymentId : undefined,
       ok: result.ok,

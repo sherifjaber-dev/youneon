@@ -1,23 +1,25 @@
 import { NextResponse } from "next/server";
 import { completePaymentById } from "@/lib/pi-payment-server";
-import { PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
+import { parseClientSandbox, PiPlatformError, piPaymentDebugMeta } from "@/lib/pi-platform";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  let body: { paymentId?: unknown; txid?: unknown; username?: unknown } = {};
+  let body: { paymentId?: unknown; txid?: unknown; username?: unknown; sandbox?: unknown } = {};
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const debug = piPaymentDebugMeta();
+  const sandbox = parseClientSandbox(body, request);
+  const debug = piPaymentDebugMeta(sandbox);
   try {
     const result = await completePaymentById(
       body?.paymentId,
       body?.txid,
-      typeof body?.username === "string" ? body.username : null
+      typeof body?.username === "string" ? body.username : null,
+      sandbox
     );
     const piStatus = result.piStatus || result.status;
     console.info("[Pi] complete route", {

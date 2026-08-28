@@ -6,7 +6,11 @@ export const WRONG_PI_API_KEY_TESTNET =
 export const WRONG_PI_API_KEY_MAINNET =
   "Wrong Pi API key for this network. Use Production Server API Key on Mainnet.";
 
-export function wrongPiApiKeyMessage(_sandbox?: boolean): string {
+export const WRONG_PI_API_KEY_OPEN_APP =
+  "Wrong Pi API key for Open App. Set PI_API_KEY_PRODUCTION on Vercel to the Develop Testnet Server API Key of the SAME Pi app that Open App uses (not Studio, not Stripe, not a sandbox-only key).";
+
+export function wrongPiApiKeyMessage(sandbox?: boolean): string {
+  if (sandbox === false) return WRONG_PI_API_KEY_OPEN_APP;
   return WRONG_PI_API_KEY_TESTNET;
 }
 

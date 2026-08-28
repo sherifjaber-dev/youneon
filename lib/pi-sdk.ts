@@ -280,12 +280,16 @@ export async function handleIncompletePayment(payment: PiPaymentDTO): Promise<vo
   try {
     const res = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Pi-Sandbox": paymentSandbox() ? "true" : "false",
+      },
       credentials: "include",
       body: JSON.stringify({
         paymentId,
         txid: txid || undefined,
         payment,
+        sandbox: paymentSandbox(),
         username: lite?.username || undefined,
         uid: lite?.uid || undefined,
       }),
@@ -478,15 +482,28 @@ function sameOriginApiUrl(path: string): string {
   }
 }
 
+function paymentSandbox(): boolean {
+  return resolvePiSandboxFromHost();
+}
+
+function isDeadApproveStatus(status: number): boolean {
+  return status === 404 || status === 401 || status === 403;
+}
+
+/** Pi SDK retries onReadyForServerApproval if the callback rejects — never re-approve these. */
+const deadApprovePaymentIds = new Set<string>();
+
 function postPaymentActionXhr(
   url: string,
-  payload: string
+  payload: string,
+  sandbox: boolean
 ): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
   return new Promise((resolve, reject) => {
     try {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", url, true);
       xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.setRequestHeader("X-Pi-Sandbox", sandbox ? "true" : "false");
       xhr.withCredentials = true;
       xhr.timeout = 15000;
       xhr.onload = () => {
@@ -517,8 +534,10 @@ async function postPaymentAction(
   options?: { urgent?: boolean }
 ): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
   const lite = readLiteSession();
+  const sandbox = paymentSandbox();
   const payload = JSON.stringify({
     ...body,
+    sandbox,
     username: lite?.username || undefined,
     uid: lite?.uid || undefined,
   });
@@ -526,7 +545,7 @@ async function postPaymentAction(
 
   if (options?.urgent) {
     try {
-      return await postPaymentActionXhr(url, payload);
+      return await postPaymentActionXhr(url, payload, sandbox);
     } catch (xhrError) {
       logError(xhrError);
     }
@@ -534,7 +553,10 @@ async function postPaymentAction(
 
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Pi-Sandbox": sandbox ? "true" : "false",
+    },
     credentials: "include",
     cache: "no-store",
     keepalive: options?.urgent === true,
@@ -674,6 +696,10 @@ export async function createPiPayment(
         if (id) lastPaymentId = id;
         const approveId = id || (typeof paymentId === "string" ? paymentId : "");
         const sandbox = getPiInitOptions().sandbox;
+        if (approveId && deadApprovePaymentIds.has(approveId)) {
+          console.warn("[Pi] approve skipped (dead paymentId)", { paymentId: approveId });
+          return;
+        }
         // Always approve immediately — including Open App sandbox:false.
         // Wallet expires if this POST is skipped or delayed.
         console.log("[Pi] approve request", { paymentId: approveId, sandbox });
@@ -691,22 +717,32 @@ export async function createPiPayment(
             piStatus,
             sandbox,
             apiKeyPresent: result.data.apiKeyPresent === true,
+            keyPrefix: typeof result.data.keyPrefix === "string" ? result.data.keyPrefix : undefined,
+            keyLength: typeof result.data.keyLength === "number" ? result.data.keyLength : undefined,
           });
           if (!result.ok) {
             const authFail =
               isPiAuthFailureStatus(result.status) || isPiAuthFailureStatus(piStatus);
+            const dead =
+              isDeadApproveStatus(result.status) || isDeadApproveStatus(piStatus);
             const error = new Error(
               authFail
                 ? wrongPiApiKeyMessage(sandbox)
                 : (typeof result.data.error === "string" && result.data.error) ||
                   `Payment approval failed (${result.status})`
             );
+            if (dead && approveId) {
+              deadApprovePaymentIds.add(approveId);
+            }
             logError(error);
             emitPurchaseFeedback({ type: "error", message: error.message });
             finishWith(() => reject(error));
+            // Do not throw on a dead paymentId — Pi SDK retries this callback ~every 10s.
+            if (dead) return;
             throw error;
           }
         } catch (error) {
+          if (settled) return;
           const err = error instanceof Error ? error : new Error(errorMessage(error));
           logError(err);
           emitPurchaseFeedback({ type: "error", message: err.message });
