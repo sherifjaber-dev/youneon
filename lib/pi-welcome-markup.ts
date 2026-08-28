@@ -23,7 +23,7 @@ const WORDMARK_IMG_STYLE =
   NONE;
 
 const HERO_STYLE =
-  "display:block;width:min(72vw,268px);height:auto;margin:10px 0 18px;object-fit:contain;" +
+  "display:block;width:min(78vw,280px);max-width:280px;height:auto;max-height:min(42vh,340px);margin:10px 0 18px;object-fit:contain;object-position:center;background-color:#070010;" +
   NONE;
 
 const TAG_STYLE =
@@ -56,7 +56,7 @@ const LEGAL_AMP =
 
 export function youneonWelcomeHeroHtml(_idPrefix: string): string {
   return (
-    '<img class="youneon-welcome-hero" src="/default-avatar.png" alt="" width="512" height="512" decoding="async" style="' +
+    '<img class="youneon-welcome-hero" src="/youneon-hero.png" alt="" width="689" height="1024" decoding="async" style="' +
     HERO_STYLE +
     '" />'
   );

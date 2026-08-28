@@ -474,7 +474,7 @@
     return (
       '<div class="youneon-welcome-card" style="position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;pointer-events:auto;user-select:none;-webkit-user-select:none;cursor:default">' +
       '<h1 class="youneon-welcome-wordmark-wrap" style="margin:0 0 8px;padding:0;line-height:0;width:100%;display:flex;justify-content:center;align-items:center;background:transparent;' + NONE + '"><img class="youneon-welcome-wordmark" src="/youneon-login-logo.png" alt="YouNeon" width="560" height="274" decoding="async" style="display:block;width:min(80vw,280px);max-width:280px;height:auto;margin:0;background:transparent;mix-blend-mode:screen;-webkit-mix-blend-mode:screen;object-fit:contain;' + NONE + '" /></h1>' +
-      '<img class="youneon-welcome-hero" src="/default-avatar.png" alt="" width="512" height="512" decoding="async" style="display:block;width:min(72vw,268px);height:auto;margin:10px 0 18px;object-fit:contain;' + NONE + '" />' +
+      '<img class="youneon-welcome-hero" src="/youneon-hero.png" alt="" width="689" height="1024" decoding="async" style="display:block;width:min(78vw,280px);max-width:280px;height:auto;max-height:min(42vh,340px);margin:10px 0 18px;object-fit:contain;object-position:center;background-color:#070010;' + NONE + '" />' +
       '<p style="font-size:15px;line-height:1.4;font-weight:500;color:#8b8494;margin:0 0 22px;' + NONE + '">Meet in the glow.</p>' +
       '<div class="youneon-signin-wrap" style="' + WRAP_STYLE + '">' +
       CONTROLS_HTML +
