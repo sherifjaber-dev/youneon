@@ -51,22 +51,36 @@ function envKey(name: string): string {
 }
 
 /**
- * sandbox:true (Studio / localhost / sandbox.minepi.com) → PI_API_KEY (Develop).
- * sandbox:false (Open App / vercel.app / pinet.com) → PI_API_KEY_PRODUCTION,
- * falling back to PI_API_KEY if production is unset.
+ * Default key for a request. Both env vars are Testnet Server API Keys.
+ * Approve/complete try PI_API_KEY_PRODUCTION first, then PI_API_KEY on 404.
  */
-export function getPiServerApiKeyInfo(sandbox: boolean): { key: string; source: PiKeySource } {
-  if (!sandbox) {
-    const production = envKey("PI_API_KEY_PRODUCTION");
-    if (production) return { key: production, source: "PI_API_KEY_PRODUCTION" };
-  }
-  const primary = envKey("PI_API_KEY");
-  if (primary) return { key: primary, source: "PI_API_KEY" };
-  const network = envKey("PI_NETWORK_API_KEY");
-  if (network) return { key: network, source: "PI_NETWORK_API_KEY" };
-  const platform = envKey("PI_PLATFORM_API_KEY");
-  if (platform) return { key: platform, source: "PI_PLATFORM_API_KEY" };
+export function getPiServerApiKeyInfo(_sandbox: boolean): { key: string; source: PiKeySource } {
+  const attempts = getPiApproveKeyAttempts();
+  if (attempts.length > 0) return attempts[0];
   return { key: "", source: "" };
+}
+
+/**
+ * Unique keys to try for approve/complete. PRODUCTION first (Open App listing),
+ * then trimmed PI_API_KEY (Studio / Develop). Same value is not tried twice.
+ */
+export function getPiApproveKeyAttempts(): { key: string; source: PiKeySource }[] {
+  const production = envKey("PI_API_KEY_PRODUCTION");
+  const primary = envKey("PI_API_KEY");
+  const seen = new Set<string>();
+  const attempts: { key: string; source: PiKeySource }[] = [];
+  const add = (key: string, source: PiKeySource) => {
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    attempts.push({ key, source });
+  };
+  add(production, "PI_API_KEY_PRODUCTION");
+  add(primary, "PI_API_KEY");
+  if (attempts.length === 0) {
+    add(envKey("PI_NETWORK_API_KEY"), "PI_NETWORK_API_KEY");
+    add(envKey("PI_PLATFORM_API_KEY"), "PI_PLATFORM_API_KEY");
+  }
+  return attempts;
 }
 
 export function getPiServerApiKey(sandbox = false): string {
@@ -89,7 +103,7 @@ export function isPiSandbox(): boolean {
 /**
  * Platform API base for approve/complete.
  * Always api.minepi.com/v2 — never sandbox.minepi.com (that is the desktop UI).
- * Client Pi.init sandbox (Studio vs Open App) must not change this host.
+ * Client Pi.init sandbox (Testnet vs Mainnet) must not change this host.
  * Override with PI_PLATFORM_API_BASE only if Pi documents a different base.
  */
 export function getPiPlatformBase(): string {
@@ -140,28 +154,38 @@ export function piPaymentDebugMeta(sandbox = false): PiPaymentDebugMeta {
 
 /**
  * Client sandbox from JSON `{ sandbox }`, `X-Pi-Sandbox` header, or Origin/Referer host.
- * Matches Pi.init: true on sandbox.minepi.com / localhost; false on vercel.app / pinet.com.
+ * Testnet-only app: default/force true unless NEXT_PUBLIC_PI_SANDBOX=false (Mainnet).
+ * Ignore client sandbox:false so a cached Open App cannot select Mainnet keys.
  */
 export function parseClientSandbox(body: unknown, request?: Request): boolean {
+  const forced = resolvePiSandboxFromHost();
+  if (!forced) return false;
+
+  let client: boolean | undefined;
   if (body && typeof body === "object") {
     const rec = body as Record<string, unknown>;
-    if (rec.sandbox === true || rec.sandbox === "true" || rec.sandbox === 1) return true;
-    if (rec.sandbox === false || rec.sandbox === "false" || rec.sandbox === 0) return false;
+    if (rec.sandbox === true || rec.sandbox === "true" || rec.sandbox === 1) client = true;
+    else if (rec.sandbox === false || rec.sandbox === "false" || rec.sandbox === 0) client = false;
   }
-  if (request) {
+  if (client === undefined && request) {
     const header = (request.headers.get("x-pi-sandbox") || "").trim().toLowerCase();
-    if (header === "true" || header === "1") return true;
-    if (header === "false" || header === "0") return false;
-    const origin = request.headers.get("origin") || request.headers.get("referer") || "";
-    if (origin) {
-      try {
-        return resolvePiSandboxFromHost(new URL(origin).hostname);
-      } catch {
-        /* ignore */
+    if (header === "true" || header === "1") client = true;
+    else if (header === "false" || header === "0") client = false;
+    else {
+      const origin = request.headers.get("origin") || request.headers.get("referer") || "";
+      if (origin) {
+        try {
+          client = resolvePiSandboxFromHost(new URL(origin).hostname);
+        } catch {
+          /* ignore */
+        }
       }
     }
   }
-  return false;
+  if (client === false) {
+    console.info("[Pi] client sent sandbox:false; forcing true for Testnet app");
+  }
+  return true;
 }
 
 function unwrapId(value: unknown, keys: string[]): unknown {
@@ -218,6 +242,7 @@ export function logPiPaymentAction(
     piUrl?: string;
     piBody?: unknown;
     piBodyText?: string;
+    keySource?: PiKeySource;
   }
 ): void {
   const debug = piPaymentDebugMeta(info.sandbox);
@@ -235,7 +260,7 @@ export function logPiPaymentAction(
     keyLength: debug.keyLength,
     keyStartsWithSkLive: debug.keyStartsWithSkLive,
     sandbox: debug.sandbox,
-    keySource: debug.keySource,
+    keySource: info.keySource || debug.keySource,
     apiKeyPresent: debug.apiKeyPresent,
     piUrlBase: debug.piUrl,
   });
@@ -286,9 +311,8 @@ export function describePiApiFailure(
     return detail ? `${hint} ${detail}` : hint;
   }
   if (status === 404) {
-    const hint = sandbox
-      ? "Payment not found for PI_API_KEY (Develop / Studio)."
-      : "Payment not found for this API key. Open App needs PI_API_KEY_PRODUCTION set to the Server API Key of the SAME Pi app that created the payment.";
+    const hint =
+      "Payment not found after trying PI_API_KEY_PRODUCTION and PI_API_KEY. The paymentId is not visible to this Testnet app (wrong app, or Pi.init sandbox:false created a Mainnet payment).";
     return `Pi ${action} failed (404): ${hint}${detail ? ` ${detail}` : ""}`;
   }
   return `Pi ${action} failed (${status})${detail ? `: ${detail}` : ""}`;
@@ -300,6 +324,8 @@ type PiApiOptions = {
   sandbox?: boolean;
   paymentId?: string;
   authScheme?: PiAuthScheme;
+  apiKey?: string;
+  keySource?: PiKeySource;
 };
 
 export type PiApiResult<T = unknown> = {
@@ -310,6 +336,7 @@ export type PiApiResult<T = unknown> = {
   authScheme: PiAuthScheme;
   headerMode: PiAuthScheme;
   bodyText: string;
+  keySource: PiKeySource;
 };
 
 function logPiAuthAttempt(
@@ -339,14 +366,12 @@ export async function piApi<T = unknown>(
   options: PiApiOptions = {}
 ): Promise<PiApiResult<T>> {
   const sandbox = options.sandbox === true;
-  const info = getPiServerApiKeyInfo(sandbox);
+  const info = options.apiKey
+    ? { key: options.apiKey.trim(), source: options.keySource || getPiServerApiKeyInfo(sandbox).source }
+    : getPiServerApiKeyInfo(sandbox);
   const apiKey = info.key.trim();
   if (!apiKey) {
     throw new PiPlatformError(missingPiApiKeyMessage(sandbox), 503);
-  }
-
-  if (!sandbox && info.source !== "PI_API_KEY_PRODUCTION") {
-    console.warn("[Pi] PI_API_KEY_PRODUCTION missing; using", info.source, "for Open App. A 404 means this key is not the Open App's Server API Key.");
   }
 
   const method = options.method || "GET";
@@ -389,13 +414,13 @@ export async function piApi<T = unknown>(
     headerMode: authScheme,
     authScheme,
     hasProductionKey: debug.hasProductionKey,
-    keyLength: debug.keyLength,
-    keyStartsWithSkLive: debug.keyStartsWithSkLive,
+    keyLength: apiKey.length,
+    keyStartsWithSkLive: apiKey.startsWith("sk_live"),
     piBodyText: clipPiBodyText(bodyText),
     piBody: safePiResponseBody(data),
     sandbox: debug.sandbox,
-    keySource: debug.keySource,
-    apiKeyPresent: debug.apiKeyPresent,
+    keySource: info.source,
+    apiKeyPresent: apiKey.length > 0,
   });
   return {
     ok: res.ok,
@@ -405,10 +430,11 @@ export async function piApi<T = unknown>(
     authScheme,
     headerMode: authScheme,
     bodyText,
+    keySource: info.source,
   };
 }
 
-/** Try Key, then Bearer. Stop at the first Pi response that is not 401. */
+/** Try Key, then Bearer for one API key. Stop at the first response that is not 401. */
 async function piApiKeyThenBearer<T = unknown>(
   path: string,
   options: Omit<PiApiOptions, "authScheme"> = {}
@@ -423,8 +449,51 @@ async function piApiKeyThenBearer<T = unknown>(
   return last!;
 }
 
+/**
+ * Try PI_API_KEY_PRODUCTION first. On 404, retry once with trimmed PI_API_KEY.
+ * Stop at the first 200. 401 still tries Bearer on the same key only.
+ */
+async function piApiWithKey404Fallback<T = unknown>(
+  path: string,
+  options: Omit<PiApiOptions, "authScheme" | "apiKey" | "keySource"> = {}
+): Promise<PiApiResult<T>> {
+  const sandbox = options.sandbox === true;
+  const attempts = getPiApproveKeyAttempts();
+  if (attempts.length === 0) {
+    throw new PiPlatformError(missingPiApiKeyMessage(sandbox), 503);
+  }
+
+  let last: PiApiResult<T> | null = null;
+  for (let i = 0; i < attempts.length; i++) {
+    const attempt = attempts[i];
+    last = await piApiKeyThenBearer<T>(path, {
+      ...options,
+      apiKey: attempt.key,
+      keySource: attempt.source,
+    });
+    if (last.status === 200 || last.ok) {
+      console.info("[Pi] platform succeeded", {
+        keySource: attempt.source,
+        status: last.status,
+        path,
+        paymentId: options.paymentId,
+      });
+      return last;
+    }
+    if (last.status === 404 && i + 1 < attempts.length) {
+      console.info("[Pi] 404 with", attempt.source, "- retrying once with", attempts[i + 1].source, {
+        paymentId: options.paymentId,
+        path,
+      });
+      continue;
+    }
+    return last;
+  }
+  return last!;
+}
+
 export async function getPiPayment(paymentId: string, sandbox = false) {
-  return piApiKeyThenBearer<PiPaymentDTO>(`/payments/${paymentId}`, {
+  return piApiWithKey404Fallback<PiPaymentDTO>(`/payments/${paymentId}`, {
     method: "GET",
     sandbox,
     paymentId,
@@ -434,35 +503,29 @@ export async function getPiPayment(paymentId: string, sandbox = false) {
 export async function approvePiPayment(paymentId: string, sandbox = false) {
   const path = `/payments/${paymentId}/approve`;
   try {
-    const schemes: PiAuthScheme[] = ["Key", "Bearer"];
-    let last: PiApiResult<PiPaymentDTO> | null = null;
-    for (const headerMode of schemes) {
-      const result = await piApi<PiPaymentDTO>(path, {
-        method: "POST",
-        body: {},
-        sandbox,
-        paymentId,
-        authScheme: headerMode,
-      });
-      last = result;
-      logPiAuthAttempt("approve", sandbox, headerMode, result.status, result.bodyText, {
-        paymentId,
-        piUrl: result.url,
-      });
-      logPiPaymentAction("approve", {
-        paymentId,
-        status: result.status,
-        sandbox,
-        authScheme: headerMode,
-        headerMode,
-        piUrl: result.url,
-        piBody: result.data,
-        piBodyText: clipPiBodyText(result.bodyText),
-      });
-      // 401 = invalid key / wrong scheme. Try Bearer next. 404 = wrong app — stop.
-      if (result.status !== 401) return result;
-    }
-    return last!;
+    const result = await piApiWithKey404Fallback<PiPaymentDTO>(path, {
+      method: "POST",
+      body: {},
+      sandbox,
+      paymentId,
+    });
+    logPiAuthAttempt("approve", sandbox, result.headerMode, result.status, result.bodyText, {
+      paymentId,
+      piUrl: result.url,
+      keySource: result.keySource,
+    });
+    logPiPaymentAction("approve", {
+      paymentId,
+      status: result.status,
+      sandbox,
+      authScheme: result.authScheme,
+      headerMode: result.headerMode,
+      piUrl: result.url,
+      piBody: result.data,
+      piBodyText: clipPiBodyText(result.bodyText),
+      keySource: result.keySource,
+    });
+    return result;
   } catch (error) {
     const status = error instanceof PiPlatformError ? error.status : 0;
     logPiAuthAttempt("approve", sandbox, "Key", status, "", { paymentId });
@@ -472,7 +535,7 @@ export async function approvePiPayment(paymentId: string, sandbox = false) {
 }
 
 export async function completePiPayment(paymentId: string, txid: string, sandbox = false) {
-  const result = await piApiKeyThenBearer<PiPaymentDTO>(`/payments/${paymentId}/complete`, {
+  const result = await piApiWithKey404Fallback<PiPaymentDTO>(`/payments/${paymentId}/complete`, {
     method: "POST",
     body: { txid },
     sandbox,
@@ -488,12 +551,13 @@ export async function completePiPayment(paymentId: string, txid: string, sandbox
     piUrl: result.url,
     piBody: result.data,
     piBodyText: clipPiBodyText(result.bodyText),
+    keySource: result.keySource,
   });
   return { ...result, ok: result.status === 200 };
 }
 
 export async function cancelPiPayment(paymentId: string, sandbox = false) {
-  const result = await piApiKeyThenBearer<PiPaymentDTO>(`/payments/${paymentId}/cancel`, {
+  const result = await piApiWithKey404Fallback<PiPaymentDTO>(`/payments/${paymentId}/cancel`, {
     method: "POST",
     body: {},
     sandbox,
@@ -508,6 +572,7 @@ export async function cancelPiPayment(paymentId: string, sandbox = false) {
     piUrl: result.url,
     piBody: result.data,
     piBodyText: clipPiBodyText(result.bodyText),
+    keySource: result.keySource,
   });
   return result;
 }

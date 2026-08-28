@@ -21,6 +21,7 @@ import {
   parsePaymentId,
   parseTxid,
   piPaymentDebugMeta,
+  type PiKeySource,
 } from "@/lib/pi-platform";
 import type { PiPaymentDTO } from "@/lib/pi-types";
 
@@ -35,6 +36,7 @@ export type PaymentActionResult = {
   waiting?: boolean;
   piStatus?: number;
   headerMode?: "Key" | "Bearer";
+  keySource?: PiKeySource;
 };
 
 async function sessionUsername(): Promise<string | null> {
@@ -77,7 +79,7 @@ async function grantFromPayment(
   }
 }
 
-/** In-process: do not re-hit Pi approve for the same 404/401/403 paymentId. */
+/** In-process: do not re-hit Pi approve for the same 404/401/403 paymentId after both keys. */
 const deadApprovePaymentIds = new Set<string>();
 
 function isDeadApproveStatus(status: number): boolean {
@@ -105,8 +107,7 @@ export async function approvePaymentById(
     };
   }
 
-  // Always POST /approve immediately. Do not GET first — Open App with
-  // Pi.init sandbox:false expires the wallet if approve is delayed.
+  // Always POST /approve immediately. Do not GET first — delayed approve expires the wallet.
   console.info("[Pi] approve start", {
     paymentId,
     hasProductionKey: debug.hasProductionKey,
@@ -126,6 +127,7 @@ export async function approvePaymentById(
     piBodyText: approved.bodyText,
     sandbox: debug.sandbox,
     piUrl: approved.url,
+    keySource: approved.keySource,
   });
 
   if (
@@ -140,10 +142,12 @@ export async function approvePaymentById(
       approved: true,
       piStatus: approved.status,
       headerMode: approved.headerMode,
+      keySource: approved.keySource,
     };
   }
 
   if (isDeadApproveStatus(approved.status)) {
+    // Confirmed 404/401/403 after both keys — do not retry this paymentId every 10s.
     deadApprovePaymentIds.add(paymentId);
     return {
       ok: false,
@@ -151,6 +155,7 @@ export async function approvePaymentById(
       payment: approved.data,
       piStatus: approved.status,
       headerMode: approved.headerMode,
+      keySource: approved.keySource,
       error: describePiApiFailure("approve", approved.status || 502, approved.data, sandbox),
     };
   }
@@ -165,6 +170,7 @@ export async function approvePaymentById(
         approved: true,
         piStatus: approved.status,
         headerMode: approved.headerMode,
+        keySource: already.keySource || approved.keySource,
       };
     }
   } catch (error) {
@@ -184,6 +190,7 @@ export async function approvePaymentById(
     payment: approved.data,
     piStatus: approved.status,
     headerMode: approved.headerMode,
+    keySource: approved.keySource,
     error: describePiApiFailure("approve", approved.status || 502, approved.data, sandbox),
   };
 }
@@ -211,8 +218,7 @@ export async function completePaymentById(
   });
 
   // Official order: approve (no txid), then complete with txid.
-  // Do not GET first — that extra round-trip expired Open App wallets
-  // after Pi.init sandbox:false. Approve is idempotent.
+  // Do not GET first — that extra round-trip expired wallets. Approve is idempotent.
   try {
     const approved = await approvePiPayment(paymentId, sandbox);
     if (

@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       keyLength: debug.keyLength,
       keyStartsWithSkLive: debug.keyStartsWithSkLive,
       headerMode: result.headerMode,
+      keySource: result.keySource,
       sandbox: debug.sandbox,
     });
     if (!result.ok) {
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
           piStatus: result.piStatus || result.status,
           headerMode: result.headerMode,
           ...debug,
+          keySource: result.keySource || debug.keySource,
         },
         { status: result.status }
       );
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
       payment: result.payment,
       headerMode: result.headerMode,
       ...debug,
+      keySource: result.keySource || debug.keySource,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not approve payment";

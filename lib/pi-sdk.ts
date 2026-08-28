@@ -6,7 +6,7 @@ import {
   purchaseErrorMessage,
   purchaseSummaryFromPayment,
 } from "@/lib/purchase-feedback";
-import { getPiInitOptions, resolvePiSandboxFromHost } from "@/lib/system-config";
+import { getPiInitOptions, isPiStudioHost, resolvePiSandboxFromHost } from "@/lib/system-config";
 import { identityFromAuthResult, markPiAuthOk, readLiteSession } from "@/lib/pi-client-session";
 import { isPiAuthFailureStatus, wrongPiApiKeyMessage } from "@/lib/pi-network-copy";
 import type {
@@ -206,15 +206,16 @@ export function resetPiSdkInit(): void {
 }
 
 /**
- * Official Pi.init. sandbox is true only on Studio / local hosts.
- * Testnet vs Mainnet is the Developer Portal registration, not this flag.
+ * Official Pi.init. sandbox true = Testnet SDK access for this registered Testnet app.
+ * Studio vs Ecosystem is NOT sandbox:false — that creates Mainnet payments
+ * Testnet Server API Keys cannot see (404 payment_not_found).
  */
 export async function initPi(): Promise<boolean> {
   if (typeof window === "undefined" || !window.Pi) {
     throw new Error("Pi SDK not loaded");
   }
   const isSandbox = resolvePiSandboxFromHost();
-  console.log("[Pi] init start", { sandbox: isSandbox });
+  console.log("[Pi] init start", { sandbox: isSandbox, studioHost: isPiStudioHost() });
   await window.Pi.init({ version: "2.0", sandbox: isSandbox });
   console.log("[Pi] init success");
   return isSandbox;
@@ -700,8 +701,7 @@ export async function createPiPayment(
           console.warn("[Pi] approve skipped (dead paymentId)", { paymentId: approveId });
           return;
         }
-        // Always approve immediately — including Open App sandbox:false.
-        // Wallet expires if this POST is skipped or delayed.
+        // Always approve immediately. Wallet expires if this POST is skipped or delayed.
         console.log("[Pi] approve request", { paymentId: approveId, sandbox });
         try {
           const result = await postPaymentAction(
@@ -721,6 +721,8 @@ export async function createPiPayment(
             keyStartsWithSkLive: result.data.keyStartsWithSkLive === true,
             headerMode:
               typeof result.data.headerMode === "string" ? result.data.headerMode : undefined,
+            keySource:
+              typeof result.data.keySource === "string" ? result.data.keySource : undefined,
           });
           if (!result.ok) {
             const authFail =

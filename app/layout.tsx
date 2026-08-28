@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { AppProviders } from "@/components/app-providers";
 import { StaticPiLogin } from "@/components/static-pi-login";
-import { PI_NETWORK_CONFIG } from "@/lib/system-config";
+import { PI_NETWORK_CONFIG, getPiInitOptions } from "@/lib/system-config";
 import "./globals.css";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pinet.com";
@@ -93,9 +93,9 @@ const PI_SDK_HEAD_SCRIPT =
  * Never loads sdk.minepi.com if App Studio / Pi Browser already injected window.Pi.
  * Head already starts sdk.minepi.com; fallback load is timed out at 3s so a hung
  * script cannot freeze pinet.com. If Pi is already present, never wait on it.
- * Pi.init is official only: { version: "2.0", sandbox } from hostname
- * (true on sandbox.minepi.com / localhost / 127.0.0.1; false in Ecosystem).
- * Testnet vs Mainnet is the Developer Portal registration, not this flag.
+ * Pi.init is official only: { version: "2.0", sandbox }.
+ * sandbox true = Testnet SDK access for this registered Testnet app
+ * (vercel.app, pinet.com, AND Studio/localhost). Studio vs Ecosystem is NOT sandbox:false.
  * Classic Pi.authenticate(scopesArray, cb) runs FIRST so Studio can hook it.
  * Authenticate is raced against 12s so a hanging stub Pi on pinet.com Chrome
  * cannot leave Sign in stuck on Signing in... If auth later succeeds, hide overlay.
@@ -114,8 +114,11 @@ const PI_BOOT_SCRIPT =
   "function isSandboxHost() {" +
   "try {" +
   "var host = String((location && location.hostname) || '');" +
-  "return host.indexOf('sandbox.minepi.com') !== -1 || host === 'localhost' || host === '127.0.0.1';" +
-  "} catch (e) { return false; }" +
+  "try { window.__YOUNEON_PI_HOST__ = host; } catch (h) {}" +
+  "} catch (e) {}" +
+  "return " +
+  JSON.stringify(getPiInitOptions().sandbox) +
+  ";" +
   "}" +
   "try { window.__YOUNEON_PI_SANDBOX__ = isSandboxHost(); } catch (sbx) {}" +
   "function piInitOptions() {" +
@@ -457,7 +460,7 @@ export default async function RootLayout({
       >
         {isPublicLegal ? null : <StaticPiLogin overlayId="youneon-static-login" />}
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: PI_BOOT_SCRIPT }} />
-        <script type="text/javascript" src="/pi-boot.js?v=sandbox-host-1"></script>
+        <script type="text/javascript" src="/pi-boot.js?v=sandbox-testnet-1"></script>
         <script type="text/javascript" dangerouslySetInnerHTML={{ __html: DEFER_FONTS_SCRIPT }} />
         <div
           id="youneon-app-tree"

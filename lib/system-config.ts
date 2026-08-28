@@ -2,23 +2,31 @@ function resolvePiClientId(): string {
   return (process.env.NEXT_PUBLIC_PI_CLIENT_ID || "").trim();
 }
 
-/**
- * Pi.init sandbox from the page hostname — not Testnet vs Mainnet.
- * Testnet is the Developer Portal registration; this flag only selects Studio
- * vs Pi Browser / Ecosystem.
- *
- * sandbox: true  → sandbox.minepi.com, localhost, 127.0.0.1
- * sandbox: false → youneon-app.vercel.app, *.pinet.com, Pi Browser Open App
- */
-export function resolvePiSandboxFromHost(hostname?: string): boolean {
-  let host = typeof hostname === "string" ? hostname : "";
-  if (!host && typeof window !== "undefined") {
+function envPiSandboxFlag(): boolean | undefined {
+  const raw = String(process.env.NEXT_PUBLIC_PI_SANDBOX ?? "").trim().toLowerCase();
+  if (raw === "false" || raw === "0") return false;
+  if (raw === "true" || raw === "1") return true;
+  return undefined;
+}
+
+function pageHostname(hostname?: string): string {
+  if (typeof hostname === "string" && hostname) return hostname;
+  if (typeof window !== "undefined") {
     try {
-      host = window.location.hostname || "";
+      return window.location.hostname || "";
     } catch {
-      host = "";
+      return "";
     }
   }
+  return "";
+}
+
+/**
+ * Hostname helper only (Studio / local vs vercel.app / pinet.com).
+ * Do not use this to set Pi.init sandbox:false — that is Mainnet, not "Open App".
+ */
+export function isPiStudioHost(hostname?: string): boolean {
+  const host = pageHostname(hostname);
   return (
     host.includes("sandbox.minepi.com") ||
     host === "localhost" ||
@@ -26,10 +34,25 @@ export function resolvePiSandboxFromHost(hostname?: string): boolean {
   );
 }
 
+/**
+ * Pi.init sandbox is Pi SDK Testnet access for this registered Testnet app.
+ * Studio vs Ecosystem is NOT sandbox:false — sandbox:false creates Mainnet
+ * payments that Testnet Server API Keys cannot see (404 payment_not_found).
+ *
+ * Default true on vercel.app, pinet.com, AND Studio/localhost until Mainnet.
+ * Set NEXT_PUBLIC_PI_SANDBOX=false only when this app moves to Mainnet.
+ */
+export function resolvePiSandboxFromHost(_hostname?: string): boolean {
+  const override = envPiSandboxFlag();
+  if (override !== undefined) return override;
+  // Hostname is diagnostic only; never force false on Open App / Ecosystem hosts.
+  return true;
+}
+
 export const PI_NETWORK_CONFIG = {
   SDK_URL: "https://sdk.minepi.com/pi-sdk.js",
   SDK_LITE_URL: "https://pi-apps.github.io/pi-sdk-lite/build/production/sdklite.js",
-  /** @deprecated Use resolvePiSandboxFromHost() at runtime. Build-time env does not control Pi.init. */
+  /** Runtime Pi.init sandbox. Default true (Testnet). NEXT_PUBLIC_PI_SANDBOX=false for Mainnet. */
   get SANDBOX(): boolean {
     return resolvePiSandboxFromHost();
   },
@@ -48,7 +71,8 @@ export type PiInitOptions = {
 /**
  * Official Pi.init payload only: { version: "2.0", sandbox }.
  * Never pass clientId — it is unofficial and can break Pi Browser (Studio ignores it).
- * sandbox is hostname-based (Studio vs Ecosystem). It does not switch Testnet/Mainnet.
+ * sandbox true = Testnet SDK access for this registered Testnet app.
+ * Studio vs Ecosystem is NOT sandbox:false.
  */
 export function getPiInitOptions(_includeClientId = false): PiInitOptions {
   return {
