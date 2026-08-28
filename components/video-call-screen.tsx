@@ -82,6 +82,44 @@ interface ChatMsg { id: string; from: "me" | "partner"; text: string; timestamp:
 
 const SKIP_COOLDOWN_MS = 5000;
 
+function isLiveTrack(track: MediaStreamTrack | undefined | null, kind?: "video" | "audio"): track is MediaStreamTrack {
+  return !!track && track.readyState === "live" && (!kind || track.kind === kind);
+}
+
+function liveTrackFromStream(stream: MediaStream | null | undefined, kind: "video" | "audio"): MediaStreamTrack | undefined {
+  return stream?.getTracks().find((t) => isLiveTrack(t, kind));
+}
+
+function localDailyTrack(call: DailyCall | null, kind: "video" | "audio"): MediaStreamTrack | undefined {
+  try {
+    const track = call?.participants()?.local?.tracks?.[kind]?.persistentTrack;
+    return isLiveTrack(track, kind) ? track : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function watchTrackEnded(track: MediaStreamTrack | undefined | null) {
+  if (!track || (track as MediaStreamTrack & { _ynEndedLog?: boolean })._ynEndedLog) return;
+  (track as MediaStreamTrack & { _ynEndedLog?: boolean })._ynEndedLog = true;
+  track.addEventListener("ended", () => {
+    console.log("[cam] track ended", track.kind, track.id);
+  });
+}
+
+function attachVideoEl(el: HTMLVideoElement | null, track: MediaStreamTrack | undefined) {
+  if (!el || !isLiveTrack(track, "video")) return;
+  watchTrackEnded(track);
+  const cur = el.srcObject as MediaStream | null;
+  if (cur?.getVideoTracks()[0] === track) return;
+  el.srcObject = new MediaStream([track]);
+}
+
+function setTrackEnabled(track: MediaStreamTrack | undefined, enabled: boolean) {
+  if (!isLiveTrack(track)) return;
+  if (track.enabled !== enabled) track.enabled = enabled;
+}
+
 const NSFW_PORN_THRESHOLD = 0.7;
 const NSFW_HENTAI_THRESHOLD = 0.7;
 const NSFW_SEXY_THRESHOLD = 0.85;
@@ -263,6 +301,8 @@ function VideoCallScreen({
   const roomUrlRef = useRef("");
   const giftLogRef = useRef<Array<{ giftId: string; emoji?: string; direction: "sent" | "received"; timestamp: number }>>([]);
   const previewStreamRef = useRef<MediaStream | null>(null);
+  const cameraStartLockRef = useRef(false);
+  const meetingJoinedRef = useRef(false);
   const nsfwModelRef = useRef<any>(null);
   const nsfwIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sessionStartedRef = useRef(Date.now());
@@ -296,6 +336,7 @@ function VideoCallScreen({
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const camOnRef = useRef(true);
+  const micOnRef = useRef(true);
   const [remoteName, setRemoteName] = useState<string>("");
   const [partner, setPartner] = useState<PartnerProfile | null>(
     partnerProfile || (partnerName ? { name: partnerName } : null)
@@ -334,12 +375,69 @@ function VideoCallScreen({
     else setBrowser("other");
   }, []);
 
+  const stopCamera = useCallback((reason: string) => {
+    console.log("[cam] stopCamera", reason);
+    const call = callRef.current;
+    const dailyTracks = [
+      call?.participants()?.local?.tracks?.video?.persistentTrack,
+      call?.participants()?.local?.tracks?.audio?.persistentTrack,
+    ];
+    dailyTracks.forEach((t) => {
+      if (t && t.readyState !== "ended") t.stop();
+    });
+    const stream = previewStreamRef.current;
+    if (stream) {
+      stream.getTracks().forEach((t) => {
+        if (t.readyState !== "ended") t.stop();
+      });
+      previewStreamRef.current = null;
+    }
+  }, []);
+
+  const startCamera = useCallback(async (reason: string, call?: DailyCall | null) => {
+    const existing =
+      liveTrackFromStream(previewStreamRef.current, "video") ||
+      localDailyTrack(call || callRef.current, "video");
+    if (existing) {
+      console.log("[cam] startCamera skipped (track live)", reason, existing.id);
+      watchTrackEnded(existing);
+      return existing;
+    }
+    if (cameraStartLockRef.current) {
+      console.log("[cam] startCamera skipped (in flight)", reason);
+      return undefined;
+    }
+    cameraStartLockRef.current = true;
+    console.log("[cam] startCamera", reason);
+    try {
+      if (call) {
+        await call.startCamera();
+        const fromDaily = localDailyTrack(call, "video");
+        if (fromDaily) watchTrackEnded(fromDaily);
+        return fromDaily;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      previewStreamRef.current = stream;
+      stream.getTracks().forEach((t) => watchTrackEnded(t));
+      return liveTrackFromStream(stream, "video");
+    } catch (err) {
+      console.error("[cam] startCamera failed", reason, err);
+      throw err;
+    } finally {
+      cameraStartLockRef.current = false;
+    }
+  }, []);
+
   const checkPermissions = async () => {
     setPermission("checking");
     setErrorMsg("");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      stream.getTracks().forEach((t) => t.stop());
+      const live = liveTrackFromStream(previewStreamRef.current, "video");
+      if (live) {
+        setPermission("granted");
+        return;
+      }
+      await startCamera("permission-check");
       setPermission("granted");
     } catch (err: any) {
       const name = err?.name || "";
@@ -413,25 +511,21 @@ function VideoCallScreen({
     messageTimerRef.current = setTimeout(() => setDisplayedMessage(null), 10000);
   }, []);
 
+  const saveReceivedGiftRef = useRef(saveReceivedGift);
+  saveReceivedGiftRef.current = saveReceivedGift;
+  const showIncomingMessageRef = useRef(showIncomingMessage);
+  showIncomingMessageRef.current = showIncomingMessage;
+  const triggerGiftBurstRef = useRef(triggerGiftBurst);
+  triggerGiftBurstRef.current = triggerGiftBurst;
+
   useEffect(() => {
-    if (permission !== "granted" || callStatus !== "preview") return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
-        previewStreamRef.current = stream;
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      } catch (e) { console.warn(e); }
-    })();
-    return () => {
-      cancelled = true;
-      if (previewStreamRef.current) {
-        previewStreamRef.current.getTracks().forEach((t) => t.stop());
-        previewStreamRef.current = null;
-      }
-    };
-  }, [permission, callStatus]);
+    if (permission !== "granted") return;
+    attachVideoEl(
+      localVideoRef.current,
+      liveTrackFromStream(previewStreamRef.current, "video") ||
+        localDailyTrack(callRef.current, "video")
+    );
+  }, [permission]);
 
   useEffect(() => {
     if (callStatus !== "joined" || !nsfwModelRef.current || bypassNsfw) {
@@ -466,15 +560,16 @@ function VideoCallScreen({
     Object.values(participants).forEach((p: DailyParticipant) => {
       if (p.local) {
         const videoTrack = p.tracks.video?.persistentTrack;
-        if (videoTrack && localVideoRef.current) {
-          const cur = localVideoRef.current.srcObject as MediaStream | null;
-          if (!cur || cur.getVideoTracks()[0] !== videoTrack) {
-            localVideoRef.current.srcObject = new MediaStream([videoTrack]);
-          }
-        }
+        const audioTrack = p.tracks.audio?.persistentTrack;
+        setTrackEnabled(videoTrack, camOnRef.current);
+        setTrackEnabled(audioTrack, micOnRef.current);
+        attachVideoEl(localVideoRef.current, videoTrack);
       } else {
         remoteCount++;
-        setRemoteName(p.user_name || "Partner");
+        setRemoteName((prev) => {
+          const next = p.user_name || "Partner";
+          return prev === next ? prev : next;
+        });
         const remoteUserId = (p.userData as { userId?: string } | undefined)?.userId;
         if (remoteUserId) {
           setPartner((prev) => {
@@ -504,9 +599,9 @@ function VideoCallScreen({
     });
     if (remoteCount > 0) {
       hadRemoteRef.current = true;
-      setCallStatus("joined");
-    } else {
-      setCallStatus("waiting");
+      setCallStatus((s) => (s === "joined" ? s : "joined"));
+    } else if (meetingJoinedRef.current) {
+      setCallStatus((s) => (s === "waiting" ? s : "waiting"));
       if (hadRemoteRef.current && matchOptsRef.current.matchMode === "random") {
         hadRemoteRef.current = false;
         setPartner(null);
@@ -524,19 +619,13 @@ function VideoCallScreen({
     const userId = opts.currentUserId || "";
     sessionStartedRef.current = Date.now();
     hadRemoteRef.current = false;
+    meetingJoinedRef.current = false;
 
     if (opts.matchMode === "random" && !isRealPiUsername(userId)) {
       setPermission("error");
       setErrorMsg("Sign in with Pi Network to start a video chat.");
       return;
     }
-
-    const stopPreview = () => {
-      if (previewStreamRef.current) {
-        previewStreamRef.current.getTracks().forEach((t) => t.stop());
-        previewStreamRef.current = null;
-      }
-    };
 
     const start = async () => {
       try {
@@ -547,10 +636,17 @@ function VideoCallScreen({
         setRemoteName("");
         setCamOn(true);
         setMicOn(true);
+        camOnRef.current = true;
+        micOnRef.current = true;
         giftLogRef.current = [];
         roomUrlRef.current = "";
         if (opts.matchMode === "direct" && opts.partnerProfile) setPartner(opts.partnerProfile);
         else if (opts.matchMode === "random") setPartner(opts.partnerProfile || null);
+
+        attachVideoEl(
+          localVideoRef.current,
+          liveTrackFromStream(previewStreamRef.current, "video")
+        );
 
         let url = "";
         if (opts.matchMode === "direct") {
@@ -588,29 +684,70 @@ function VideoCallScreen({
         roomUrlRef.current = url;
         if (cancelled) return;
 
-        stopPreview();
         setCallStatus("joining");
-        const callObject = DailyIframe.createCallObject({ audioSource: true, videoSource: true });
+        const videoTrack = liveTrackFromStream(previewStreamRef.current, "video")
+          || localDailyTrack(callRef.current, "video");
+        const audioTrack = liveTrackFromStream(previewStreamRef.current, "audio")
+          || localDailyTrack(callRef.current, "audio");
+        if (videoTrack) {
+          console.log("[cam] startCamera skipped (reusing live track)", "daily-join", videoTrack.id);
+        }
+
+        const callObject = DailyIframe.createCallObject({
+          audioSource: audioTrack || true,
+          videoSource: videoTrack || true,
+        });
         callRef.current = callObject;
         const refresh = () => updateMediaElements(callObject);
-        callObject.on("joined-meeting", refresh);
+        callObject.on("joined-meeting", () => {
+          meetingJoinedRef.current = true;
+          console.log("[cam] meeting joined");
+          refresh();
+        });
+        callObject.on("left-meeting", () => {
+          meetingJoinedRef.current = false;
+          console.log("[cam] meeting left");
+        });
         callObject.on("participant-joined", refresh);
         callObject.on("participant-updated", refresh);
         callObject.on("participant-left", refresh);
-        callObject.on("track-started", refresh);
-        callObject.on("track-stopped", refresh);
+        callObject.on("track-started", (ev: { track?: MediaStreamTrack; participant?: { local?: boolean } }) => {
+          if (ev?.track?.kind === "video" && ev?.participant?.local) {
+            watchTrackEnded(ev.track);
+          }
+          refresh();
+        });
+        callObject.on("track-stopped", (ev: { track?: MediaStreamTrack; participant?: { local?: boolean } }) => {
+          if (ev?.track?.kind === "video") {
+            console.log("[cam] track ended", {
+              local: !!ev.participant?.local,
+              id: ev.track.id,
+              state: ev.track.readyState,
+            });
+          }
+          refresh();
+        });
+        callObject.on("network-connection", () => {
+          const live = localDailyTrack(callObject, "video")
+            || liveTrackFromStream(previewStreamRef.current, "video");
+          if (live) {
+            console.log("[cam] startCamera skipped (track live)", "reconnect", live.id);
+            attachVideoEl(localVideoRef.current, live);
+            return;
+          }
+        });
         callObject.on("app-message", (event: any) => {
           const d = event?.data;
           if (!d || !d.type) return;
           if (d.type === "chat" && d.text) {
-            showIncomingMessage({
+            showIncomingMessageRef.current({
               id: `msg-${Date.now()}-${Math.random()}`,
               from: "partner", text: String(d.text).slice(0, 200), timestamp: Date.now(),
             });
           } else if (d.type === "gift") {
             const giftId = resolveGiftId(d.giftId, d.emoji);
             if (!giftId) return;
-            triggerGiftBurst(giftId);
+            triggerGiftBurstRef.current(giftId);
             const meta = CALL_GIFTS.find((g) => g.id === giftId);
             giftLogRef.current.push({
               giftId,
@@ -618,9 +755,14 @@ function VideoCallScreen({
               direction: "received",
               timestamp: Date.now(),
             });
-            saveReceivedGift(giftId, meta?.emoji || String(d.emoji || ""), partnerRef.current?.name || "Partner");
+            saveReceivedGiftRef.current(giftId, meta?.emoji || String(d.emoji || ""), partnerRef.current?.name || "Partner");
           }
         });
+
+        if (!videoTrack) {
+          await startCamera("daily-join", callObject);
+        }
+
         await callObject.join({
           url,
           userName: opts.currentUserName || "Me",
@@ -642,25 +784,39 @@ function VideoCallScreen({
       setShowProfile(false); setRemoteUserDoc(null); setRemoteName(""); setNsfwBlur(false); setBypassNsfw(false);
       if (bypassTimerRef.current) clearTimeout(bypassTimerRef.current);
       if (callRef.current) {
+        console.log("[cam] meeting left");
         callRef.current.leave().catch(() => {});
         callRef.current.destroy().catch(() => {});
         callRef.current = null;
       }
-      stopPreview();
+      meetingJoinedRef.current = false;
     };
-  }, [permission, sessionId, updateMediaElements, showIncomingMessage, triggerGiftBurst, saveReceivedGift]);
+  }, [permission, sessionId, updateMediaElements, startCamera, stopCamera]);
+
+  useEffect(() => {
+    return () => stopCamera("unmount");
+  }, [stopCamera]);
 
   useEffect(() => {
     camOnRef.current = camOn;
   }, [camOn]);
 
   useEffect(() => {
-    if (callStatus !== "joined" && callStatus !== "waiting") return;
+    micOnRef.current = micOn;
+  }, [micOn]);
+
+  useEffect(() => {
+    if (callStatus !== "joined" && callStatus !== "waiting" && callStatus !== "joining") return;
     const onVis = () => {
       const call = callRef.current;
       if (!call || !readLocalBackgroundPlay()) return;
-      if (document.hidden) call.setLocalVideo(false);
-      else call.setLocalVideo(camOnRef.current);
+      const video = localDailyTrack(call, "video")
+        || liveTrackFromStream(previewStreamRef.current, "video");
+      if (!isLiveTrack(video, "video")) {
+        console.log("[cam] startCamera skipped (no live track to toggle)", "visibility");
+        return;
+      }
+      setTrackEnabled(video, document.hidden ? false : camOnRef.current);
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
@@ -764,16 +920,22 @@ function VideoCallScreen({
   const remotePreview = mergeRemoteProfile(remoteUserDoc, partner, remoteName);
 
   const toggleCam = () => {
-    if (!callRef.current) return;
     const next = !camOn;
-    callRef.current.setLocalVideo(next);
+    const track = localDailyTrack(callRef.current, "video")
+      || liveTrackFromStream(previewStreamRef.current, "video");
+    if (!isLiveTrack(track, "video")) return;
+    setTrackEnabled(track, next);
+    camOnRef.current = next;
     setCamOn(next);
   };
 
   const toggleMic = () => {
-    if (!callRef.current) return;
     const next = !micOn;
-    callRef.current.setLocalAudio(next);
+    const track = localDailyTrack(callRef.current, "audio")
+      || liveTrackFromStream(previewStreamRef.current, "audio");
+    if (!isLiveTrack(track, "audio")) return;
+    setTrackEnabled(track, next);
+    micOnRef.current = next;
     setMicOn(next);
   };
 
@@ -788,7 +950,11 @@ function VideoCallScreen({
   const handleEnd = async () => {
     const userId = currentUserId || "anon";
     if (matchMode === "random") await leaveMatchQueue(userId).catch(() => {});
-    if (callRef.current) await callRef.current.leave().catch(() => {});
+    if (callRef.current) {
+      console.log("[cam] meeting left");
+      await callRef.current.leave().catch(() => {});
+    }
+    stopCamera("end-call");
     onEnd({
       partner: partnerRef.current,
       durationSeconds: Math.max(0, Math.floor((Date.now() - sessionStartedRef.current) / 1000)),
@@ -951,34 +1117,6 @@ function VideoCallScreen({
     );
   }
 
-  if (callStatus === "preview") {
-    return (
-      <div className="fixed inset-0 z-50 overflow-hidden bg-[#07040f]">
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          className="yn-call-pip yn-call-pip-hidden object-cover scale-x-[-1]"
-        />
-        <div className="yn-wait-screen">
-          <WaitingMatchPanel
-            title="Finding a match…"
-            subtitle="Looking for someone in the same room…"
-          />
-        </div>
-        <button
-          onClick={() => onEnd()}
-          className="absolute right-4 z-40 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md hover:bg-white/16"
-          style={{ top: "max(12px, env(safe-area-inset-top))" }}
-          aria-label="Cancel matching"
-        >
-          Cancel
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-[#1a0a24]">
       <video
@@ -1127,6 +1265,14 @@ function VideoCallScreen({
         />
       )}
 
+      {callStatus === "preview" && (
+        <div className="yn-wait-screen">
+          <WaitingMatchPanel
+            title="Finding a match…"
+            subtitle="Looking for someone in the same room…"
+          />
+        </div>
+      )}
       {callStatus === "waiting" && (
         <div className={`yn-wait-screen${showGiftPicker ? " is-gift-hidden" : ""}`}>
           <WaitingMatchPanel
@@ -1140,6 +1286,16 @@ function VideoCallScreen({
         <div className="yn-wait-screen">
           <WaitingMatchPanel title="Starting video…" subtitle="Connecting your camera and microphone." />
         </div>
+      )}
+      {(callStatus === "preview" || callStatus === "joining") && (
+        <button
+          onClick={() => onEnd()}
+          className="absolute right-4 z-40 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md hover:bg-white/16"
+          style={{ top: "max(12px, env(safe-area-inset-top))" }}
+          aria-label="Cancel matching"
+        >
+          Cancel
+        </button>
       )}
 
       {callStatus === "joined" && nsfwModelRef.current && !nsfwBlur && (
