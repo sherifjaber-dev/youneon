@@ -79,7 +79,7 @@ async function grantFromPayment(
   }
 }
 
-/** In-process: do not re-hit Pi approve for the same 404/401/403 paymentId after both keys. */
+/** In-process: do not re-hit Pi approve for the same 404/401/403 paymentId. */
 const deadApprovePaymentIds = new Set<string>();
 
 function isDeadApproveStatus(status: number): boolean {
@@ -149,7 +149,7 @@ export async function approvePaymentById(
   }
 
   if (isDeadApproveStatus(approved.status)) {
-    // Confirmed 404/401/403 after both keys — do not retry this paymentId every 10s.
+    // Confirmed 404/401/403 with PRODUCTION — do not retry this paymentId every 10s.
     deadApprovePaymentIds.add(paymentId);
     return {
       ok: false,

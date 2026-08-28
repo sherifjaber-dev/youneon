@@ -56,17 +56,20 @@ function envKey(name: string): string {
 
 /**
  * Default key for a request. Both env vars are Testnet Server API Keys.
- * Approve/complete try PI_API_KEY_PRODUCTION first, then PI_API_KEY on 404.
+ * Open App approve uses PI_API_KEY_PRODUCTION only (no PI_API_KEY retry).
+ * Complete/cancel/get still try PRODUCTION first, then PI_API_KEY on 404.
  */
 export function getPiServerApiKeyInfo(_sandbox: boolean): { key: string; source: PiKeySource } {
+  const production = envKey("PI_API_KEY_PRODUCTION");
+  if (production) return { key: production, source: "PI_API_KEY_PRODUCTION" };
   const attempts = getPiApproveKeyAttempts();
   if (attempts.length > 0) return attempts[0];
   return { key: "", source: "" };
 }
 
 /**
- * Unique keys to try for approve/complete. PRODUCTION first (Open App listing).
- * On PRODUCTION 404, PI_API_KEY is retried only if it looks like a 64-char Server API Key.
+ * Unique keys to try for complete/cancel/get. PRODUCTION first (Open App listing).
+ * Open App approve does not use this list — it never retries PI_API_KEY (that key 401s).
  */
 export function getPiApproveKeyAttempts(): { key: string; source: PiKeySource }[] {
   const production = envKey("PI_API_KEY_PRODUCTION");
@@ -486,10 +489,100 @@ async function piApiWithServerKey<T = unknown>(
   return piApi<T>(path, { ...options, authScheme: "Key" });
 }
 
+function extractIncompletePaymentIds(data: unknown): string[] {
+  let items: unknown[] = [];
+  if (Array.isArray(data)) {
+    items = data;
+  } else if (data && typeof data === "object") {
+    const rec = data as Record<string, unknown>;
+    if (Array.isArray(rec.incomplete_payments)) items = rec.incomplete_payments;
+    else if (Array.isArray(rec.payments)) items = rec.payments;
+    else if (Array.isArray(rec.data)) items = rec.data;
+  }
+  const ids: string[] = [];
+  for (const item of items) {
+    if (typeof item === "string") {
+      const id = parsePaymentId(item);
+      if (id) ids.push(id);
+      continue;
+    }
+    if (item && typeof item === "object") {
+      const rec = item as Record<string, unknown>;
+      const id = parsePaymentId(rec.identifier ?? rec.paymentId ?? rec.payment_id ?? rec.id);
+      if (id) ids.push(id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * After Open App approve 404: GET /payments/incomplete with PI_API_KEY_PRODUCTION only.
+ * Logs count + payment ids (never keys). keyPrefix is PRODUCTION (xjae8e).
+ */
+async function listIncompletePaymentsWithProductionKey(
+  paymentId: string,
+  sandbox: boolean
+): Promise<void> {
+  const key = productionApiKey();
+  const keyPrefix = productionKeyPrefix();
+  if (!key) {
+    console.info("[Pi] skip incomplete list — PI_API_KEY_PRODUCTION missing", {
+      paymentId,
+      keyPrefix,
+      keySource: "PI_API_KEY_PRODUCTION",
+      sandbox,
+    });
+    return;
+  }
+  try {
+    const listed = await piApiWithServerKey<unknown>("/payments/incomplete", {
+      method: "GET",
+      sandbox,
+      paymentId,
+      apiKey: key,
+      keySource: "PI_API_KEY_PRODUCTION",
+    });
+    const ids = extractIncompletePaymentIds(listed.data);
+    console.info("[Pi] incomplete payments (PI_API_KEY_PRODUCTION)", {
+      count: ids.length,
+      paymentIds: ids,
+      status: listed.status,
+      keyPrefix,
+      keySource: "PI_API_KEY_PRODUCTION",
+      sandbox,
+    });
+    if (ids.includes(paymentId)) {
+      console.info("[Pi] incomplete list contains the paymentId we tried to approve", {
+        paymentId,
+        keyPrefix,
+        keySource: "PI_API_KEY_PRODUCTION",
+        sandbox,
+      });
+    } else {
+      console.info("[Pi] PRODUCTION key cannot see this Open App payment", {
+        paymentId,
+        incompleteCount: ids.length,
+        keyPrefix,
+        keySource: "PI_API_KEY_PRODUCTION",
+        sandbox,
+      });
+    }
+  } catch (error) {
+    console.info("[Pi] incomplete list failed", {
+      paymentId,
+      message: error instanceof Error ? error.message : "list failed",
+      keyPrefix,
+      keySource: "PI_API_KEY_PRODUCTION",
+      sandbox,
+    });
+  }
+}
+
 /**
  * Try PI_API_KEY_PRODUCTION first (Key). On 404, retry once with PI_API_KEY only if that
  * value looks like a 64-char Server API Key. Do not Bearer-retry after 401 Invalid/missing.
  * If PRODUCTION Key 404s and the fallback key is invalid, keep the 404 (wrong Pi app).
+ * Open App approve does not use this — it never retries PI_API_KEY.
  */
 async function piApiWithKey404Fallback<T = unknown>(
   path: string,
@@ -573,13 +666,29 @@ export async function getPiPayment(paymentId: string, sandbox = false) {
 
 export async function approvePiPayment(paymentId: string, sandbox = false) {
   const path = `/payments/${paymentId}/approve`;
+  const key = productionApiKey();
+  if (!key) {
+    throw new PiPlatformError(MISSING_PI_API_KEY_PRODUCTION, 503);
+  }
   try {
-    const result = await piApiWithKey404Fallback<PiPaymentDTO>(path, {
+    const result = await piApiWithServerKey<PiPaymentDTO>(path, {
       method: "POST",
       body: {},
       sandbox,
       paymentId,
+      apiKey: key,
+      keySource: "PI_API_KEY_PRODUCTION",
     });
+    if (result.status === 404) {
+      console.info("[Pi] 404 with PI_API_KEY_PRODUCTION - not retrying PI_API_KEY", {
+        paymentId,
+        path,
+        keyPrefix: productionKeyPrefix(),
+        keySource: "PI_API_KEY_PRODUCTION",
+        sandbox,
+      });
+      await listIncompletePaymentsWithProductionKey(paymentId, sandbox);
+    }
     logPiAuthAttempt("approve", sandbox, result.headerMode, result.status, result.bodyText, {
       paymentId,
       piUrl: result.url,
