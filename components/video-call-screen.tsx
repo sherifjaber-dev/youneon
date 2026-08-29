@@ -51,6 +51,7 @@ import {
   submitUserReport,
   type ReportReasonId,
 } from "@/lib/safety";
+import { loadSafetyModels, scanVideoFrame, safetyLabel, type SafetyModels } from "@/lib/video-safety";
 
 interface PartnerProfile {
   userId?: string;
@@ -199,10 +200,8 @@ function setTrackEnabled(track: MediaStreamTrack | undefined, enabled: boolean) 
   if (track.enabled !== enabled) track.enabled = enabled;
 }
 
-const NSFW_PORN_THRESHOLD = 0.7;
-const NSFW_HENTAI_THRESHOLD = 0.7;
-const NSFW_SEXY_THRESHOLD = 0.85;
-const NSFW_CHECK_INTERVAL_MS = 2000;
+const SAFETY_CHECK_MS = 1400;
+const SAFETY_HITS_NEEDED = 2;
 
 type CallIconName = "mic" | "micOff" | "cam" | "camOff" | "chat" | "gift" | "skip" | "end" | "flip";
 
@@ -403,8 +402,9 @@ function VideoCallScreen({
   const facingModeRef = useRef<FacingMode>("user");
   const flipLockRef = useRef(false);
   const meetingJoinedRef = useRef(false);
-  const nsfwModelRef = useRef<any>(null);
-  const nsfwIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const safetyModelsRef = useRef<SafetyModels | null>(null);
+  const safetyIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const safetyHitsRef = useRef(0);
   const sessionStartedRef = useRef(Date.now());
   const hadRemoteRef = useRef(false);
   const partnerRef = useRef<PartnerProfile | null>(partnerProfile || (partnerName ? { name: partnerName } : null));
@@ -472,6 +472,7 @@ function VideoCallScreen({
   const [nsfwBlur, setNsfwBlur] = useState(false);
   const [nsfwReason, setNsfwReason] = useState<string>("");
   const [bypassNsfw, setBypassNsfw] = useState(false);
+  const [safetyReady, setSafetyReady] = useState(false);
   const bypassTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -575,38 +576,19 @@ function VideoCallScreen({
 
   useEffect(() => {
     let cancelled = false;
-    const loadScript = (src: string) =>
-      new Promise<void>((resolve, reject) => {
-        if (document.querySelector(`script[src="${src}"]`)) {
-          resolve();
-          return;
-        }
-        const s = document.createElement("script");
-        s.src = src;
-        s.async = true;
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error(`Failed to load ${src}`));
-        document.body.appendChild(s);
-      });
-
     (async () => {
       try {
-        await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js");
-        await loadScript("https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/nsfwjs.min.js");
-        const nsfwjs = (window as any).nsfwjs;
-        if (!nsfwjs) throw new Error("nsfwjs not available on window");
-        const model = await nsfwjs.load(
-          "https://cdn.jsdelivr.net/npm/nsfwjs@4.2.1/dist/models/mobilenet_v2/"
-        );
-        if (!cancelled) {
-          nsfwModelRef.current = model;
-          console.log("✅ NSFW AI model loaded from CDN");
-        }
+        const models = await loadSafetyModels();
+        if (cancelled) return;
+        safetyModelsRef.current = models;
+        setSafetyReady(true);
       } catch (e) {
-        console.warn("⚠️ NSFW model failed to load:", e);
+        console.warn("[safety] models failed to load", e);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const triggerGiftBurst = useCallback((giftId: GiftId) => {
@@ -650,31 +632,36 @@ function VideoCallScreen({
   }, [permission, callStatus]);
 
   useEffect(() => {
-    if (callStatus !== "joined" || !nsfwModelRef.current || bypassNsfw) {
-      if (nsfwIntervalRef.current) clearInterval(nsfwIntervalRef.current);
+    if (callStatus !== "joined" || !safetyReady || bypassNsfw || nsfwBlur) {
+      if (safetyIntervalRef.current) clearInterval(safetyIntervalRef.current);
+      safetyHitsRef.current = 0;
       return;
     }
     const checkFrame = async () => {
       const video = remoteVideoRef.current;
-      const model = nsfwModelRef.current;
-      if (!video || !model || video.readyState < 2 || video.videoWidth === 0) return;
+      const models = safetyModelsRef.current;
+      if (!video || !models) return;
       try {
-        const predictions: Array<{ className: string; probability: number }> = await model.classify(video);
-        let triggered: string | null = null;
-        for (const p of predictions) {
-          if (p.className === "Porn" && p.probability > NSFW_PORN_THRESHOLD) triggered = "nudity";
-          else if (p.className === "Hentai" && p.probability > NSFW_HENTAI_THRESHOLD) triggered = "explicit drawing";
-          else if (p.className === "Sexy" && p.probability > NSFW_SEXY_THRESHOLD) triggered = "suggestive content";
+        const hit = await scanVideoFrame(video, models);
+        if (hit) {
+          safetyHitsRef.current += 1;
+          if (safetyHitsRef.current >= SAFETY_HITS_NEEDED) {
+            setNsfwReason(safetyLabel(hit.reason));
+            setNsfwBlur(true);
+          }
+        } else {
+          safetyHitsRef.current = 0;
         }
-        if (triggered) {
-          setNsfwReason(triggered);
-          setNsfwBlur(true);
-        }
-      } catch (e) { /* silent */ }
+      } catch {
+        /* keep the call going if a frame fails */
+      }
     };
-    nsfwIntervalRef.current = setInterval(checkFrame, NSFW_CHECK_INTERVAL_MS);
-    return () => { if (nsfwIntervalRef.current) clearInterval(nsfwIntervalRef.current); };
-  }, [callStatus, bypassNsfw, sessionId]);
+    void checkFrame();
+    safetyIntervalRef.current = setInterval(checkFrame, SAFETY_CHECK_MS);
+    return () => {
+      if (safetyIntervalRef.current) clearInterval(safetyIntervalRef.current);
+    };
+  }, [callStatus, bypassNsfw, sessionId, safetyReady, nsfwBlur]);
 
   const updateMediaElements = useCallback((call: DailyCall) => {
     const participants = call.participants();
@@ -1257,6 +1244,7 @@ function VideoCallScreen({
   };
 
   const handleSeeAnyway = () => {
+    safetyHitsRef.current = 0;
     setNsfwBlur(false);
     setBypassNsfw(true);
     if (bypassTimerRef.current) clearTimeout(bypassTimerRef.current);
@@ -1264,6 +1252,7 @@ function VideoCallScreen({
   };
 
   const leavePartner = () => {
+    safetyHitsRef.current = 0;
     setNsfwBlur(false);
     setShowReport(false);
     setShowProfile(false);
@@ -1441,9 +1430,9 @@ function VideoCallScreen({
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500/50 mb-4">
                 <span className="text-4xl">⚠️</span>
               </div>
-              <h2 className="text-xl font-semibold mb-2">Inappropriate content detected</h2>
+              <h2 className="text-xl font-semibold mb-2">Video hidden</h2>
               <p className="text-white/70 text-sm">
-                Our AI detected possible <b className="text-red-300">{nsfwReason}</b> in the video.
+                Possible <b className="text-red-300">{nsfwReason}</b> was detected. The picture is blurred so you stay safe.
               </p>
             </div>
             <div className="bg-black/30 rounded-xl p-3 mb-5 text-xs text-white/60 text-center">
@@ -1635,13 +1624,13 @@ function VideoCallScreen({
         </button>
       )}
 
-      {callStatus === "joined" && nsfwModelRef.current && !nsfwBlur && (
+      {callStatus === "joined" && safetyReady && !nsfwBlur && (
         <div
           className="absolute left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-fuchsia-300/35 bg-[#3b1d4a]/60 px-3 py-1.5 backdrop-blur-md"
           style={{ top: "max(12px, env(safe-area-inset-top))" }}
         >
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-          <span className="text-[11px] font-medium text-white/80">AI protection on</span>
+          <span className="text-[11px] font-medium text-white/80">Safety filter on</span>
         </div>
       )}
 
