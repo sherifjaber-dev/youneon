@@ -4,7 +4,6 @@ import {
   addDoc,
   collection,
   doc,
-  getDocs,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -25,19 +24,21 @@ export type Announcement = {
 };
 
 const COLLECTION = "announcements";
-const SEED_KEY = "youneon_announcements_seeded";
+const SEED_KEY = "youneon_announcements_seeded_v3";
 const READ_IDS_KEY = "youneon_read_announcement_ids";
 
-const DEFAULT_ANNOUNCEMENTS: Array<Omit<Announcement, "id" | "createdAtMs" | "active">> = [
+const DEFAULT_ANNOUNCEMENTS: Array<Omit<Announcement, "createdAtMs" | "active"> & { id: string }> = [
   {
+    id: "seed_welcome_v3",
     title: "Welcome to YouNeon",
-    body: "Meet people worldwide. Stay kind, stay safe, and enjoy the glow.",
+    body: "YouNeon is live video chat for meeting people on Pi Network. Tap Video Chat for a random call, Lounge to see who was just online, and Messages to keep talking. Video from a chat rings that person. Fill in your profile (18+). Be kind. Skip, Block, or tap the shield if a call feels wrong. A safety filter can blur nudity, weapons, or drugs on your screen. Neon and Premium are optional — never send Pi to a stranger outside the app.",
     type: "system",
   },
   {
-    title: "YouNeon Premium is here",
-    body: "Unlimited chats, free filters, ad-free browsing, and 2,000 Neon when you subscribe — 1 π for 30 days.",
-    type: "promo",
+    id: "seed_beta_v3",
+    title: "We’re new — build this with us",
+    body: "YouNeon just launched. Things will change, and that’s the point. If something is confusing, broken, or missing — tell us. Leave a comment, send an idea, or email Sherif.Jaber@icloud.com. Lounge, chat, safety, the look: we read it. Thank you for being here early and helping us make a place that feels good to meet people.",
+    type: "news",
   },
 ];
 
@@ -87,15 +88,13 @@ export async function seedAnnouncementsIfEmpty(): Promise<void> {
   }
 
   try {
-    const snap = await getDocs(collection(db, COLLECTION));
-    if (!snap.empty) {
-      localStorage.setItem(SEED_KEY, "1");
-      return;
-    }
-    await Promise.all(
-      DEFAULT_ANNOUNCEMENTS.map((item, index) =>
+    await Promise.all([
+      setDoc(doc(db, COLLECTION, "seed_system_0"), { active: false }, { merge: true }),
+      setDoc(doc(db, COLLECTION, "seed_welcome_v2"), { active: false }, { merge: true }),
+      setDoc(doc(db, COLLECTION, "seed_beta_v2"), { active: false }, { merge: true }),
+      ...DEFAULT_ANNOUNCEMENTS.map((item, index) =>
         setDoc(
-          doc(db, COLLECTION, `seed_${item.type}_${index}`),
+          doc(db, COLLECTION, item.id),
           {
             title: item.title,
             body: item.body,
@@ -106,8 +105,8 @@ export async function seedAnnouncementsIfEmpty(): Promise<void> {
           },
           { merge: true }
         )
-      )
-    );
+      ),
+    ]);
     localStorage.setItem(SEED_KEY, "1");
   } catch (error) {
     console.warn("Announcement seed failed", error);

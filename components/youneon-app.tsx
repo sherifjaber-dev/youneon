@@ -73,6 +73,7 @@ import { clearSeededLocalCaches, purgeSeededSocialForUser } from "@/lib/purge-se
 import { isDemoLunaId } from "@/lib/demo-luna-profile";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
 import { IncomingCallScreen } from "@/components/incoming-call-screen";
+import { WelcomeSheet, hasSeenWelcome } from "@/components/welcome-sheet";
 import {
   setDirectCallStatus,
   subscribeIncomingDirectCalls,
@@ -217,6 +218,7 @@ export function YouNeonApp() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNeonShop, setShowNeonShop] = useState(false);
   const [showSubscribe, setShowSubscribe] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [activeChat, setActiveChat] = useState<any>(null);
   const [chatUnlocks, setChatUnlocks] = useState<ChatUnlocks | null>(null);
   const [unlockedChats, setUnlockedChats] = useState<string[]>([]);
@@ -308,6 +310,14 @@ export function YouNeonApp() {
     window.addEventListener(PREMIUM_GRANTED_EVENT, onGranted);
     return () => window.removeEventListener(PREMIUM_GRANTED_EVENT, onGranted);
   }, []);
+
+  useEffect(() => {
+    if (!signedIn) {
+      setShowWelcome(false);
+      return;
+    }
+    if (!hasSeenWelcome()) setShowWelcome(true);
+  }, [signedIn]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1074,6 +1084,7 @@ export function YouNeonApp() {
         onUnlockWithNeon={() => void handleUnlockWithNeon()}
         onUnlockedByPurchase={() => void handleUnlockByPurchase()}
       />
+      <WelcomeSheet open={showWelcome} onClose={() => setShowWelcome(false)} />
     </div>
   );
 }
