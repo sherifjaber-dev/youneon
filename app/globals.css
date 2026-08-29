@@ -928,12 +928,15 @@ html.youneon-signed-in select {
 
 .yn-wait-scan {
   position: absolute;
-  inset: 10px;
-  width: auto;
-  height: auto;
+  left: 50%;
+  top: 50%;
+  width: 148px;
+  height: 148px;
+  margin: -74px 0 0 -74px;
   pointer-events: none;
-  animation: yn-wait-spin 3.4s linear infinite;
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--pink) 70%, transparent));
+  animation: yn-wait-spin 2.8s linear infinite;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--pink) 80%, transparent));
+  z-index: 3;
 }
 
 .yn-wait-pulse,

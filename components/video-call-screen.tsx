@@ -331,14 +331,11 @@ function WaitingMatchPanel({
       </header>
       <div className="yn-wait-center">
         <div className="yn-wait-radar" aria-hidden="true">
-          <span className="yn-wait-pulse" />
-          <span className="yn-wait-pulse yn-wait-pulse-2" />
-          <span className="yn-wait-pulse yn-wait-pulse-3" />
           <svg className="yn-wait-scan" viewBox="0 0 200 200">
             <defs>
               <linearGradient id="yn-wait-scan-stroke" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#f5d76e" stopOpacity="0" />
-                <stop offset="55%" stopColor="#e879f9" stopOpacity="0.15" />
+                <stop offset="55%" stopColor="#e879f9" stopOpacity="0.2" />
                 <stop offset="88%" stopColor="#e879f9" />
                 <stop offset="100%" stopColor="#f5d76e" />
               </linearGradient>
@@ -346,20 +343,12 @@ function WaitingMatchPanel({
             <circle
               cx="100"
               cy="100"
-              r="90"
-              fill="none"
-              stroke="rgba(232,121,249,0.18)"
-              strokeWidth="1.4"
-            />
-            <circle
-              cx="100"
-              cy="100"
-              r="90"
+              r="93"
               fill="none"
               stroke="url(#yn-wait-scan-stroke)"
-              strokeWidth="3.2"
+              strokeWidth="5"
               strokeLinecap="round"
-              strokeDasharray="42 524"
+              strokeDasharray="36 548"
             />
           </svg>
           <span className="yn-wait-sat yn-wait-sat-1"><WaitSticker src="/wait/heart.png" /></span>
@@ -1488,11 +1477,6 @@ function VideoCallScreen({
             <CallIcon name="flip" uid="pip-flip" size={14} tone="plain" />
           </button>
         )}
-        {!micOn && (
-          <div className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full border border-pink-400/40 bg-black/70 text-pink-200">
-            <CallIcon name="micOff" uid="pip-mic" />
-          </div>
-        )}
         <div className="absolute bottom-1.5 left-1.5 rounded-full border border-white/10 bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white/90">You</div>
       </div>
 
@@ -1629,7 +1613,7 @@ function VideoCallScreen({
           />
         </div>
       )}
-      {(callStatus === "preview" || callStatus === "joining") && (
+      {(callStatus === "preview" || callStatus === "joining" || callStatus === "waiting") && (
         <button
           onClick={() => onEnd()}
           className="absolute right-4 z-40 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md hover:bg-white/16"
@@ -1676,67 +1660,57 @@ function VideoCallScreen({
 
       <div className="yn-call-dock">
         <div className="yn-call-bar" role="toolbar" aria-label="Call controls">
-          <button
-            type="button"
-            onClick={toggleMic}
-            className={`yn-call-btn ${micOn ? "" : "is-off"}`}
-            data-testid="toggle-mic-btn"
-            aria-label={micOn ? "Mute microphone" : "Unmute microphone"}
-            aria-pressed={!micOn}
-          >
-            <span className="yn-call-btn-ring">
-              <CallIcon name={micOn ? "mic" : "micOff"} tone="plain" />
-            </span>
-            <span className="yn-call-btn-label">Mute</span>
-          </button>
+          {callStatus === "joined" && (
+            <>
+              <button
+                type="button"
+                onClick={toggleCam}
+                className={`yn-call-btn ${camOn ? "" : "is-off"}`}
+                data-testid="toggle-cam-btn"
+                aria-label={camOn ? "Turn camera off" : "Turn camera on"}
+                aria-pressed={!camOn}
+              >
+                <span className="yn-call-btn-ring">
+                  <CallIcon name={camOn ? "cam" : "camOff"} tone="plain" />
+                </span>
+                <span className="yn-call-btn-label">Camera</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={toggleCam}
-            className={`yn-call-btn ${camOn ? "" : "is-off"}`}
-            data-testid="toggle-cam-btn"
-            aria-label={camOn ? "Turn camera off" : "Turn camera on"}
-            aria-pressed={!camOn}
-          >
-            <span className="yn-call-btn-ring">
-              <CallIcon name={camOn ? "cam" : "camOff"} tone="plain" />
-            </span>
-            <span className="yn-call-btn-label">Camera</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (showChatInput) setShowChatInput(false);
+                  else if (chatHistory.length > 0 && !displayedMessage) setShowHistory((v) => !v);
+                  else { setShowChatInput(true); setShowHistory(false); setShowGiftPicker(false); }
+                }}
+                className="yn-call-btn"
+                data-testid="chat-btn"
+                aria-label="Open chat"
+              >
+                <span className="yn-call-btn-ring">
+                  <CallIcon name="chat" tone="plain" />
+                  {chatHistory.length > 0 && !displayedMessage && (
+                    <span className="yn-call-btn-badge">{chatHistory.length > 9 ? "9+" : chatHistory.length}</span>
+                  )}
+                </span>
+                <span className="yn-call-btn-label">Chat</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (showChatInput) setShowChatInput(false);
-              else if (chatHistory.length > 0 && !displayedMessage) setShowHistory((v) => !v);
-              else { setShowChatInput(true); setShowHistory(false); setShowGiftPicker(false); }
-            }}
-            className="yn-call-btn"
-            data-testid="chat-btn"
-            aria-label="Open chat"
-          >
-            <span className="yn-call-btn-ring">
-              <CallIcon name="chat" tone="plain" />
-              {chatHistory.length > 0 && !displayedMessage && (
-                <span className="yn-call-btn-badge">{chatHistory.length > 9 ? "9+" : chatHistory.length}</span>
-              )}
-            </span>
-            <span className="yn-call-btn-label">Chat</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { setShowGiftPicker((v) => !v); setShowChatInput(false); setShowHistory(false); }}
-            className={`yn-call-btn${showGiftPicker ? " is-gift-open" : ""}`}
-            data-testid="gift-btn"
-            aria-label="Send gift"
-            aria-pressed={showGiftPicker}
-          >
-            <span className="yn-call-btn-ring">
-              <CallIcon name="gift" tone="plain" />
-            </span>
-            <span className="yn-call-btn-label">Gifts</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => { setShowGiftPicker((v) => !v); setShowChatInput(false); setShowHistory(false); }}
+                className={`yn-call-btn${showGiftPicker ? " is-gift-open" : ""}`}
+                data-testid="gift-btn"
+                aria-label="Send gift"
+                aria-pressed={showGiftPicker}
+              >
+                <span className="yn-call-btn-ring">
+                  <CallIcon name="gift" tone="plain" />
+                </span>
+                <span className="yn-call-btn-label">Gifts</span>
+              </button>
+            </>
+          )}
 
           {matchMode !== "direct" && (
             <button
@@ -1758,18 +1732,20 @@ function VideoCallScreen({
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={handleEnd}
-            className="yn-call-btn is-end"
-            data-testid="end-call-btn"
-            aria-label="End call"
-          >
-            <span className="yn-call-btn-ring">
-              <CallIcon name="end" tone="plain" />
-            </span>
-            <span className="yn-call-btn-label">End Call</span>
-          </button>
+          {callStatus === "joined" && (
+            <button
+              type="button"
+              onClick={handleEnd}
+              className="yn-call-btn is-end"
+              data-testid="end-call-btn"
+              aria-label="End call"
+            >
+              <span className="yn-call-btn-ring">
+                <CallIcon name="end" tone="plain" />
+              </span>
+              <span className="yn-call-btn-label">End Call</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
