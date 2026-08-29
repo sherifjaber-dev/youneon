@@ -47,8 +47,8 @@ export const REPORT_REASONS: { id: ReportReasonId; label: string; hint: string }
   },
   {
     id: "violence",
-    label: "Violence, self-harm or disturbing content",
-    hint: "Graphic harm, weapons used as a threat, or self-harm.",
+    label: "Violence, weapons, self-harm or disturbing content",
+    hint: "Graphic harm, firearms, weapons used as a threat, or self-harm.",
   },
   {
     id: "privacy",
@@ -58,7 +58,7 @@ export const REPORT_REASONS: { id: ReportReasonId; label: string; hint: string }
   {
     id: "scam",
     label: "Scam, spam, illegal activity, prostitution or drugs",
-    hint: "Fake staff, wallet requests, or illegal offers.",
+    hint: "Fake staff, wallet requests, illegal drugs, or illegal offers.",
   },
   {
     id: "recording",

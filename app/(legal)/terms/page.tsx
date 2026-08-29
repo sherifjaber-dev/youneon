@@ -6,7 +6,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pine
 
 export const metadata: Metadata = {
   title: "Terms of Service – YouNeon",
-  description: "Terms of Service for using YouNeon, the Pi Network live video chat app.",
+  description: "Terms of Service for YouNeon: 18+ live video chat on Pi Network, Community Guidelines, payments, and safety.",
   alternates: { canonical: `${APP_URL}/terms` },
 };
 

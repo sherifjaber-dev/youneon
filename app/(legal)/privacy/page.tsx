@@ -7,7 +7,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://youneonwtce7005.pine
 export const metadata: Metadata = {
   title: "Privacy Policy – YouNeon",
   description:
-    "How YouNeon collects, uses, and protects information for the Pi Network community.",
+    "How YouNeon collects, uses, and protects information for the Pi Network community, including live video, reports, and Pi payments.",
   alternates: { canonical: `${APP_URL}/privacy` },
 };
 
