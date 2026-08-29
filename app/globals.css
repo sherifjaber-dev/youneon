@@ -363,15 +363,15 @@ html.youneon-signed-in select {
   }
 }
 
-/* Sign in with Pi — keep native handlers; visual size only (match Follow: pink fill, 12px radius) */
+/* Sign in with Pi — keep native handlers; visual size only */
 .youneon-signin-btn {
-  height: 37px !important;
-  min-height: 37px !important;
-  padding: 0 16px !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  padding: 0 22px !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
   line-height: 1 !important;
-  border-radius: 12px !important;
+  border-radius: 999px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -379,20 +379,78 @@ html.youneon-signed-in select {
   color: #ffffff !important;
   background-color: #c21875 !important;
   background-image: none !important;
-  box-shadow: none !important;
+  box-shadow: 0 0 22px rgba(194, 24, 117, 0.55);
   pointer-events: auto !important;
   position: relative !important;
   z-index: 2147483647 !important;
+  animation: yn-welcome-cta 2.4s ease-in-out infinite;
 }
 
 .youneon-signin-wrap {
   pointer-events: auto !important;
   position: relative !important;
   z-index: 10 !important;
+  width: 100%;
+  max-width: 340px;
 }
 
 .youneon-signin-btn:active {
   background-color: #9e145f !important;
+  transform: scale(0.98);
+}
+
+@keyframes yn-welcome-cta {
+  0%, 100% { box-shadow: 0 0 18px rgba(194, 24, 117, 0.45); }
+  50% { box-shadow: 0 0 34px rgba(224, 53, 150, 0.85); }
+}
+
+@keyframes yn-welcome-aurora {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+.youneon-static-login {
+  overflow: hidden;
+}
+
+.youneon-static-login::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 48% at 50% 12%, rgba(194, 24, 117, 0.32), transparent 58%),
+    radial-gradient(ellipse 55% 40% at 88% 78%, rgba(124, 58, 237, 0.24), transparent 55%),
+    radial-gradient(ellipse 46% 34% at 8% 72%, rgba(56, 189, 248, 0.1), transparent 52%);
+  animation: yn-welcome-aurora 7.5s ease-in-out infinite;
+}
+
+.youneon-static-login::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.12;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.28) 0.7px, transparent 0.8px);
+  background-size: 3px 3px;
+}
+
+.youneon-welcome-hero-frame {
+  filter: drop-shadow(0 0 28px rgba(194, 24, 117, 0.45));
+}
+
+.youneon-welcome-hero {
+  border-radius: 32px;
+  box-shadow:
+    0 0 0 1.5px rgba(232, 121, 249, 0.5),
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .youneon-signin-btn,
+  .youneon-static-login::before {
+    animation: none;
+  }
 }
 
 /* Login footer — stacked under Sign in in document flow; never overlay the Pi-account line */

@@ -15,19 +15,35 @@ const INNER_STYLE =
   "position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;pointer-events:auto;user-select:none;-webkit-user-select:none;cursor:default";
 
 const WORDMARK_WRAP_STYLE =
-  "margin:0 0 8px;padding:0;line-height:0;width:100%;display:flex;justify-content:center;align-items:center;background:transparent;" +
+  "margin:0 0 4px;padding:0;line-height:0;width:100%;display:flex;justify-content:center;align-items:center;background:transparent;" +
   NONE;
 
 const WORDMARK_IMG_STYLE =
-  "display:block;width:min(80vw,280px);max-width:280px;height:auto;margin:0;background:transparent;mix-blend-mode:screen;-webkit-mix-blend-mode:screen;object-fit:contain;" +
+  "display:block;width:min(82vw,300px);max-width:300px;height:auto;margin:0;background:transparent;mix-blend-mode:screen;-webkit-mix-blend-mode:screen;object-fit:contain;" +
+  NONE;
+
+const HERO_FRAME_STYLE =
+  "position:relative;display:flex;align-items:center;justify-content:center;margin:6px 0 16px;padding:0;" +
   NONE;
 
 const HERO_STYLE =
-  "display:block;width:min(78vw,280px);max-width:280px;height:auto;max-height:min(42vh,340px);margin:10px 0 18px;object-fit:contain;object-position:center;background-color:#070010;" +
+  "display:block;width:min(72vw,268px);max-width:268px;height:auto;max-height:min(38vh,320px);margin:0;object-fit:contain;object-position:center;background-color:#070010;border-radius:32px;" +
   NONE;
 
 const TAG_STYLE =
-  "font-size:15px;line-height:1.4;font-weight:500;color:#8b8494;margin:0 0 22px;" +
+  "font-size:22px;line-height:1.2;font-weight:800;letter-spacing:-0.03em;color:#ffffff;margin:0 0 6px;text-shadow:0 0 18px rgba(224,53,150,0.55);" +
+  NONE;
+
+const HOOK_STYLE =
+  "font-size:14px;line-height:1.45;font-weight:500;color:#c4b5d4;margin:0 0 16px;max-width:280px;" +
+  NONE;
+
+const BEATS_STYLE =
+  "display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 22px;flex-wrap:wrap;" +
+  NONE;
+
+const BEAT_STYLE =
+  "display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;border:1px solid rgba(232,121,249,0.45);background:rgba(18,4,22,0.72);color:#f5d0fe;font-size:11px;font-weight:700;letter-spacing:0.04em;" +
   NONE;
 
 const HINT_STYLE =
@@ -56,9 +72,11 @@ const LEGAL_AMP =
 
 export function youneonWelcomeHeroHtml(_idPrefix: string): string {
   return (
-    '<img class="youneon-welcome-hero" src="/youneon-hero.png" alt="" width="689" height="1024" decoding="async" style="' +
+    '<div class="youneon-welcome-hero-frame" style="' +
+    HERO_FRAME_STYLE +
+    '"><img class="youneon-welcome-hero" src="/youneon-hero.png" alt="" width="689" height="1024" decoding="async" style="' +
     HERO_STYLE +
-    '" />'
+    '" /></div>'
   );
 }
 
@@ -114,9 +132,25 @@ export function piWelcomeInnerHtml(buttonId: string, idPrefix: string): string {
     '">' +
     youneonWelcomeWordmarkHtml() +
     youneonWelcomeHeroHtml(idPrefix) +
-    '<p style="' +
+    '<p class="youneon-welcome-tag" style="' +
     TAG_STYLE +
     '">Meet in the glow.</p>' +
+    '<p class="youneon-welcome-hook" style="' +
+    HOOK_STYLE +
+    '">Live video. Real people. Right now.</p>' +
+    '<div class="youneon-welcome-beats" style="' +
+    BEATS_STYLE +
+    '">' +
+    '<span style="' +
+    BEAT_STYLE +
+    '">Video</span>' +
+    '<span style="' +
+    BEAT_STYLE +
+    '">Lounge</span>' +
+    '<span style="' +
+    BEAT_STYLE +
+    '">Chat</span>' +
+    "</div>" +
     '<div class="youneon-signin-wrap" style="' +
     BUTTON_WRAP +
     '">' +
