@@ -42,9 +42,9 @@ export function WelcomeSheet({ open, onClose }: WelcomeSheetProps) {
       />
       <div className="relative z-10 mx-3 mb-[max(16px,env(safe-area-inset-bottom))] max-h-[min(92vh,720px)] w-full max-w-md overflow-y-auto rounded-[28px] border border-[#e879f9]/35 bg-[#12081c] p-6 shadow-[0_0_48px_rgba(194,24,117,0.35)]">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#f0abfc]">Welcome</p>
-        <h2 className="mt-2 text-[26px] font-semibold leading-tight tracking-[-0.03em] text-white">
+        <p className="yn-welcome-title mt-2 text-[26px] font-semibold leading-tight tracking-[-0.03em]">
           Hey — you’re in YouNeon
-        </h2>
+        </p>
         <p className="mt-3 text-[15px] leading-6 text-[#d4c4e8]">
           This is live video chat for meeting people on Pi Network. YouNeon is brand new, and we’re building it with you. Be 18+, be decent, and say hi.
         </p>
