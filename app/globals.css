@@ -881,11 +881,17 @@ html.youneon-signed-in select {
 }
 
 .yn-wait-logo {
-  font-size: 26px;
+  display: block;
+  line-height: 0;
 }
 
-.yn-wait-brand-cam {
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--pink) 85%, transparent));
+.yn-wait-logo .yn-script-logo-img {
+  height: 36px;
+  max-width: min(168px, 52vw);
+  object-position: left center;
+  filter:
+    drop-shadow(0 0 6px color-mix(in srgb, var(--pink) 70%, transparent))
+    drop-shadow(0 0 14px rgba(94, 200, 255, 0.4));
 }
 
 .yn-wait-online {
@@ -920,20 +926,14 @@ html.youneon-signed-in select {
   margin: 0 auto 10px;
 }
 
-.yn-wait-sweep {
+.yn-wait-scan {
   position: absolute;
-  inset: 18px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    color-mix(in srgb, var(--pink) 38%, transparent) 28deg,
-    color-mix(in srgb, #c084fc 22%, transparent) 52deg,
-    transparent 88deg
-  );
-  animation: yn-wait-spin 4.8s linear infinite;
-  mask-image: radial-gradient(circle, transparent 38%, #000 42%, #000 72%, transparent 74%);
-  -webkit-mask-image: radial-gradient(circle, transparent 38%, #000 42%, #000 72%, transparent 74%);
+  inset: 10px;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+  animation: yn-wait-spin 3.4s linear infinite;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--pink) 70%, transparent));
 }
 
 .yn-wait-pulse,
@@ -945,8 +945,8 @@ html.youneon-signed-in select {
   width: 148px;
   height: 148px;
   border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--pink) 70%, #c084fc);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--pink) 35%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--pink) 55%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--pink) 22%, transparent);
   animation: yn-wait-sonar 2.8s ease-out infinite;
 }
 
@@ -997,11 +997,19 @@ html.youneon-signed-in select {
   height: 132px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
+  padding: 3px;
+  background: conic-gradient(from 210deg, #e879f9, #7c3aed, #f5d76e, #e879f9);
+  box-shadow: 0 0 28px color-mix(in srgb, var(--pink) 48%, transparent);
+  overflow: visible;
+}
+
+.yn-wait-self-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   overflow: hidden;
   background: #160816;
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--yn-gold) 55%, var(--pink)),
-    0 0 28px color-mix(in srgb, var(--pink) 45%, transparent);
 }
 
 .yn-wait-self-fallback {
@@ -1026,15 +1034,6 @@ html.youneon-signed-in select {
 
 .yn-wait-self-video.is-off {
   opacity: 0;
-}
-
-.yn-wait-self-ring {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, #ffe38a 40%, transparent);
-  pointer-events: none;
 }
 
 .yn-wait-orb {

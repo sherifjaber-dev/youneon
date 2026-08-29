@@ -46,6 +46,7 @@ import {
 } from "@/components/call-remote-profile";
 import { CallReportSheet } from "@/components/call-report-sheet";
 import { ShieldAlert } from "lucide-react";
+import { YouNeonScriptLogo } from "@/components/youneon-script-logo";
 import {
   dailyRoomIdFromUrl,
   submitUserReport,
@@ -321,20 +322,7 @@ function WaitingMatchPanel({
     <div className="yn-wait-overlay">
       <header className="yn-wait-header">
         <div className="yn-wait-brand">
-          <span className="yn-script-logo yn-wait-logo">
-            <span className="yn-script-you">You</span>
-            <span className="yn-script-neon">Neon</span>
-          </span>
-          <svg className="yn-wait-brand-cam" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="yn-wait-brand-cam-g" x1="3" y1="4" x2="21" y2="20">
-                <stop stopColor="var(--pink)" />
-                <stop offset="1" stopColor="#c084fc" />
-              </linearGradient>
-            </defs>
-            <rect x="3.2" y="6.4" width="11.4" height="11.2" rx="2.3" stroke="url(#yn-wait-brand-cam-g)" strokeWidth="1.7" />
-            <path d="M14.8 10.2 20.2 7.5v9.1L14.8 13.9z" stroke="url(#yn-wait-brand-cam-g)" strokeWidth="1.7" strokeLinejoin="round" />
-          </svg>
+          <YouNeonScriptLogo className="yn-wait-logo" />
         </div>
         <p className="yn-wait-online">
           <span className="yn-wait-online-dot" />
@@ -343,26 +331,54 @@ function WaitingMatchPanel({
       </header>
       <div className="yn-wait-center">
         <div className="yn-wait-radar" aria-hidden="true">
-          <span className="yn-wait-sweep" />
           <span className="yn-wait-pulse" />
           <span className="yn-wait-pulse yn-wait-pulse-2" />
           <span className="yn-wait-pulse yn-wait-pulse-3" />
+          <svg className="yn-wait-scan" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="yn-wait-scan-stroke" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#f5d76e" stopOpacity="0" />
+                <stop offset="55%" stopColor="#e879f9" stopOpacity="0.15" />
+                <stop offset="88%" stopColor="#e879f9" />
+                <stop offset="100%" stopColor="#f5d76e" />
+              </linearGradient>
+            </defs>
+            <circle
+              cx="100"
+              cy="100"
+              r="90"
+              fill="none"
+              stroke="rgba(232,121,249,0.18)"
+              strokeWidth="1.4"
+            />
+            <circle
+              cx="100"
+              cy="100"
+              r="90"
+              fill="none"
+              stroke="url(#yn-wait-scan-stroke)"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeDasharray="42 524"
+            />
+          </svg>
           <span className="yn-wait-sat yn-wait-sat-1"><WaitSticker src="/wait/heart.png" /></span>
           <span className="yn-wait-sat yn-wait-sat-2"><WaitSticker src="/wait/bolt.png" /></span>
           <span className="yn-wait-sat yn-wait-sat-3"><WaitSticker src="/wait/star.png" /></span>
           <span className="yn-wait-sat yn-wait-sat-4"><WaitSticker src="/wait/flame.png" /></span>
           <div className="yn-wait-self">
-            <span className="yn-wait-self-fallback">
-              <CallIcon name="cam" uid="wait-hero" size={36} />
-            </span>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={`yn-wait-self-video${camOn ? "" : " is-off"}`}
-            />
-            <span className="yn-wait-self-ring" />
+            <div className="yn-wait-self-inner">
+              <span className="yn-wait-self-fallback">
+                <CallIcon name="cam" uid="wait-hero" size={36} />
+              </span>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`yn-wait-self-video${camOn ? "" : " is-off"}`}
+              />
+            </div>
           </div>
         </div>
         {premium && <p className="yn-wait-priority">Priority matching</p>}
