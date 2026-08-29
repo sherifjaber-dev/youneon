@@ -79,45 +79,59 @@ export const SMILEY_META: Record<SmileyId, { label: string }> = {
   naughty: { label: "Naughty" },
 };
 
-export const SWEET_SMILEYS: SmileyId[] = [
-  "blush",
-  "kiss",
-  "hearts",
-  "angel",
-  "sparkle",
-  "blowkiss",
-  "laugh",
-  "shy",
-  "sleepy",
-  "pout",
-  "starry",
-  "flower",
-  "hug",
-  "bunny",
-  "love",
-  "peace",
-  "cool",
-  "shock",
-];
+export const SWEET_EMOJIS = [
+  { glyph: "😊", label: "Smile" },
+  { glyph: "😂", label: "Laugh" },
+  { glyph: "🤣", label: "ROFL" },
+  { glyph: "🥰", label: "Hearts" },
+  { glyph: "😍", label: "Heart eyes" },
+  { glyph: "😘", label: "Kiss" },
+  { glyph: "😚", label: "Kiss closed" },
+  { glyph: "🥺", label: "Pleading" },
+  { glyph: "😇", label: "Angel" },
+  { glyph: "🤗", label: "Hug" },
+  { glyph: "😎", label: "Cool" },
+  { glyph: "😴", label: "Sleepy" },
+  { glyph: "🤩", label: "Starry" },
+  { glyph: "😋", label: "Yum" },
+  { glyph: "😌", label: "Calm" },
+  { glyph: "😳", label: "Blush" },
+  { glyph: "😭", label: "Cry" },
+  { glyph: "😆", label: "Grin" },
+  { glyph: "🌸", label: "Flower" },
+  { glyph: "🐰", label: "Bunny" },
+  { glyph: "⭐", label: "Star" },
+  { glyph: "❤️", label: "Love" },
+  { glyph: "✌️", label: "Peace" },
+  { glyph: "👍", label: "Like" },
+] as const;
 
-export const FLIRTY_SMILEYS: SmileyId[] = [
-  "wink",
-  "smirk",
-  "devil",
-  "tongue",
-  "hot",
-  "drool",
-  "bite",
-  "sideeye",
-  "tease",
-  "lash",
-  "wet",
-  "naughty",
-  "lips",
-  "fire",
-  "peach",
-  "chili",
-];
+export const FLIRTY_EMOJIS = [
+  { glyph: "😉", label: "Wink" },
+  { glyph: "😏", label: "Smirk" },
+  { glyph: "😈", label: "Devil" },
+  { glyph: "😜", label: "Tongue" },
+  { glyph: "😝", label: "Squint" },
+  { glyph: "😛", label: "Playful" },
+  { glyph: "🥵", label: "Hot" },
+  { glyph: "🤤", label: "Drool" },
+  { glyph: "🤭", label: "Shy" },
+  { glyph: "🫦", label: "Bite" },
+  { glyph: "💋", label: "Lips" },
+  { glyph: "🔥", label: "Fire" },
+  { glyph: "🍑", label: "Peach" },
+  { glyph: "🌶️", label: "Spicy" },
+  { glyph: "👀", label: "Eyes" },
+  { glyph: "💦", label: "Sweat" },
+  { glyph: "😻", label: "Smitten" },
+  { glyph: "😘", label: "Blow kiss" },
+  { glyph: "😍", label: "In love" },
+  { glyph: "🫠", label: "Melt" },
+  { glyph: "😈", label: "Naughty" },
+  { glyph: "💃", label: "Dance" },
+  { glyph: "🙈", label: "Peek" },
+  { glyph: "👅", label: "Lick" },
+] as const;
 
 export function smileyToken(id: SmileyId): string {
   return `:${id}:`;
@@ -663,13 +677,22 @@ export function YouNeonSmiley({
 
 export function ChatSmileyText({ text, className }: { text: string; className?: string }) {
   const parts = parseSmileys(text);
-  const onlySmileys = parts.every(
+  const hasTokens = parts.some((part) => part.type === "smiley");
+  const onlySmileys = hasTokens && parts.every(
     (part) => part.type === "smiley" || (part.type === "text" && !part.value.trim())
   );
+  const emojiOnly = !hasTokens && isEmojiOnlyMessage(text);
   const size = onlySmileys ? 40 : 22;
 
   return (
-    <p className={cn("yn-chat-smiley-text break-words whitespace-pre-wrap", onlySmileys && "flex flex-wrap items-center gap-1", className)}>
+    <p
+      className={cn(
+        "yn-chat-smiley-text break-words whitespace-pre-wrap",
+        onlySmileys && "flex flex-wrap items-center gap-1",
+        emojiOnly && "yn-chat-emoji-only",
+        className
+      )}
+    >
       {parts.map((part, i) =>
         part.type === "smiley" ? (
           <YouNeonSmiley key={`${part.id}-${i}`} id={part.id} size={size} title={SMILEY_META[part.id].label} />
@@ -681,13 +704,22 @@ export function ChatSmileyText({ text, className }: { text: string; className?: 
   );
 }
 
+function isEmojiOnlyMessage(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  const stripped = trimmed
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}\u{20E3}]/gu, "")
+    .replace(/\s/g, "");
+  return stripped.length === 0;
+}
+
 export function YouNeonSmileyPicker({
   onSelect,
 }: {
-  onSelect: (id: SmileyId) => void;
+  onSelect: (emoji: string) => void;
 }) {
   const [tab, setTab] = useState<"sweet" | "flirty">("sweet");
-  const ids = tab === "sweet" ? SWEET_SMILEYS : FLIRTY_SMILEYS;
+  const items = tab === "sweet" ? SWEET_EMOJIS : FLIRTY_EMOJIS;
   return (
     <div className="yn-smiley-picker" data-testid="chat-smiley-picker">
       <div className="yn-smiley-tabs">
@@ -707,16 +739,15 @@ export function YouNeonSmileyPicker({
         </button>
       </div>
       <div className="yn-smiley-grid">
-        {ids.map((id) => (
+        {items.map((item) => (
           <button
-            key={id}
+            key={`${tab}-${item.glyph}-${item.label}`}
             type="button"
             className="yn-smiley-cell"
-            onClick={() => onSelect(id)}
-            aria-label={SMILEY_META[id].label}
-            data-testid={`smiley-${id}`}
+            onClick={() => onSelect(item.glyph)}
+            aria-label={item.label}
           >
-            <YouNeonSmiley id={id} size={40} />
+            <span className="yn-emoji-glyph">{item.glyph}</span>
           </button>
         ))}
       </div>

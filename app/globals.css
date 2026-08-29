@@ -2061,6 +2061,18 @@ html.yn-profile-open {
   overflow-y: auto;
 }
 
+.yn-emoji-glyph {
+  font-size: 34px;
+  line-height: 1;
+  filter: none;
+}
+
+.yn-chat-emoji-only {
+  font-size: 42px;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+
 .yn-smiley-cell {
   display: flex;
   align-items: center;

@@ -22,8 +22,6 @@ import { CountryFlag } from "@/components/country-flag";
 import {
   ChatSmileyText,
   YouNeonSmileyPicker,
-  smileyToken,
-  type SmileyId,
 } from "@/components/icons/youneon-smileys";
 import { CALL_GIFTS, ChatReactionPicker, resolveGiftId, type CallGift } from "@/components/gift-overlay";
 import { GiftArt } from "@/components/icons/gift-art";
@@ -130,16 +128,16 @@ export function ChatScreen({
     setUnlocking(false);
   };
 
-  const handleSend = async () => {
+  const sendChatText = async (text: string) => {
     if (!isUnlocked) { setShowInsufficientModal(neonBalance < UNLOCK_COST); return; }
-    if (!input.trim() || sending) return;
-    const text = input.trim();
+    const body = text.trim();
+    if (!body || sending) return;
     setInput("");
     setShowEmoji(false);
     setShowReactions(false);
     setSending(true);
     try {
-      await sendChatMessage(conversationId, currentUserId, text);
+      await sendChatMessage(conversationId, currentUserId, body);
     } catch (e) {
       console.error(e);
       alert("Could not send message");
@@ -147,12 +145,16 @@ export function ChatScreen({
     setSending(false);
   };
 
-  const handleSmiley = (id: SmileyId) => {
-    const token = smileyToken(id);
-    setInput((prev) => {
-      if (!prev) return token;
-      return prev.endsWith(" ") ? prev + token : `${prev} ${token}`;
-    });
+  const handleSend = async () => {
+    await sendChatText(input);
+  };
+
+  const handleSmiley = (emoji: string) => {
+    if (!input.trim()) {
+      void sendChatText(emoji);
+      return;
+    }
+    setInput((prev) => prev + emoji);
   };
 
   const handleReaction = async (gift: CallGift) => {
