@@ -50,14 +50,6 @@ function NavSvg({
   );
 }
 
-const neon: { stroke: string; fill: string; strokeWidth: number; strokeLinejoin: "round"; strokeLinecap: "round" } = {
-  stroke: "currentColor",
-  fill: "none",
-  strokeWidth: 1.7,
-  strokeLinejoin: "round",
-  strokeLinecap: "round",
-};
-
 function OutlineSvg({
   size = 30,
   className,
@@ -78,52 +70,79 @@ function OutlineSvg({
   );
 }
 
-/** Video camera with play mark — matches the neon bar reference. */
+const S = {
+  stroke: "currentColor",
+  fill: "none" as const,
+  strokeWidth: 1.65,
+  strokeLinejoin: "round" as const,
+  strokeLinecap: "round" as const,
+};
+
+/** Video camera — body, lens play, viewfinder. */
 export function YouNeonNavCameraIcon({ size = 30, className }: NavIconProps) {
   return (
     <OutlineSvg size={size} className={className}>
-      <g {...neon}>
-        <rect x="2.2" y="6.6" width="13.4" height="10.8" rx="2.4" />
-        <path d="M15.7 9.15 21.1 6.7v10.6L15.7 14.85z" />
-        <path d="M7.15 9.55 13.05 12.05 7.15 14.55z" />
+      <g {...S}>
+        <rect x="2.4" y="6.8" width="13.2" height="10.4" rx="2.6" />
+        <path d="M15.7 9.35 21.15 6.9v10.2L15.7 14.65z" />
+        <path d="M7.05 9.7v4.6L12.85 12z" />
       </g>
     </OutlineSvg>
   );
 }
 
-/** Lounge sofa. */
+/** Lounge sofa — back, two cushions, arms, legs. */
 export function YouNeonNavSofaIcon({ size = 30, className }: NavIconProps) {
   return (
     <OutlineSvg size={size} className={className}>
-      <g {...neon}>
-        <path d="M5.4 11.1V8.4c0-1.7 1.4-3.1 3.1-3.1h7c1.7 0 3.1 1.4 3.1 3.1v2.7" />
-        <path d="M3.4 12.35c0-.85.7-1.55 1.55-1.55h14.1c.85 0 1.55.7 1.55 1.55v4.35c0 .9-.73 1.65-1.65 1.65H5.05c-.92 0-1.65-.75-1.65-1.65z" />
-        <path d="M8.15 10.8v7.55M15.85 10.8v7.55" />
-        <path d="M5.2 18.55v1.55M18.8 18.55v1.55" />
+      <g {...S}>
+        <path d="M6.2 10.4V7.7A2.4 2.4 0 0 1 8.6 5.3h6.8A2.4 2.4 0 0 1 17.8 7.7v2.7" />
+        <rect x="3.15" y="10.55" width="17.7" height="8.05" rx="2.15" />
+        <path d="M12 10.55v8.05" />
+        <path d="M6.15 18.6v1.85M17.85 18.6v1.85" />
       </g>
     </OutlineSvg>
   );
 }
 
-/** History clock with neon hanger. */
+const CLOCK_TICKS = Array.from({ length: 12 }, (_, i) => {
+  const deg = (i * 30 - 90) * (Math.PI / 180);
+  const long = i % 3 === 0;
+  const inner = long ? 5.15 : 5.45;
+  const outer = long ? 6.45 : 6.2;
+  return {
+    x1: 12 + Math.cos(deg) * inner,
+    y1: 13.15 + Math.sin(deg) * inner,
+    x2: 12 + Math.cos(deg) * outer,
+    y2: 13.15 + Math.sin(deg) * outer,
+  };
+});
+
+/** History clock — analog face, 10:10 hands, pocket-watch crown. */
 export function YouNeonNavClockIcon({ size = 30, className }: NavIconProps) {
   return (
     <OutlineSvg size={size} className={className}>
-      <g {...neon}>
-        <path d="M12 2.1v3.15" />
-        <circle cx="12" cy="13.05" r="7.35" />
-        <path d="M12 9.05v4.05l3.15.05" />
+      <g {...S}>
+        <circle cx="12" cy="2.55" r="0.95" />
+        <path d="M12 3.5v1.85" />
+        <circle cx="12" cy="13.15" r="7.05" />
+        {CLOCK_TICKS.map((t, i) => (
+          <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} />
+        ))}
+        <path d="M12 13.15 8.85 10.55" />
+        <path d="M12 13.15 15.35 10.7" />
+        <circle cx="12" cy="13.15" r="0.7" fill="currentColor" stroke="none" />
       </g>
     </OutlineSvg>
   );
 }
 
-/** Messages bubble. */
+/** Messages — rounded bubble with a clean tail. */
 export function YouNeonNavChatIcon({ size = 30, className }: NavIconProps) {
   return (
     <OutlineSvg size={size} className={className}>
-      <g {...neon}>
-        <path d="M6.6 5.15h10.8A3.35 3.35 0 0 1 20.75 8.5v5.15A3.35 3.35 0 0 1 17.4 17H9.35L4.4 20.05V8.5A3.35 3.35 0 0 1 6.6 5.15Z" />
+      <g {...S}>
+        <path d="M6.4 4.85h11.2A3.15 3.15 0 0 1 20.75 8v5.35A3.15 3.15 0 0 1 17.6 16.5h-6.55L6.15 19.7V8A3.15 3.15 0 0 1 6.4 4.85Z" />
       </g>
     </OutlineSvg>
   );
