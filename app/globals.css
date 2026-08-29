@@ -2061,16 +2061,25 @@ html.yn-profile-open {
   overflow-y: auto;
 }
 
-.yn-emoji-glyph {
-  font-size: 34px;
-  line-height: 1;
-  filter: none;
+.yn-emoji-sticker {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
-.yn-chat-emoji-only {
-  font-size: 42px;
-  line-height: 1.15;
-  letter-spacing: 0.02em;
+.yn-chat-sticker {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  display: block;
+}
+
+.yn-chat-bubble:has(.yn-chat-sticker) {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 .yn-smiley-cell {

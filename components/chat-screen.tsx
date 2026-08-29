@@ -22,6 +22,9 @@ import { CountryFlag } from "@/components/country-flag";
 import {
   ChatSmileyText,
   YouNeonSmileyPicker,
+  STICKER_SRC,
+  isStickerId,
+  type StickerId,
 } from "@/components/icons/youneon-smileys";
 import { CALL_GIFTS, ChatReactionPicker, resolveGiftId, type CallGift } from "@/components/gift-overlay";
 import { GiftArt } from "@/components/icons/gift-art";
@@ -149,12 +152,17 @@ export function ChatScreen({
     await sendChatText(input);
   };
 
-  const handleSmiley = (emoji: string) => {
-    if (!input.trim()) {
-      void sendChatText(emoji);
-      return;
-    }
-    setInput((prev) => prev + emoji);
+  const handleSmiley = (id: StickerId) => {
+    if (!isUnlocked) { setShowInsufficientModal(neonBalance < UNLOCK_COST); return; }
+    if (sending) return;
+    setShowEmoji(false);
+    setSending(true);
+    void sendChatMessage(conversationId, currentUserId, "", "", { sticker: id })
+      .catch((e) => {
+        console.error(e);
+        alert("Could not send emoji");
+      })
+      .finally(() => setSending(false));
   };
 
   const handleReaction = async (gift: CallGift) => {
@@ -401,6 +409,14 @@ export function ChatScreen({
                           src={msg.imageBase64}
                           alt=""
                           className="rounded-xl max-w-full mb-1.5"
+                        />
+                      )}
+                      {msg.sticker && isStickerId(msg.sticker) && (
+                        <img
+                          src={STICKER_SRC[msg.sticker]}
+                          alt=""
+                          className="yn-chat-sticker"
+                          draggable={false}
                         />
                       )}
                       {(() => {

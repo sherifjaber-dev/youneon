@@ -79,59 +79,80 @@ export const SMILEY_META: Record<SmileyId, { label: string }> = {
   naughty: { label: "Naughty" },
 };
 
-export const SWEET_EMOJIS = [
-  { glyph: "😊", label: "Smile" },
-  { glyph: "😂", label: "Laugh" },
-  { glyph: "🤣", label: "ROFL" },
-  { glyph: "🥰", label: "Hearts" },
-  { glyph: "😍", label: "Heart eyes" },
-  { glyph: "😘", label: "Kiss" },
-  { glyph: "😚", label: "Kiss closed" },
-  { glyph: "🥺", label: "Pleading" },
-  { glyph: "😇", label: "Angel" },
-  { glyph: "🤗", label: "Hug" },
-  { glyph: "😎", label: "Cool" },
-  { glyph: "😴", label: "Sleepy" },
-  { glyph: "🤩", label: "Starry" },
-  { glyph: "😋", label: "Yum" },
-  { glyph: "😌", label: "Calm" },
-  { glyph: "😳", label: "Blush" },
-  { glyph: "😭", label: "Cry" },
-  { glyph: "😆", label: "Grin" },
-  { glyph: "🌸", label: "Flower" },
-  { glyph: "🐰", label: "Bunny" },
-  { glyph: "⭐", label: "Star" },
-  { glyph: "❤️", label: "Love" },
-  { glyph: "✌️", label: "Peace" },
-  { glyph: "👍", label: "Like" },
-] as const;
+export type StickerId =
+  | "laugh"
+  | "joy"
+  | "wink"
+  | "cool"
+  | "hearts"
+  | "kiss"
+  | "shy"
+  | "sleepy"
+  | "cry"
+  | "bunny"
+  | "lashes"
+  | "smirk"
+  | "sideeye"
+  | "devil"
+  | "blowkiss"
+  | "hot"
+  | "tongue"
+  | "shush"
+  | "peach"
+  | "fire";
 
-export const FLIRTY_EMOJIS = [
-  { glyph: "😉", label: "Wink" },
-  { glyph: "😏", label: "Smirk" },
-  { glyph: "😈", label: "Devil" },
-  { glyph: "😜", label: "Tongue" },
-  { glyph: "😝", label: "Squint" },
-  { glyph: "😛", label: "Playful" },
-  { glyph: "🥵", label: "Hot" },
-  { glyph: "🤤", label: "Drool" },
-  { glyph: "🤭", label: "Shy" },
-  { glyph: "🫦", label: "Bite" },
-  { glyph: "💋", label: "Lips" },
-  { glyph: "🔥", label: "Fire" },
-  { glyph: "🍑", label: "Peach" },
-  { glyph: "🌶️", label: "Spicy" },
-  { glyph: "👀", label: "Eyes" },
-  { glyph: "💦", label: "Sweat" },
-  { glyph: "😻", label: "Smitten" },
-  { glyph: "😘", label: "Blow kiss" },
-  { glyph: "😍", label: "In love" },
-  { glyph: "🫠", label: "Melt" },
-  { glyph: "😈", label: "Naughty" },
-  { glyph: "💃", label: "Dance" },
-  { glyph: "🙈", label: "Peek" },
-  { glyph: "👅", label: "Lick" },
-] as const;
+export const STICKER_SRC: Record<StickerId, string> = {
+  laugh: "/emojis/laugh.png",
+  joy: "/emojis/joy.png",
+  wink: "/emojis/wink.png",
+  cool: "/emojis/cool.png",
+  hearts: "/emojis/hearts.png",
+  kiss: "/emojis/kiss.png",
+  shy: "/emojis/shy.png",
+  sleepy: "/emojis/sleepy.png",
+  cry: "/emojis/cry.png",
+  bunny: "/emojis/bunny.png",
+  lashes: "/emojis/lashes.png",
+  smirk: "/emojis/smirk.png",
+  sideeye: "/emojis/sideeye.png",
+  devil: "/emojis/devil.png",
+  blowkiss: "/emojis/blowkiss.png",
+  hot: "/emojis/hot.png",
+  tongue: "/emojis/tongue.png",
+  shush: "/emojis/shush.png",
+  peach: "/emojis/peach.png",
+  fire: "/emojis/fire.png",
+};
+
+export const SWEET_STICKERS: { id: StickerId; label: string }[] = [
+  { id: "laugh", label: "Laugh" },
+  { id: "joy", label: "Joy" },
+  { id: "wink", label: "Wink" },
+  { id: "cool", label: "Cool" },
+  { id: "hearts", label: "Hearts" },
+  { id: "kiss", label: "Kiss" },
+  { id: "shy", label: "Shy" },
+  { id: "sleepy", label: "Sleepy" },
+  { id: "cry", label: "Cry" },
+  { id: "bunny", label: "Bunny" },
+];
+
+export const FLIRTY_STICKERS: { id: StickerId; label: string }[] = [
+  { id: "lashes", label: "Lashes" },
+  { id: "smirk", label: "Smirk" },
+  { id: "sideeye", label: "Side eye" },
+  { id: "devil", label: "Devil" },
+  { id: "blowkiss", label: "Blow kiss" },
+  { id: "hot", label: "Hot" },
+  { id: "tongue", label: "Tongue" },
+  { id: "shush", label: "Shush" },
+  { id: "peach", label: "Peach" },
+  { id: "fire", label: "Fire" },
+];
+
+export function isStickerId(value: string): value is StickerId {
+  return value in STICKER_SRC;
+}
 
 export function smileyToken(id: SmileyId): string {
   return `:${id}:`;
@@ -716,10 +737,10 @@ function isEmojiOnlyMessage(text: string): boolean {
 export function YouNeonSmileyPicker({
   onSelect,
 }: {
-  onSelect: (emoji: string) => void;
+  onSelect: (id: StickerId) => void;
 }) {
   const [tab, setTab] = useState<"sweet" | "flirty">("sweet");
-  const items = tab === "sweet" ? SWEET_EMOJIS : FLIRTY_EMOJIS;
+  const items = tab === "sweet" ? SWEET_STICKERS : FLIRTY_STICKERS;
   return (
     <div className="yn-smiley-picker" data-testid="chat-smiley-picker">
       <div className="yn-smiley-tabs">
@@ -741,13 +762,14 @@ export function YouNeonSmileyPicker({
       <div className="yn-smiley-grid">
         {items.map((item) => (
           <button
-            key={`${tab}-${item.glyph}-${item.label}`}
+            key={item.id}
             type="button"
             className="yn-smiley-cell"
-            onClick={() => onSelect(item.glyph)}
+            onClick={() => onSelect(item.id)}
             aria-label={item.label}
+            data-testid={`sticker-${item.id}`}
           >
-            <span className="yn-emoji-glyph">{item.glyph}</span>
+            <img src={STICKER_SRC[item.id]} alt="" className="yn-emoji-sticker" draggable={false} />
           </button>
         ))}
       </div>

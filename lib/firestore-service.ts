@@ -74,7 +74,7 @@ export interface UserProfile {
 
 export interface ChatMessage {
   id?: string; conversationId: string; senderId: string;
-  text?: string; imageBase64?: string; giftId?: string; timestamp?: Date;
+  text?: string; imageBase64?: string; giftId?: string; sticker?: string; timestamp?: Date;
 }
 
 const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
@@ -381,14 +381,16 @@ export const sendChatMessage = async (
   senderId: string,
   text?: string,
   imageBase64?: string,
-  extra?: { giftId?: string }
+  extra?: { giftId?: string; sticker?: string }
 ) => {
   const giftId = extra?.giftId || "";
+  const sticker = extra?.sticker || "";
   await addDoc(collection(db, "conversations", conversationId, "messages"), {
     senderId,
     text: text || "",
     imageBase64: imageBase64 || "",
     giftId,
+    sticker,
     timestamp: serverTimestamp(),
   });
   const ref = doc(db, "conversations", conversationId);
@@ -397,7 +399,7 @@ export const sendChatMessage = async (
     const data = snap.data();
     const recipient = (data.participants as string[]).find((p) => p !== senderId);
     const currentUnread = (data.unreadCount && data.unreadCount[recipient!]) || 0;
-    const preview = text || (imageBase64 ? "📷 Image" : giftId ? "✨ Reaction" : "");
+    const preview = text || (sticker ? "Emoji" : imageBase64 ? "📷 Image" : giftId ? "✨ Reaction" : "");
     await updateDoc(ref, {
       lastMessage: preview,
       lastMessageTime: serverTimestamp(),
@@ -426,7 +428,7 @@ export const subscribeToMessages = (conversationId: string, cb: (msgs: ChatMessa
     const msgs = snap.docs.map((d) => {
       const data = d.data() as any;
       return { id: d.id, conversationId, senderId: data.senderId, text: data.text,
-        imageBase64: data.imageBase64, giftId: data.giftId || "", timestamp: data.timestamp?.toDate() } as ChatMessage;
+        imageBase64: data.imageBase64, giftId: data.giftId || "", sticker: data.sticker || "", timestamp: data.timestamp?.toDate() } as ChatMessage;
     });
     cb(msgs);
   });
