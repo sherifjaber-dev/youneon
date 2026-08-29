@@ -1793,24 +1793,41 @@ html.yn-profile-open {
   box-shadow: none;
 }
 
+
 .yn-chat-composer {
-  background: rgba(8, 4, 18, 0.94);
-  border-top: 1px solid rgba(168, 85, 247, 0.22);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background:
+    linear-gradient(180deg, rgba(8, 4, 18, 0) 0%, rgba(8, 4, 18, 0.92) 28%);
+  border-top: 0;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
+.yn-box365,
 .yn-chat-bar {
   display: flex;
   min-width: 0;
   flex: 1;
   align-items: center;
   gap: 2px;
-  padding: 4px 10px 4px 4px;
-  border-radius: 999px;
-  border: 1px solid rgba(192, 132, 252, 0.5);
-  background: rgba(12, 6, 22, 0.92);
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.28);
+  min-height: 54px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 22px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#11081c, #11081c) padding-box,
+    linear-gradient(120deg, #f0abfc 0%, #e03596 32%, #7c3aed 68%, #f5d76e 100%) border-box;
+  box-shadow:
+    0 0 0 1px rgba(245, 215, 110, 0.12),
+    0 8px 24px rgba(8, 4, 18, 0.45),
+    0 0 22px rgba(194, 24, 117, 0.28);
+}
+
+.yn-box365:focus-within,
+.yn-chat-bar:focus-within {
+  box-shadow:
+    0 0 0 1px rgba(245, 215, 110, 0.35),
+    0 8px 28px rgba(8, 4, 18, 0.5),
+    0 0 28px rgba(224, 53, 150, 0.45);
 }
 
 .yn-chat-icon {
@@ -1820,13 +1837,13 @@ html.yn-profile-open {
   width: 38px;
   height: 38px;
   border-radius: 999px;
-  color: #c084fc;
+  color: #e9d5ff;
   filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.55));
 }
 
 .yn-chat-icon.is-on {
-  color: var(--pink-text);
-  background: color-mix(in srgb, var(--pink) 12%, transparent);
+  color: #fff;
+  background: linear-gradient(135deg, rgba(224, 53, 150, 0.35), rgba(124, 58, 237, 0.35));
   filter: drop-shadow(0 0 8px color-mix(in srgb, var(--pink) 70%, transparent));
 }
 
@@ -1836,24 +1853,28 @@ html.yn-profile-open {
   background: transparent;
   border: none;
   color: #fff;
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 .yn-chat-field::placeholder {
   color: #8b8098;
+  font-weight: 500;
 }
 
 .yn-chat-send {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
+  width: 50px;
+  height: 50px;
   flex-shrink: 0;
   border-radius: 999px;
   color: #fff;
-  background: linear-gradient(135deg, var(--pink) 0%, #7c3aed 100%);
+  background: linear-gradient(145deg, #ff4db8 0%, #c026d3 52%, #7c3aed 100%);
   box-shadow:
-    0 0 16px color-mix(in srgb, var(--pink) 65%, transparent),
+    0 0 0 1.5px rgba(245, 215, 110, 0.45),
+    0 0 18px color-mix(in srgb, var(--pink) 65%, transparent),
     0 0 28px rgba(124, 58, 237, 0.4);
 }
 
@@ -1874,7 +1895,19 @@ html.yn-profile-open {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
+  animation: yn-bubble-in 0.28s ease;
+}
+
+@keyframes yn-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .yn-chat-row.is-mine {
@@ -1893,24 +1926,34 @@ html.yn-profile-open {
 .yn-chat-bubble {
   font-size: 16px;
   font-weight: 500;
-  letter-spacing: -0.015em;
-  line-height: 1.38;
+  letter-spacing: -0.018em;
+  line-height: 1.4;
   word-break: break-word;
+  padding: 10px 14px 8px;
 }
 
 .yn-chat-bubble-out {
-  border-radius: 20px 20px 6px 20px;
-  background: linear-gradient(145deg, #e03596 0%, #a21caf 52%, #7c3aed 100%);
+  border-radius: 22px 22px 7px 22px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(160deg, #ff4db8 0%, #d946ef 46%, #7c3aed 100%) padding-box,
+    linear-gradient(135deg, #fde68a, #f0abfc, #c084fc) border-box;
   color: #fff;
-  box-shadow: 0 8px 20px rgba(194, 24, 117, 0.28);
+  box-shadow:
+    0 10px 22px rgba(194, 24, 117, 0.32),
+    0 0 18px rgba(224, 53, 150, 0.28);
 }
 
 .yn-chat-bubble-in {
-  border-radius: 20px 20px 20px 6px;
-  background: #1b1028;
+  border-radius: 22px 22px 22px 7px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(180deg, #1c102c, #140a22) padding-box,
+    linear-gradient(135deg, #f0abfc 0%, #a855f7 48%, #f5d76e 100%) border-box;
   color: #f8f0ff;
-  border: 1px solid rgba(192, 132, 252, 0.35);
-  box-shadow: 0 6px 16px rgba(8, 4, 18, 0.35);
+  box-shadow:
+    0 8px 18px rgba(8, 4, 18, 0.4),
+    0 0 16px rgba(168, 85, 247, 0.22);
 }
 
 .yn-chat-time {
@@ -1922,12 +1965,12 @@ html.yn-profile-open {
 
 .yn-chat-time.is-mine {
   text-align: right;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .yn-chat-time.is-theirs {
   text-align: left;
-  color: rgba(196, 181, 253, 0.7);
+  color: rgba(196, 181, 253, 0.75);
 }
 
 .yn-chat-accent-btn {

@@ -422,7 +422,7 @@ export function ChatScreen({
                       />
                     )}
                     <div
-                      className={`yn-chat-bubble max-w-[78%] px-3.5 py-2.5 ${
+                      className={`yn-chat-bubble max-w-[78%] ${
                         mine
                           ? "yn-chat-bubble-out"
                           : "yn-chat-bubble-in"
@@ -495,7 +495,7 @@ export function ChatScreen({
           )}
 
           <div className={`yn-chat-composer fixed bottom-0 left-0 right-0 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] flex items-center gap-2 z-40${waitingForReply ? " is-waiting" : ""}`}>
-            <div className="yn-chat-bar">
+            <div className="yn-chat-bar yn-box365">
               <button
                 onClick={() => {
                   if (blockIfWaiting()) return;
