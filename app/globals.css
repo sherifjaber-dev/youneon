@@ -3023,26 +3023,26 @@ html.yn-profile-open {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 7px;
   min-height: 58px;
-  padding: 8px 4px 10px;
+  padding: 8px 4px 12px;
   background: none;
   border: none;
   box-shadow: none;
   overflow: visible;
-  color: #c4b5d6;
+  color: #9b7ec8;
   transition: color 0.18s ease, transform 0.12s ease;
 }
 
 .yn-nav-slot:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .yn-nav-icon {
   position: relative;
   display: flex;
-  height: 42px;
-  width: 42px;
+  height: 34px;
+  width: 34px;
   align-items: center;
   justify-content: center;
   overflow: visible;
@@ -3054,42 +3054,41 @@ html.yn-profile-open {
 }
 
 .yn-nav-slot.is-on .yn-nav-icon::before {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--pink) 48%, transparent) 0%, transparent 72%);
-  animation: yn-nav-halo 1.8s ease-in-out infinite;
-  pointer-events: none;
-  z-index: -1;
+  content: none;
 }
 
 .yn-nav-svg {
   display: block;
   overflow: visible;
-  opacity: 0.72;
+  opacity: 1;
+  color: inherit;
   filter: none;
-  transition: opacity 0.18s ease, filter 0.18s ease, transform 0.18s ease;
+  transition: color 0.18s ease, filter 0.18s ease;
 }
 
 .yn-nav-label {
+  position: relative;
+  z-index: 1;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   line-height: 1;
-  color: #9a8aaa;
+  color: #c5c0cc;
   transition: color 0.18s ease, text-shadow 0.18s ease;
 }
 
 .yn-nav-slot.is-on .yn-nav-svg {
   opacity: 1;
-  transform: translateY(-1px);
+  transform: none;
+  color: #ff4de8;
   filter:
-    drop-shadow(0 0 3px color-mix(in srgb, var(--pink) 90%, transparent))
-    drop-shadow(0 0 10px color-mix(in srgb, var(--pink) 55%, transparent));
+    drop-shadow(0 0 3px #ff4de8)
+    drop-shadow(0 0 10px #ff4de8)
+    drop-shadow(0 0 18px rgba(255, 77, 232, 0.75));
 }
 
 .yn-nav-slot.is-on .yn-nav-icon {
-  color: var(--pink-text);
+  color: #ff4de8;
   background: none;
   box-shadow: none;
 }
@@ -3101,30 +3100,37 @@ html.yn-profile-open {
 }
 
 .yn-nav-slot.is-on {
-  color: var(--pink-text);
+  color: #ff4de8;
   background: none;
   box-shadow: none;
 }
 
 .yn-nav-slot.is-on .yn-nav-label {
   color: #fff;
-  font-weight: 800;
+  font-weight: 700;
   text-shadow:
-    0 0 8px color-mix(in srgb, var(--pink) 100%, transparent),
-    0 0 16px color-mix(in srgb, var(--pink) 70%, transparent);
+    0 0 8px #ff4de8,
+    0 0 16px rgba(255, 77, 232, 0.9),
+    0 0 28px rgba(255, 77, 232, 0.55);
 }
 
 .yn-nav-slot.is-on::after {
   content: "";
   position: absolute;
-  bottom: 4px;
   left: 50%;
-  width: 28px;
-  height: 3px;
-  border-radius: 99px;
-  background: linear-gradient(90deg, var(--pink), #c084fc);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--pink) 90%, transparent);
+  bottom: 2px;
+  width: 92px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse 70% 70% at 50% 80%,
+    rgba(255, 77, 232, 0.95) 0%,
+    rgba(255, 77, 232, 0.45) 38%,
+    rgba(168, 85, 247, 0.12) 62%,
+    transparent 78%);
   transform: translateX(-50%);
+  pointer-events: none;
+  filter: blur(1.5px);
+  z-index: 0;
 }
 
 @keyframes yn-nav-halo {

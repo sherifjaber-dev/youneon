@@ -50,74 +50,82 @@ function NavSvg({
   );
 }
 
-/** Video camera — rounded body, top handle, right lens. */
-export function YouNeonNavCameraIcon({ size = 30, className, filled }: NavIconProps) {
+const neon: { stroke: string; fill: string; strokeWidth: number; strokeLinejoin: "round"; strokeLinecap: "round" } = {
+  stroke: "currentColor",
+  fill: "none",
+  strokeWidth: 1.7,
+  strokeLinejoin: "round",
+  strokeLinecap: "round",
+};
+
+function OutlineSvg({
+  size = 30,
+  className,
+  children,
+}: NavIconProps & { children: ReactNode }) {
   return (
-    <NavSvg size={size} className={className} filled={filled}>
-      {(stroke, fill) => (
-        <g stroke={stroke} strokeWidth={filled ? 1.9 : 1.75} strokeLinejoin="round" strokeLinecap="round">
-          <rect x="5.2" y="3.5" width="7.6" height="2.7" rx="1.2" fill={fill} />
-          <rect x="2.05" y="6.05" width="14.2" height="12.2" rx="3.2" fill={fill} />
-          <circle cx="9.15" cy="12.15" r="2.35" fill={filled ? "#120814" : "none"} />
-          <path d="M16.2 9.05 21.25 7.15c.55-.2.95.14.95.84v7.92c0 .7-.4 1.04-.95.84L16.2 14.95z" fill={fill} />
-        </g>
-      )}
-    </NavSvg>
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      aria-hidden
+      overflow="visible"
+      className={className}
+    >
+      {children}
+    </svg>
   );
 }
 
-/** Lounge armchair — backrest, arms, seat, feet. */
-export function YouNeonNavSofaIcon({ size = 30, className, filled }: NavIconProps) {
+/** Video camera with play mark — matches the neon bar reference. */
+export function YouNeonNavCameraIcon({ size = 30, className }: NavIconProps) {
   return (
-    <NavSvg size={size} className={className} filled={filled}>
-      {(stroke, fill) => (
-        <g stroke={stroke} strokeWidth={filled ? 1.9 : 1.75} strokeLinejoin="round" strokeLinecap="round">
-          <rect x="6.2" y="3.05" width="11.6" height="9.1" rx="2.3" fill={fill} />
-          <rect x="2.9" y="9.05" width="4.5" height="10.3" rx="2.1" fill={fill} />
-          <rect x="16.6" y="9.05" width="4.5" height="10.3" rx="2.1" fill={fill} />
-          <rect x="7" y="11.1" width="10" height="4.5" rx="1.7" fill={filled ? "#120814" : "none"} />
-          <path d="M4.1 19.4v1.4M19.9 19.4v1.4" fill="none" />
-        </g>
-      )}
-    </NavSvg>
+    <OutlineSvg size={size} className={className}>
+      <g {...neon}>
+        <rect x="2.2" y="6.6" width="13.4" height="10.8" rx="2.4" />
+        <path d="M15.7 9.15 21.1 6.7v10.6L15.7 14.85z" />
+        <path d="M7.15 9.55 13.05 12.05 7.15 14.55z" />
+      </g>
+    </OutlineSvg>
   );
 }
 
-/** History clock — ring, hands, rewind arrow. */
-export function YouNeonNavClockIcon({ size = 30, className, filled }: NavIconProps) {
+/** Lounge sofa. */
+export function YouNeonNavSofaIcon({ size = 30, className }: NavIconProps) {
   return (
-    <NavSvg size={size} className={className} filled={filled}>
-      {(stroke, fill) => (
-        <g stroke={stroke} strokeWidth={filled ? 1.9 : 1.75} strokeLinejoin="round" strokeLinecap="round">
-          <circle cx="12" cy="12.1" r="8.15" fill={fill} />
-          <path d="M12 8.15v4.15l2.85 1.7" fill="none" stroke={filled ? "#fff" : stroke} strokeWidth={filled ? 1.7 : 1.75} />
-          <path d="M16.35 4.55 18.7 6.15 16.9 8.05" fill="none" />
-        </g>
-      )}
-    </NavSvg>
+    <OutlineSvg size={size} className={className}>
+      <g {...neon}>
+        <path d="M5.4 11.1V8.4c0-1.7 1.4-3.1 3.1-3.1h7c1.7 0 3.1 1.4 3.1 3.1v2.7" />
+        <path d="M3.4 12.35c0-.85.7-1.55 1.55-1.55h14.1c.85 0 1.55.7 1.55 1.55v4.35c0 .9-.73 1.65-1.65 1.65H5.05c-.92 0-1.65-.75-1.65-1.65z" />
+        <path d="M8.15 10.8v7.55M15.85 10.8v7.55" />
+        <path d="M5.2 18.55v1.55M18.8 18.55v1.55" />
+      </g>
+    </OutlineSvg>
   );
 }
 
-/** Messages — rounded bubble with tail. */
-export function YouNeonNavChatIcon({ size = 30, className, filled }: NavIconProps) {
+/** History clock with neon hanger. */
+export function YouNeonNavClockIcon({ size = 30, className }: NavIconProps) {
   return (
-    <NavSvg size={size} className={className} filled={filled}>
-      {(stroke, fill) => (
-        <g stroke={stroke} strokeWidth={filled ? 1.9 : 1.75} strokeLinejoin="round" strokeLinecap="round">
-          <path
-            d="M7.7 4.7h8.6A3.8 3.8 0 0 1 20.1 8.5v4.75A3.8 3.8 0 0 1 16.3 17.05H10.15L4.9 20.7l1.05-3.65H7.7A3.8 3.8 0 0 1 3.9 13.25V8.5A3.8 3.8 0 0 1 7.7 4.7Z"
-            fill={fill}
-          />
-          {filled ? (
-            <g fill="#fff" stroke="none">
-              <circle cx="9.1" cy="11.15" r="0.95" />
-              <circle cx="12" cy="11.15" r="0.95" />
-              <circle cx="14.9" cy="11.15" r="0.95" />
-            </g>
-          ) : null}
-        </g>
-      )}
-    </NavSvg>
+    <OutlineSvg size={size} className={className}>
+      <g {...neon}>
+        <path d="M12 2.1v3.15" />
+        <circle cx="12" cy="13.05" r="7.35" />
+        <path d="M12 9.05v4.05l3.15.05" />
+      </g>
+    </OutlineSvg>
+  );
+}
+
+/** Messages bubble. */
+export function YouNeonNavChatIcon({ size = 30, className }: NavIconProps) {
+  return (
+    <OutlineSvg size={size} className={className}>
+      <g {...neon}>
+        <path d="M6.6 5.15h10.8A3.35 3.35 0 0 1 20.75 8.5v5.15A3.35 3.35 0 0 1 17.4 17H9.35L4.4 20.05V8.5A3.35 3.35 0 0 1 6.6 5.15Z" />
+      </g>
+    </OutlineSvg>
   );
 }
 
