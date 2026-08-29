@@ -331,30 +331,40 @@ function WaitingMatchPanel({
       </header>
       <div className="yn-wait-center">
         <div className="yn-wait-radar" aria-hidden="true">
-          <svg className="yn-wait-scan" viewBox="0 0 200 200">
-            <defs>
-              <linearGradient id="yn-wait-scan-stroke" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#f5d76e" stopOpacity="0" />
-                <stop offset="55%" stopColor="#e879f9" stopOpacity="0.2" />
-                <stop offset="88%" stopColor="#e879f9" />
-                <stop offset="100%" stopColor="#f5d76e" />
-              </linearGradient>
-            </defs>
-            <circle
-              cx="100"
-              cy="100"
-              r="93"
-              fill="none"
-              stroke="url(#yn-wait-scan-stroke)"
-              strokeWidth="5"
-              strokeLinecap="round"
-              strokeDasharray="36 548"
-            />
-          </svg>
-          <span className="yn-wait-sat yn-wait-sat-1"><WaitSticker src="/wait/heart.png" /></span>
-          <span className="yn-wait-sat yn-wait-sat-2"><WaitSticker src="/wait/bolt.png" /></span>
-          <span className="yn-wait-sat yn-wait-sat-3"><WaitSticker src="/wait/star.png" /></span>
-          <span className="yn-wait-sat yn-wait-sat-4"><WaitSticker src="/wait/flame.png" /></span>
+          <span className="yn-wait-scan-wrap">
+            <svg className="yn-wait-scan" viewBox="0 0 200 200">
+              <defs>
+                <linearGradient id="yn-wait-scan-stroke" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#f5d76e" stopOpacity="0" />
+                  <stop offset="55%" stopColor="#e879f9" stopOpacity="0.2" />
+                  <stop offset="88%" stopColor="#e879f9" />
+                  <stop offset="100%" stopColor="#f5d76e" />
+                </linearGradient>
+              </defs>
+              <circle
+                cx="100"
+                cy="100"
+                r="93"
+                fill="none"
+                stroke="url(#yn-wait-scan-stroke)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray="36 548"
+              />
+            </svg>
+          </span>
+          <span className="yn-wait-orbit yn-wait-orbit-1">
+            <span className="yn-wait-sat"><WaitSticker src="/wait/heart.png" /></span>
+          </span>
+          <span className="yn-wait-orbit yn-wait-orbit-2">
+            <span className="yn-wait-sat"><WaitSticker src="/wait/bolt.png" /></span>
+          </span>
+          <span className="yn-wait-orbit yn-wait-orbit-3">
+            <span className="yn-wait-sat"><WaitSticker src="/wait/star.png" /></span>
+          </span>
+          <span className="yn-wait-orbit yn-wait-orbit-4">
+            <span className="yn-wait-sat"><WaitSticker src="/wait/flame.png" /></span>
+          </span>
           <div className="yn-wait-self">
             <div className="yn-wait-self-inner">
               <span className="yn-wait-self-fallback">
