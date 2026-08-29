@@ -6,7 +6,7 @@ import { db } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { AdInterstitial } from "@/components/ad-placements";
 import { CountryLabel } from "@/components/country-flag";
-import { GiftArt } from "@/components/icons/gift-art";
+import { PremiumGem } from "@/components/premium-gem";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
@@ -246,13 +246,7 @@ export function DiscoverScreen({
               <ChevronRight size={14} strokeWidth={2.6} className="text-[#1a1408]" />
             </span>
           </div>
-          <GiftArt
-            id="diamond"
-            size={88}
-            variant="pick"
-            instance="sponsored-premium"
-            className="yn-premium-gift shrink-0"
-          />
+          <PremiumGem className="yn-premium-gift h-[92px] w-[92px] shrink-0" />
         </button>
       </div>
 

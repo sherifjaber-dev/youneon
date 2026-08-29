@@ -3003,7 +3003,13 @@ html.yn-profile-open {
 .yn-premium-gift {
   display: block;
   overflow: visible;
-  filter: drop-shadow(0 0 10px rgba(176, 38, 255, 0.55));
+  object-fit: contain;
+  filter: drop-shadow(0 0 14px rgba(245, 215, 110, 0.45)) drop-shadow(0 0 18px rgba(194, 24, 117, 0.5));
+}
+
+.yn-premium-diamond {
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(245, 215, 110, 0.4)) drop-shadow(0 0 16px rgba(168, 85, 247, 0.45));
 }
 
 .yn-bottom-nav {
@@ -3091,12 +3097,6 @@ html.yn-profile-open {
   color: #ff4de8;
   background: none;
   box-shadow: none;
-}
-
-.yn-premium-diamond {
-  object-fit: contain;
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.55));
 }
 
 .yn-nav-slot.is-on {
