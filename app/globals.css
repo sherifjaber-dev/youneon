@@ -1865,6 +1865,7 @@ html.yn-profile-open {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+  margin-bottom: 2px;
 }
 
 .yn-chat-row.is-mine {
@@ -1880,21 +1881,34 @@ html.yn-profile-open {
   border-radius: 999px;
 }
 
+.yn-chat-bubble {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.38;
+  word-break: break-word;
+}
+
 .yn-chat-bubble-out {
-  background: linear-gradient(90deg, var(--pink) 0%, #7a2ee5 100%);
+  border-radius: 20px 20px 6px 20px;
+  background: linear-gradient(145deg, #e03596 0%, #a21caf 52%, #7c3aed 100%);
   color: #fff;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--pink) 28%, transparent);
+  box-shadow: 0 8px 20px rgba(194, 24, 117, 0.28);
 }
 
 .yn-chat-bubble-in {
-  background: rgba(36, 20, 54, 0.94);
-  color: #fff;
-  border: 1px solid rgba(124, 58, 237, 0.28);
+  border-radius: 20px 20px 20px 6px;
+  background: #1b1028;
+  color: #f8f0ff;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  box-shadow: 0 6px 16px rgba(8, 4, 18, 0.35);
 }
 
 .yn-chat-time {
-  font-size: 11px;
-  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-top: 5px;
 }
 
 .yn-chat-time.is-mine {
@@ -1945,6 +1959,8 @@ html.yn-profile-open {
 .yn-chat-smiley-text {
   font-size: inherit;
   line-height: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
 }
 
 .yn-smiley-scrim {
@@ -2012,19 +2028,37 @@ html.yn-profile-open {
   font-weight: 700;
 }
 
-.yn-smiley-picker-title {
-  margin: 0 6px 10px;
-  font-size: 11px;
+.yn-smiley-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 4px 12px;
+}
+
+.yn-smiley-tab {
+  flex: 1;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(192, 132, 252, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  color: #b9a8c9;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #a855f7;
+  letter-spacing: 0.02em;
+}
+
+.yn-smiley-tab.is-on {
+  color: #fff;
+  background: linear-gradient(135deg, #e03596, #7c3aed);
+  border-color: transparent;
+  box-shadow: 0 0 14px rgba(194, 24, 117, 0.4);
 }
 
 .yn-smiley-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
+  max-height: 248px;
+  overflow-y: auto;
 }
 
 .yn-smiley-cell {

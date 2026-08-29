@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, type SVGProps } from "react";
+import { useState, type ReactNode, type SVGProps } from "react";
 import { cn } from "@/lib/utils";
 
 export const SMILEY_IDS = [
@@ -24,6 +24,20 @@ export const SMILEY_IDS = [
   "bite",
   "sparkle",
   "blowkiss",
+  "starry",
+  "flower",
+  "hug",
+  "bunny",
+  "love",
+  "peace",
+  "fire",
+  "peach",
+  "chili",
+  "lips",
+  "tease",
+  "lash",
+  "wet",
+  "naughty",
 ] as const;
 
 export type SmileyId = (typeof SMILEY_IDS)[number];
@@ -49,7 +63,61 @@ export const SMILEY_META: Record<SmileyId, { label: string }> = {
   bite: { label: "Bite lip" },
   sparkle: { label: "Sparkle" },
   blowkiss: { label: "Blow a kiss" },
+  starry: { label: "Starry eyes" },
+  flower: { label: "Flower" },
+  hug: { label: "Hug" },
+  bunny: { label: "Bunny" },
+  love: { label: "Love" },
+  peace: { label: "Peace" },
+  fire: { label: "Fire" },
+  peach: { label: "Peach" },
+  chili: { label: "Spicy" },
+  lips: { label: "Lips" },
+  tease: { label: "Tease" },
+  lash: { label: "Lashes" },
+  wet: { label: "Flustered" },
+  naughty: { label: "Naughty" },
 };
+
+export const SWEET_SMILEYS: SmileyId[] = [
+  "blush",
+  "kiss",
+  "hearts",
+  "angel",
+  "sparkle",
+  "blowkiss",
+  "laugh",
+  "shy",
+  "sleepy",
+  "pout",
+  "starry",
+  "flower",
+  "hug",
+  "bunny",
+  "love",
+  "peace",
+  "cool",
+  "shock",
+];
+
+export const FLIRTY_SMILEYS: SmileyId[] = [
+  "wink",
+  "smirk",
+  "devil",
+  "tongue",
+  "hot",
+  "drool",
+  "bite",
+  "sideeye",
+  "tease",
+  "lash",
+  "wet",
+  "naughty",
+  "lips",
+  "fire",
+  "peach",
+  "chili",
+];
 
 export function smileyToken(id: SmileyId): string {
   return `:${id}:`;
@@ -102,9 +170,9 @@ function Face() {
       cx="12"
       cy="13.15"
       r="7.95"
-      fill="#fce7f3"
-      stroke="#7e22ce"
-      strokeWidth="1.8"
+      fill="#ffd6f0"
+      stroke="#c026d3"
+      strokeWidth="1.7"
     />
   );
 }
@@ -410,10 +478,160 @@ function features(id: SmileyId): ReactNode {
           <MiniHeart x={19.15} y={5.05} s={1.45} />
         </>
       );
+    case "starry":
+      return (
+        <>
+          <Spark x={9.05} y={12.05} s={1.15} />
+          <Spark x={14.95} y={12.05} s={1.15} />
+          <path d="M8.4 16.7c1.7 1.9 4.5 2.15 6.7.55" {...line} />
+        </>
+      );
+    case "flower":
+      return (
+        <>
+          <circle cx="12" cy="13" r="2.2" fill="#fde047" />
+          <ellipse cx="12" cy="7.6" rx="2.2" ry="3.1" fill="#fb7185" />
+          <ellipse cx="12" cy="18.4" rx="2.2" ry="3.1" fill="#f472b6" />
+          <ellipse cx="7.1" cy="13" rx="3.1" ry="2.2" fill="#e879f9" />
+          <ellipse cx="16.9" cy="13" rx="3.1" ry="2.2" fill="#c084fc" />
+        </>
+      );
+    case "hug":
+      return (
+        <>
+          <DotEyes />
+          <Blush />
+          <path d="M8.6 16.7c1.5 1.6 4.1 1.7 5.8.4" {...line} />
+          <path d="M3.4 15.2c2.6 2.8 5.2 3.4 8.6 2.2" {...line} stroke={PINK} strokeWidth={1.9} />
+          <path d="M20.6 15.2c-2.6 2.8-5.2 3.4-8.6 2.2" {...line} stroke={PINK} strokeWidth={1.9} />
+        </>
+      );
+    case "bunny":
+      return (
+        <>
+          <path d="M7.2 8.2 5.4 1.8c1.9.4 3.3 2.7 3.6 5.2z" fill="#ffd6f0" stroke="#c026d3" strokeWidth="1.4" />
+          <path d="M16.8 8.2 18.6 1.8c-1.9.4-3.3 2.7-3.6 5.2z" fill="#ffd6f0" stroke="#c026d3" strokeWidth="1.4" />
+          <DotEyes />
+          <Blush />
+          <path d="M10.4 16.6c.9.55 2.2.55 3.1 0" {...line} />
+        </>
+      );
+    case "love":
+      return (
+        <path
+          d="M12 20.4c-.4 0-7.4-4.55-7.4-9.35C4.6 8.1 6.6 6.2 9 6.2c1.45 0 2.4.7 3 1.7.6-1 1.55-1.7 3-1.7 2.4 0 4.4 1.9 4.4 4.85 0 4.8-7 9.35-7.4 9.35z"
+          fill={PINK}
+          stroke={INK}
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      );
+    case "peace":
+      return (
+        <>
+          <ClosedEyes />
+          <path d="M8.6 16.55c1.5 1.7 4 1.85 5.8.5" {...line} />
+          <path d="M18.2 3.4v6.2" {...line} stroke={PURPLE} />
+          <path d="M18.2 6.5 16.1 4.2" {...line} stroke={PURPLE} />
+          <path d="M18.2 6.5 20.3 4.2" {...line} stroke={PURPLE} />
+        </>
+      );
+    case "fire":
+      return (
+        <path
+          d="M12.2 21c-3.6 0-6-2.55-6-5.9 0-2.4 1.15-4.1 2.55-5.7.45 1.7 1.45 2.5 1.45 2.5C9.6 8.4 11.1 6 12.85 3.6c.35 2.2 1.7 3.7 2.85 4.85C17.4 6.9 18.3 5.2 18.3 5.2c.85 1.9 1.5 3.7 1.5 5.85 0 4.55-3.05 9.95-7.6 9.95z"
+          fill="#fb7185"
+          stroke="#be123c"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+      );
+    case "peach":
+      return (
+        <>
+          <ellipse cx="12.2" cy="14.1" rx="7.1" ry="6.6" fill="#fb7185" stroke="#9d174d" strokeWidth="1.4" />
+          <ellipse cx="9.6" cy="13.4" rx="2.2" ry="3.1" fill="#fda4af" opacity="0.7" />
+          <path d="M12.1 7.4c.15-2.4 1.7-4.1 3.7-4.6" {...line} stroke="#16a34a" strokeWidth={1.7} />
+          <ellipse cx="16.6" cy="5.2" rx="2.4" ry="1.35" fill="#4ade80" stroke="#15803d" strokeWidth="1.1" />
+        </>
+      );
+    case "chili":
+      return (
+        <>
+          <path
+            d="M8.2 7.6c2.2-1.2 5.6-.2 7.5 2.4 2.2 3 1.7 8.3-1.5 10.4-3.4 2.25-7.85.15-8.7-3.55C4.7 13.4 6.1 8.7 8.2 7.6z"
+            fill="#ef4444"
+            stroke="#9f1239"
+            strokeWidth="1.45"
+          />
+          <path d="M14.6 6.2c.4-2.1 1.85-3.4 3.6-3.5" {...line} stroke="#16a34a" strokeWidth={1.7} />
+        </>
+      );
+    case "lips":
+      return (
+        <>
+          <path
+            d="M3.8 12.4c2.6-3.3 5.4-4.6 8.2-4.6s5.6 1.3 8.2 4.6c-2.5 3.5-5.3 5.2-8.2 5.2S6.3 15.9 3.8 12.4z"
+            fill={PINK}
+            stroke={INK}
+            strokeWidth="1.45"
+          />
+          <path d="M5.2 12.35h13.6" {...line} strokeWidth={1.5} />
+        </>
+      );
+    case "tease":
+      return (
+        <>
+          <path d="M7.1 12c1.2-1.5 3.15-1.5 4.35 0" {...line} />
+          <circle cx="15" cy="11.85" r="1.45" fill={INK} />
+          <path d="M8.2 15.3c.4 3.2 2.4 4.9 3.8 4.9s3.4-1.7 3.8-4.9z" fill={INK} />
+          <path d="M10.9 17.15c.25 2.2 1.05 3.2 2.05 3.2 1.1 0 1.75-1.1 1.6-3.1" fill={PINK} />
+        </>
+      );
+    case "lash":
+      return (
+        <>
+          <path d="M6.6 11.1c1.3-2.05 3.4-2.2 4.7-.15" {...line} strokeWidth={1.85} />
+          <path d="M12.7 11.1c1.3-2.05 3.4-2.2 4.7-.15" {...line} strokeWidth={1.85} />
+          <path d="M7.05 8.55 6.15 6.7" {...line} strokeWidth={1.35} />
+          <path d="M9.2 7.85 8.85 5.95" {...line} strokeWidth={1.35} />
+          <path d="M14.7 7.85 14.35 5.95" {...line} strokeWidth={1.35} />
+          <path d="M16.9 8.55 17.8 6.7" {...line} strokeWidth={1.35} />
+          <Blush />
+          <path d="M8.4 16.7c2.2 1.35 5.3 1.2 7.2-.65" {...line} />
+        </>
+      );
+    case "wet":
+      return (
+        <>
+          <DotEyes />
+          <Blush />
+          <path d="M8.5 16.7c1.6 1.85 4.2 2 6.1.5" {...line} />
+          <path
+            d="M18.4 5.4c.05 2.4 1.35 3.55 2.2 3.55.9 0 1.7-1.3 1.5-3.15C21.8 4.1 20.4 2.9 18.4 5.4z"
+            fill="#67e8f9"
+            stroke={INK}
+            strokeWidth="1.15"
+          />
+        </>
+      );
+    case "naughty":
+      return (
+        <>
+          <path d="M6.35 7.15 4.55 2.85 8.7 6.7z" fill={PINK} stroke={INK} strokeWidth="1.35" strokeLinejoin="round" />
+          <path d="M17.65 7.15 19.45 2.85 15.3 6.7z" fill={PINK} stroke={INK} strokeWidth="1.35" strokeLinejoin="round" />
+          <path d="M7.1 12c1.2-1.5 3.15-1.5 4.35 0" {...line} />
+          <circle cx="15" cy="11.85" r="1.45" fill={INK} />
+          <Blush />
+          <path d="M8.35 16.7c2.35 1.25 5.55 1.15 7.55-.7" {...line} />
+        </>
+      );
     default:
       return null;
   }
 }
+
+const FACELESS = new Set<SmileyId>(["flower", "love", "fire", "peach", "chili", "lips"]);
 
 export function YouNeonSmiley({
   id,
@@ -437,7 +655,7 @@ export function YouNeonSmiley({
       aria-hidden={title ? undefined : true}
       overflow="visible"
     >
-      <Face />
+      {FACELESS.has(id) ? null : <Face />}
       {features(id)}
     </svg>
   );
@@ -448,7 +666,7 @@ export function ChatSmileyText({ text, className }: { text: string; className?: 
   const onlySmileys = parts.every(
     (part) => part.type === "smiley" || (part.type === "text" && !part.value.trim())
   );
-  const size = onlySmileys ? 24 : 20;
+  const size = onlySmileys ? 40 : 22;
 
   return (
     <p className={cn("yn-chat-smiley-text break-words whitespace-pre-wrap", onlySmileys && "flex flex-wrap items-center gap-1", className)}>
@@ -468,11 +686,28 @@ export function YouNeonSmileyPicker({
 }: {
   onSelect: (id: SmileyId) => void;
 }) {
+  const [tab, setTab] = useState<"sweet" | "flirty">("sweet");
+  const ids = tab === "sweet" ? SWEET_SMILEYS : FLIRTY_SMILEYS;
   return (
     <div className="yn-smiley-picker" data-testid="chat-smiley-picker">
-      <p className="yn-smiley-picker-title">YouNeon</p>
+      <div className="yn-smiley-tabs">
+        <button
+          type="button"
+          className={`yn-smiley-tab ${tab === "sweet" ? "is-on" : ""}`}
+          onClick={() => setTab("sweet")}
+        >
+          Sweet
+        </button>
+        <button
+          type="button"
+          className={`yn-smiley-tab ${tab === "flirty" ? "is-on" : ""}`}
+          onClick={() => setTab("flirty")}
+        >
+          Flirty
+        </button>
+      </div>
       <div className="yn-smiley-grid">
-        {SMILEY_IDS.map((id) => (
+        {ids.map((id) => (
           <button
             key={id}
             type="button"

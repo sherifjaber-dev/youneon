@@ -388,10 +388,10 @@ export function ChatScreen({
                       />
                     )}
                     <div
-                      className={`max-w-[78%] px-4 py-2.5 text-[16px] leading-[1.4] ${
+                      className={`yn-chat-bubble max-w-[78%] px-3.5 py-2.5 ${
                         mine
-                          ? "yn-chat-bubble-out rounded-[18px] rounded-br-md"
-                          : "yn-chat-bubble-in rounded-[18px] rounded-bl-md"
+                          ? "yn-chat-bubble-out"
+                          : "yn-chat-bubble-in"
                       }`}
                     >
                       {msg.imageBase64 && (
@@ -494,7 +494,7 @@ export function ChatScreen({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Type a message"
+                placeholder="Say something…"
                 className="yn-chat-field py-[11px] text-[16px] placeholder:text-[#8b8098] focus:outline-none"
                 data-testid="chat-input"
               />
