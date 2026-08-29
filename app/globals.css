@@ -5255,3 +5255,109 @@ html.youneon-signed-in .yn-pe-badge {
 .yn-pe-interests input::placeholder {
   color: #6b6274;
 }
+
+.yn-incoming {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px calc(32px + env(safe-area-inset-bottom));
+  background: #070010;
+  color: #fff;
+  text-align: center;
+}
+
+.yn-incoming-glow {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 28%, rgba(194, 24, 117, 0.4), transparent 62%),
+    radial-gradient(ellipse 50% 36% at 50% 80%, rgba(124, 58, 237, 0.22), transparent 58%);
+}
+
+.yn-incoming-kicker {
+  position: relative;
+  margin: 0 0 22px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e879f9;
+}
+
+.yn-incoming-avatar {
+  position: relative;
+  box-shadow:
+    0 0 0 3px #e879f9,
+    0 0 28px rgba(194, 24, 117, 0.7);
+  animation: yn-incoming-pulse 1.6s ease-in-out infinite;
+}
+
+.yn-incoming-name {
+  position: relative;
+  margin: 22px 0 6px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.yn-incoming-sub {
+  position: relative;
+  margin: 0 0 40px;
+  font-size: 16px;
+  color: #c4b5d4;
+}
+
+.yn-incoming-actions {
+  position: relative;
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  justify-content: center;
+}
+
+.yn-incoming-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 92px;
+  background: none;
+  border: 0;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.yn-incoming-btn svg {
+  width: 64px;
+  height: 64px;
+  padding: 18px;
+  border-radius: 999px;
+}
+
+.yn-incoming-btn.is-decline svg {
+  background: #be123c;
+  box-shadow: 0 0 18px rgba(190, 18, 60, 0.55);
+}
+
+.yn-incoming-btn.is-accept svg {
+  background: #16a34a;
+  box-shadow: 0 0 22px rgba(22, 163, 74, 0.55);
+}
+
+@keyframes yn-incoming-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .yn-incoming-avatar {
+    animation: none;
+  }
+}
+

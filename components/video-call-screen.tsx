@@ -13,6 +13,15 @@ import {
   type MatchFilters,
   type QueueProfile,
 } from "@/lib/match-queue";
+import {
+  placeDirectCall,
+  setDirectCallStatus,
+  startCallRingtone,
+  stopCallRingtone,
+  subscribeDirectCall,
+  DIRECT_CALL_RING_MS,
+  type DirectCallInvite,
+} from "@/lib/direct-call";
 import { isRealPiUsername } from "@/lib/real-pi-user";
 import { blockUserForMe, readLocalBackgroundPlay, readLocalHideGender } from "@/lib/user-settings";
 import { playGiftSound } from "@/lib/gift-sounds";
@@ -73,6 +82,8 @@ interface VideoCallScreenProps {
   matchMode?: "random" | "direct";
   filters?: MatchFilters;
   roomKey?: string;
+  directRole?: "caller" | "callee";
+  callId?: string;
 }
 
 type FacingMode = "user" | "environment";
@@ -377,6 +388,8 @@ function VideoCallScreen({
   matchMode = "random",
   filters,
   roomKey,
+  directRole = "caller",
+  callId,
 }: VideoCallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const waitCamRef = useRef<HTMLVideoElement>(null);
@@ -395,6 +408,8 @@ function VideoCallScreen({
   const sessionStartedRef = useRef(Date.now());
   const hadRemoteRef = useRef(false);
   const partnerRef = useRef<PartnerProfile | null>(partnerProfile || (partnerName ? { name: partnerName } : null));
+  const directInviteRef = useRef<DirectCallInvite | null>(null);
+  const stopRingRef = useRef<(() => void) | null>(null);
   const matchOptsRef = useRef({
     currentUserId,
     currentUserName,
@@ -404,6 +419,8 @@ function VideoCallScreen({
     filters,
     roomKey,
     partnerProfile,
+    directRole,
+    callId,
   });
   matchOptsRef.current = {
     currentUserId,
@@ -414,6 +431,8 @@ function VideoCallScreen({
     filters,
     roomKey,
     partnerProfile,
+    directRole,
+    callId,
   };
 
   const [permission, setPermission] = useState<PermissionState>("checking");
@@ -710,6 +729,13 @@ function VideoCallScreen({
     });
     if (remoteCount > 0) {
       hadRemoteRef.current = true;
+      stopRingRef.current?.();
+      stopRingRef.current = null;
+      const invite = directInviteRef.current;
+      if (invite && invite.status === "ringing") {
+        directInviteRef.current = { ...invite, status: "accepted" };
+        void setDirectCallStatus(invite, "accepted");
+      }
       setCallStatus((s) => (s === "joined" ? s : "joined"));
     } else if (meetingJoinedRef.current) {
       setCallStatus((s) => (s === "waiting" ? s : "waiting"));
@@ -726,6 +752,7 @@ function VideoCallScreen({
     if (permission !== "granted") return;
     let cancelled = false;
     let unsubMatch: (() => void) | undefined;
+    let unsubDirect: (() => void) | undefined;
     const opts = matchOptsRef.current;
     const userId = opts.currentUserId || "";
     sessionStartedRef.current = Date.now();
@@ -764,6 +791,51 @@ function VideoCallScreen({
           setCallStatus("joining");
           const room = await createOrGetNamedRoom(opts.roomKey || `direct-${userId}`);
           url = room.url;
+          const calleeId = opts.partnerProfile?.userId || "";
+          if (opts.directRole !== "callee" && calleeId && userId && calleeId !== userId) {
+            try {
+              const id = await placeDirectCall({
+                callerId: userId,
+                callerName: opts.currentUserName || "Someone",
+                callerPhoto: opts.currentUserProfile?.avatar,
+                calleeId,
+                calleeName: opts.partnerProfile?.name,
+                roomKey: opts.roomKey || `direct-${userId}`,
+                conversationId: opts.roomKey,
+              });
+              const invite: DirectCallInvite = {
+                id,
+                callerId: userId,
+                callerName: opts.currentUserName || "Someone",
+                calleeId,
+                roomKey: opts.roomKey || `direct-${userId}`,
+                status: "ringing",
+                createdAtMs: Date.now(),
+              };
+              directInviteRef.current = invite;
+              stopRingRef.current = startCallRingtone(false);
+              unsubDirect = subscribeDirectCall(userId, id, (live) => {
+                if (!live || cancelled) return;
+                if (live.status === "declined" || live.status === "missed") {
+                  stopRingRef.current?.();
+                  stopRingRef.current = null;
+                  setErrorMsg(
+                    live.status === "declined"
+                      ? `${opts.partnerProfile?.name || "They"} declined the call`
+                      : "No answer"
+                  );
+                  setPermission("error");
+                }
+              });
+              window.setTimeout(() => {
+                const live = directInviteRef.current;
+                if (!live || live.id !== id || live.status !== "ringing" || cancelled) return;
+                void setDirectCallStatus(live, "missed");
+              }, DIRECT_CALL_RING_MS);
+            } catch (ringErr) {
+              console.warn("[direct-call] place failed", ringErr);
+            }
+          }
         } else {
           const match = await enqueueOrMatch({
             userId,
@@ -930,6 +1002,14 @@ function VideoCallScreen({
     return () => {
       cancelled = true;
       unsubMatch?.();
+      unsubDirect?.();
+      stopRingRef.current?.();
+      stopRingRef.current = null;
+      const invite = directInviteRef.current;
+      if (invite && invite.status === "ringing") {
+        void setDirectCallStatus(invite, "canceled");
+        directInviteRef.current = { ...invite, status: "canceled" };
+      }
       if (opts.matchMode === "random") leaveMatchQueue(userId).catch(() => {});
       setDisplayedMessage(null); setChatHistory([]); setGiftBurst(null);
       setShowChatInput(false); setShowHistory(false); setShowGiftPicker(false);
@@ -1157,6 +1237,13 @@ function VideoCallScreen({
 
   const handleEnd = async () => {
     const userId = currentUserId || "anon";
+    stopRingRef.current?.();
+    stopRingRef.current = null;
+    const invite = directInviteRef.current;
+    if (invite && (invite.status === "ringing" || invite.status === "accepted")) {
+      void setDirectCallStatus(invite, invite.status === "ringing" ? "canceled" : "canceled");
+      directInviteRef.current = { ...invite, status: "canceled" };
+    }
     if (matchMode === "random") await leaveMatchQueue(userId).catch(() => {});
     if (callRef.current) {
       console.log("[cam] meeting left");
@@ -1495,8 +1582,12 @@ function VideoCallScreen({
       {callStatus === "preview" && (
         <div className="yn-wait-screen">
           <WaitingMatchPanel
-            title="Finding someone"
-            subtitle="Looking for someone in the same room"
+            title={matchMode === "direct" ? `Calling ${partnerProfile?.name || "them"}` : "Finding someone"}
+            subtitle={
+              matchMode === "direct"
+                ? "Ringing their phone…"
+                : "Looking for someone in the same room"
+            }
             videoRef={waitCamRef}
             camOn={camOn}
           />
@@ -1505,9 +1596,15 @@ function VideoCallScreen({
       {callStatus === "waiting" && (
         <div className={`yn-wait-screen${showGiftPicker ? " is-gift-hidden" : ""}`}>
           <WaitingMatchPanel
-            title="Finding someone"
-            subtitle={isPremium ? "You skip ahead in the queue." : "Stay here — the next person joins this room."}
-            premium={isPremium}
+            title={matchMode === "direct" ? `Calling ${currentPartner.name}` : "Finding someone"}
+            subtitle={
+              matchMode === "direct"
+                ? "Waiting for them to answer"
+                : isPremium
+                  ? "You skip ahead in the queue."
+                  : "Stay here — the next person joins this room."
+            }
+            premium={matchMode === "direct" ? false : isPremium}
             videoRef={waitCamRef}
             camOn={camOn}
           />
@@ -1516,8 +1613,12 @@ function VideoCallScreen({
       {callStatus === "joining" && (
         <div className="yn-wait-screen">
           <WaitingMatchPanel
-            title="Connecting"
-            subtitle="Opening your camera and microphone."
+            title={matchMode === "direct" ? `Calling ${partnerProfile?.name || "them"}` : "Connecting"}
+            subtitle={
+              matchMode === "direct"
+                ? "Ringing… they get a call with sound."
+                : "Opening your camera and microphone."
+            }
             videoRef={waitCamRef}
             camOn={camOn}
           />

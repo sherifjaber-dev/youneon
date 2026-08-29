@@ -72,6 +72,12 @@ import { isRealPiUsername } from "@/lib/real-pi-user";
 import { clearSeededLocalCaches, purgeSeededSocialForUser } from "@/lib/purge-seeded-social";
 import { isDemoLunaId } from "@/lib/demo-luna-profile";
 import { ProfilePreviewSheet } from "@/components/call-remote-profile";
+import { IncomingCallScreen } from "@/components/incoming-call-screen";
+import {
+  setDirectCallStatus,
+  subscribeIncomingDirectCalls,
+  type DirectCallInvite,
+} from "@/lib/direct-call";
 
 type VideoSession = {
   mode: "random" | "direct";
@@ -83,6 +89,8 @@ type VideoSession = {
     avatar?: string;
     countryFlag?: string;
   };
+  role?: "caller" | "callee";
+  callId?: string;
 };
 
 type YouNeonUser = {
@@ -203,6 +211,7 @@ export function YouNeonApp() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileOverlayId, setProfileOverlayId] = useState<string | null>(null);
   const [videoSession, setVideoSession] = useState<VideoSession | null>(null);
+  const [incomingCall, setIncomingCall] = useState<DirectCallInvite | null>(null);
   const [neonBalance, setNeonBalance] = useState(0);
   const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -221,6 +230,15 @@ export function YouNeonApp() {
   const signedIn = isAuthenticated || bootAuthOk;
   const showApp = signedIn;
   userIdRef.current = currentUser?.piUsername || user?.username || "";
+
+  useEffect(() => {
+    const uid = currentUser?.id || currentUser?.piUsername;
+    if (!uid) {
+      setIncomingCall(null);
+      return;
+    }
+    return subscribeIncomingDirectCalls(uid, setIncomingCall);
+  }, [currentUser?.id, currentUser?.piUsername]);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -736,6 +754,41 @@ export function YouNeonApp() {
     setVideoSession(null);
   };
 
+  const acceptIncomingCall = () => {
+    if (!incomingCall) return;
+    const invite = incomingCall;
+    setIncomingCall(null);
+    void setDirectCallStatus(invite, "accepted");
+    setActiveChat(null);
+    setVideoSession({
+      mode: "direct",
+      role: "callee",
+      callId: invite.id,
+      roomKey: invite.roomKey,
+      partner: {
+        userId: invite.callerId,
+        name: invite.callerName,
+        avatar: invite.callerPhoto,
+      },
+    });
+  };
+
+  const declineIncomingCall = () => {
+    if (!incomingCall) return;
+    const invite = incomingCall;
+    setIncomingCall(null);
+    void setDirectCallStatus(invite, "declined");
+  };
+
+  const incomingOverlay =
+    incomingCall && !videoSession ? (
+      <IncomingCallScreen
+        invite={incomingCall}
+        onAccept={acceptIncomingCall}
+        onDecline={declineIncomingCall}
+      />
+    ) : null;
+
   const lite = typeof window !== "undefined" ? readLiteSession() : null;
   const signedUsername = user?.username || lite?.username || user?.uid || lite?.uid || "";
   const displayUser =
@@ -804,6 +857,7 @@ export function YouNeonApp() {
   if (activeChat && displayUser) {
     return (
       <>
+        {incomingOverlay}
         <ChatScreen
           conversationId={activeChat.conversationId}
           currentUserId={currentUserId}
@@ -819,6 +873,7 @@ export function YouNeonApp() {
             setActiveChat(null);
             setVideoSession({
               mode: "direct",
+              role: "caller",
               roomKey: chat?.conversationId,
               partner: chat?.otherUser
                 ? {
@@ -864,12 +919,15 @@ export function YouNeonApp() {
         filters={videoSession.filters}
         roomKey={videoSession.roomKey}
         partnerProfile={videoSession.partner}
+        directRole={videoSession.role}
+        callId={videoSession.callId}
       />
     );
   }
 
   return (
     <div className={`min-h-dvh ${activeTab === "discover" || activeTab === "lounge" || activeTab === "messages" || activeTab === "history" ? "bg-[#05050d] text-white" : "bg-yn-bg text-yn-text"}`}>
+      {incomingOverlay}
       {sessionUnverified && !chromeHidden && (
         <div className="fixed left-0 right-0 top-[calc(var(--yn-topbar-inner)+env(safe-area-inset-top))] z-40 bg-amber-100/95 px-3 py-1 text-center text-[11px] text-amber-950">
           Signed in. Pi account verification is still pending.
