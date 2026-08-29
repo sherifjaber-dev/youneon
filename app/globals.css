@@ -1861,6 +1861,15 @@ html.yn-profile-open {
   opacity: 0.4;
 }
 
+.yn-chat-composer.is-waiting .yn-chat-bar {
+  opacity: 0.72;
+}
+
+.yn-chat-composer.is-waiting .yn-chat-icon,
+.yn-chat-composer.is-waiting .yn-chat-field {
+  pointer-events: none;
+}
+
 .yn-chat-row {
   display: flex;
   align-items: flex-end;

@@ -32,6 +32,7 @@ import { playGiftSound } from "@/lib/gift-sounds";
 import { CHAT_UNLOCK_NEON } from "@/lib/product-config";
 
 const UNLOCK_COST = CHAT_UNLOCK_NEON;
+const MAX_BEFORE_REPLY = 3;
 
 interface ChatScreenProps {
   conversationId: string;
@@ -74,6 +75,7 @@ export function ChatScreen({
   const [conv, setConv] = useState<any | null>(null);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [showNoReplyToast, setShowNoReplyToast] = useState(false);
+  const [showWaitReplyToast, setShowWaitReplyToast] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -109,6 +111,12 @@ export function ChatScreen({
     () => messages.some((m) => m.senderId === otherUser.id),
     [messages, otherUser.id]
   );
+  const mySentCount = useMemo(
+    () => messages.filter((m) => m.senderId === currentUserId).length,
+    [messages, currentUserId]
+  );
+  const remainingBeforeReply = otherHasReplied ? Infinity : Math.max(0, MAX_BEFORE_REPLY - mySentCount);
+  const waitingForReply = isUnlocked && !otherHasReplied && remainingBeforeReply <= 0;
   const missingNeon = Math.max(0, UNLOCK_COST - neonBalance);
   const callCost = useMemo(() => getCallCost(conv, currentUserId), [conv, currentUserId]);
   // Can other's profile picture be shown? Only if I uploaded my own photo.
@@ -131,8 +139,16 @@ export function ChatScreen({
     setUnlocking(false);
   };
 
+  const blockIfWaiting = () => {
+    if (!waitingForReply) return false;
+    setShowWaitReplyToast(true);
+    window.setTimeout(() => setShowWaitReplyToast(false), 2800);
+    return true;
+  };
+
   const sendChatText = async (text: string) => {
     if (!isUnlocked) { setShowInsufficientModal(neonBalance < UNLOCK_COST); return; }
+    if (blockIfWaiting()) return;
     const body = text.trim();
     if (!body || sending) return;
     setInput("");
@@ -154,6 +170,7 @@ export function ChatScreen({
 
   const handleSmiley = (id: StickerId) => {
     if (!isUnlocked) { setShowInsufficientModal(neonBalance < UNLOCK_COST); return; }
+    if (blockIfWaiting()) return;
     if (sending) return;
     setShowEmoji(false);
     setSending(true);
@@ -167,6 +184,7 @@ export function ChatScreen({
 
   const handleReaction = async (gift: CallGift) => {
     if (!isUnlocked) { setShowInsufficientModal(neonBalance < UNLOCK_COST); return; }
+    if (blockIfWaiting()) return;
     if (sending) return;
     setShowReactions(false);
     setSending(true);
@@ -211,6 +229,10 @@ export function ChatScreen({
 
   const handleImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isUnlocked) { setShowInsufficientModal(neonBalance < UNLOCK_COST); return; }
+    if (blockIfWaiting()) {
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 8 * 1024 * 1024) {
@@ -367,7 +389,9 @@ export function ChatScreen({
             )}
             {!otherHasReplied && (
               <div className="yn-chat-banner yn-chat-banner-wait rounded-2xl p-3 text-center text-xs" data-testid="awaiting-reply-banner">
-                Wait for {otherUser.name} to reply — then you can start a video call
+                {waitingForReply
+                  ? `You can't write more until ${otherUser.name} replies`
+                  : `You can send ${remainingBeforeReply} more message${remainingBeforeReply === 1 ? "" : "s"} until ${otherUser.name} replies`}
               </div>
             )}
             {otherHasReplied && callCost > 0 && (
@@ -446,7 +470,7 @@ export function ChatScreen({
             <div ref={endRef} />
           </div>
 
-          {showEmoji && (
+          {showEmoji && !waitingForReply && (
             <>
               <button
                 type="button"
@@ -458,7 +482,7 @@ export function ChatScreen({
             </>
           )}
 
-          {showReactions && (
+          {showReactions && !waitingForReply && (
             <>
               <button
                 type="button"
@@ -470,13 +494,15 @@ export function ChatScreen({
             </>
           )}
 
-          <div className="yn-chat-composer fixed bottom-0 left-0 right-0 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] flex items-center gap-2 z-40">
+          <div className={`yn-chat-composer fixed bottom-0 left-0 right-0 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] flex items-center gap-2 z-40${waitingForReply ? " is-waiting" : ""}`}>
             <div className="yn-chat-bar">
               <button
                 onClick={() => {
+                  if (blockIfWaiting()) return;
                   setShowReactions(false);
                   setShowEmoji((v) => !v);
                 }}
+                disabled={waitingForReply}
                 className={`yn-chat-icon ${showEmoji ? "is-on" : ""}`}
                 data-testid="chat-emoji-btn"
               >
@@ -484,9 +510,11 @@ export function ChatScreen({
               </button>
               <button
                 onClick={() => {
+                  if (blockIfWaiting()) return;
                   setShowEmoji(false);
                   setShowReactions((v) => !v);
                 }}
+                disabled={waitingForReply}
                 className={`yn-chat-icon ${showReactions ? "is-on" : ""}`}
                 data-testid="chat-reaction-btn"
                 aria-label="Send a reaction"
@@ -494,7 +522,11 @@ export function ChatScreen({
                 <Sparkles size={20} />
               </button>
               <button
-                onClick={() => fileRef.current?.click()}
+                onClick={() => {
+                  if (blockIfWaiting()) return;
+                  fileRef.current?.click();
+                }}
+                disabled={waitingForReply}
                 className="yn-chat-icon"
                 data-testid="chat-image-btn"
               >
@@ -512,14 +544,15 @@ export function ChatScreen({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="Say something…"
+                placeholder={waitingForReply ? `Wait for ${otherUser.name} to reply` : "Say something…"}
+                disabled={waitingForReply}
                 className="yn-chat-field py-[11px] text-[16px] placeholder:text-[#8b8098] focus:outline-none"
                 data-testid="chat-input"
               />
             </div>
             <button
               onClick={handleSend}
-              disabled={!input.trim() || sending}
+              disabled={!input.trim() || sending || waitingForReply}
               className="yn-chat-send"
               data-testid="chat-send-btn"
             >
@@ -533,6 +566,11 @@ export function ChatScreen({
       {showNoReplyToast && (
         <div className="yn-chat-card fixed bottom-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl px-5 py-3 text-sm max-w-xs text-center" data-testid="no-reply-toast">
           You can start a video call after {otherUser.name} replies to your message
+        </div>
+      )}
+      {showWaitReplyToast && (
+        <div className="yn-chat-card fixed bottom-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl px-5 py-3 text-sm max-w-xs text-center" data-testid="wait-reply-toast">
+          You can't write more until {otherUser.name} replies
         </div>
       )}
 
