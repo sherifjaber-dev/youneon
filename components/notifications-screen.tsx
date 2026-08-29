@@ -224,11 +224,15 @@ export function NotificationsScreen({
               <ChevronLeft size={28} strokeWidth={2.2} />
             </button>
             <div className="min-w-0 flex-1 pt-1.5 pr-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/85">
                 {banner.eyebrow}
               </p>
-              <h1 className="mt-1 text-[20px] font-bold leading-snug tracking-tight">{banner.title}</h1>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-white/80">{banner.body}</p>
+              <h1 className="mt-1 text-[20px] font-bold leading-snug tracking-tight text-white [text-shadow:0_0_18px_rgba(255,255,255,0.35)]">
+                {banner.title}
+              </h1>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-white/90">
+                {banner.body}
+              </p>
               <button
                 type="button"
                 onClick={banner.cta === "See more" ? openShop : openSubscribe}
