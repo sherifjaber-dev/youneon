@@ -11,6 +11,7 @@ import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
 import { useOnlineCount } from "@/hooks/use-online-count";
+import { CallSafetyChip } from "@/components/call-safety-chip";
 import { isRealPiUsername } from "@/lib/real-pi-user";
 import { COUNTRY_FILTER_NEON, GENDER_FILTER_NEON, GROWTH_MODE } from "@/lib/product-config";
 
@@ -227,6 +228,7 @@ export function DiscoverScreen({
           <span className="yn-start-caption-world">{waitHint}</span>
           <span aria-hidden>•</span>
         </p>
+        <CallSafetyChip className="mx-auto mt-2" />
         <button
           type="button"
           onClick={() => onOpenSubscribe?.()}
