@@ -8,7 +8,7 @@ type ComingSoonSheetProps = {
 
 export function ComingSoonSheet({
   open,
-  title = "Kommer snart",
+  title = "Coming soon",
   onClose,
 }: ComingSoonSheetProps) {
   if (!open) return null;
