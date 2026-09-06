@@ -30,10 +30,6 @@ export function NeonShopModal({
   isOpen,
   onClose,
 }: NeonShopModalProps) {
-  if (GROWTH_MODE) {
-    return <ComingSoonSheet open={isOpen} onClose={onClose} />;
-  }
-
   const [purchasingId, setPurchasingId] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
@@ -56,6 +52,10 @@ export function NeonShopModal({
     window.addEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
     return () => window.removeEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
   }, [isOpen]);
+
+  if (GROWTH_MODE) {
+    return <ComingSoonSheet open={isOpen} onClose={onClose} />;
+  }
 
   const handlePurchase = async (event: React.MouseEvent, packageId: string) => {
     event.preventDefault();
