@@ -10,8 +10,9 @@ import { PremiumGem } from "@/components/premium-gem";
 import type { Announcement } from "@/lib/announcements";
 import { COUNTRY_OPTIONS } from "@/lib/countries";
 import { usePrivacyConsentLive } from "@/hooks/use-user-settings";
+import { useOnlineCount } from "@/hooks/use-online-count";
 import { isRealPiUsername } from "@/lib/real-pi-user";
-import { COUNTRY_FILTER_NEON, GENDER_FILTER_NEON } from "@/lib/product-config";
+import { COUNTRY_FILTER_NEON, GENDER_FILTER_NEON, GROWTH_MODE } from "@/lib/product-config";
 
 interface DiscoverScreenProps {
   onStartVideo: (filters: { gender: "women" | "men" | "both"; country: string }) => void;
@@ -35,6 +36,7 @@ export function DiscoverScreen({
   announcements = [],
 }: DiscoverScreenProps) {
   const privacy = usePrivacyConsentLive();
+  const { count: onlineCount, hint: waitHint } = useOnlineCount();
   const [selectedGender, setSelectedGender] = useState<"women" | "men" | "both">("both");
   const [selectedCountry, setSelectedCountry] = useState("Worldwide");
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -56,7 +58,7 @@ export function DiscoverScreen({
 
   const genderCost = genderOptions.find((g) => g.value === selectedGender)?.cost || 0;
   const countryCost = selectedCountry === "Worldwide" ? 0 : COUNTRY_FILTER_NEON;
-  const totalCost = genderCost + countryCost;
+  const totalCost = GROWTH_MODE ? 0 : genderCost + countryCost;
   const startPriceLabel = totalCost === 0 ? "Free" : `${totalCost} Neon`;
   const adItems = announcements.filter((item) => item.active && item.type === "ad");
   const hasEnoughNeon = neonBalance >= totalCost;
@@ -85,8 +87,7 @@ export function DiscoverScreen({
       setShowInsufficientModal(true);
       return;
     }
-    const newBalance = neonBalance - totalCost;
-    onUpdateBalance(newBalance);
+    if (totalCost > 0) onUpdateBalance(neonBalance - totalCost);
     onStartVideo({ gender: selectedGender, country: selectedCountry });
   };
 
@@ -100,6 +101,15 @@ export function DiscoverScreen({
             draggable={false}
             className="yn-live-banner-img"
           />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#080412] via-[#080412]/70 to-transparent px-3.5 pb-3 pt-10">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f0abfc]">Live video</p>
+            <p className="mt-0.5 text-[17px] font-semibold leading-tight text-white">Real people. No stock models.</p>
+            <p className="mt-1 text-[13px] text-[#d4c4e8]">
+              {onlineCount > 0
+                ? `${onlineCount} Pioneer${onlineCount === 1 ? "" : "s"} online now`
+                : "Be first in the room — matching is free"}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -157,7 +167,7 @@ export function DiscoverScreen({
               </span>
             </span>
             <div className="flex items-center gap-2">
-              {selectedCountry === "Worldwide" ? (
+              {selectedCountry === "Worldwide" || GROWTH_MODE ? (
                 <span className="yn-filter-price-free">Free</span>
               ) : (
                 <span className="yn-filter-price-gold rounded-full border border-[#f5d76e]/40 bg-[#f5d76e]/10 px-2 py-0.5">
@@ -187,11 +197,7 @@ export function DiscoverScreen({
                   <span>
                     {country === "Worldwide" ? country : <CountryLabel country={country} size={16} />}
                   </span>
-                  {country === "Worldwide" ? (
-                    <span className="yn-filter-price-free">Free</span>
-                  ) : (
-                    <span className="yn-filter-price-gold">{COUNTRY_FILTER_NEON} Neon</span>
-                  )}
+                  <span className="yn-filter-price-free">Free</span>
                 </div>
               ))}
             </div>
@@ -218,18 +224,7 @@ export function DiscoverScreen({
         </div>
         <p className="yn-start-caption">
           <span aria-hidden>•</span>
-          {totalCost === 0 ? (
-            <>
-              <span className="yn-start-caption-world">Matching worldwide</span>
-              <span className="yn-start-caption-free">Free</span>
-            </>
-          ) : (
-            <>
-              <span className="yn-start-caption-world">Priority matching</span>
-              <span>·</span>
-              <span className="yn-start-caption-price">{totalCost} Neon</span>
-            </>
-          )}
+          <span className="yn-start-caption-world">{waitHint}</span>
           <span aria-hidden>•</span>
         </p>
         <button
@@ -237,17 +232,17 @@ export function DiscoverScreen({
           onClick={() => onOpenSubscribe?.()}
           className="yn-premium-card mt-2.5 w-full flex-shrink-0 text-left"
           data-testid="sponsored-premium-card"
-          aria-label="See Premium"
+          aria-label="Coming soon"
         >
           <div className="min-w-0 flex-1 pr-2">
             <p className="yn-premium-kicker">
               <Crown size={12} className="yn-premium-kicker-icon" />
-              Sponsored · YouNeon Premium
+              Coming soon
             </p>
-            <p className="yn-premium-headline">Unlock Premium Features,</p>
-            <p className="yn-premium-sub">Better matches, HD quality, and no waiting.</p>
+            <p className="yn-premium-headline">Premium can wait.</p>
+            <p className="yn-premium-sub">Matching is free while we fill the room.</p>
             <span className="yn-see-premium mt-2.5 inline-flex items-center">
-              See Premium
+              Coming soon
               <ChevronRight size={14} strokeWidth={2.6} className="text-[#1a1408]" />
             </span>
           </div>
@@ -255,7 +250,7 @@ export function DiscoverScreen({
         </button>
       </div>
 
-      {!isPremium && privacy.advertising && (
+      {!GROWTH_MODE && !isPremium && privacy.advertising && (
         <AdInterstitial ads={adItems} onSubscribe={onOpenSubscribe} />
       )}
 
@@ -270,48 +265,24 @@ export function DiscoverScreen({
             data-testid="insufficient-neon-modal"
           >
             <div className="mb-4 text-center">
-              <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#f5d76e]/40 bg-[#f5d76e]/10">
-                <span className="text-xl text-[#f5d76e]">◆</span>
-              </div>
               <h3 className="mb-3 text-lg font-semibold">Not enough Neon</h3>
-              <div className="mb-3 rounded-xl border border-white/8 bg-black/25 p-3">
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-[#b8a9c9]">You need</span>
-                  <span className="font-semibold text-[#f5d76e]">◆ {totalCost} Neon</span>
-                </div>
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-[#b8a9c9]">You have</span>
-                  <span className="font-semibold text-white">◆ {neonBalance} Neon</span>
-                </div>
-                <div className="my-2 border-t border-white/8" />
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-[#b8a9c9]">Missing</span>
-                  <span className="font-semibold text-pink-400">◆ {missingNeon} Neon</span>
-                </div>
-              </div>
               <p className="text-sm text-[#b8a9c9]">Add Neon to start this chat.</p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowInsufficientModal(false)}
-                className="h-11 flex-1 rounded-xl border border-white/12 text-[15px] font-semibold text-[#c4b5d8] transition hover:bg-white/[0.04]"
-                data-testid="cancel-insufficient-btn"
+                className="h-11 flex-1 rounded-xl border border-white/12 text-[15px] font-semibold text-[#c4b5d8]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => {
                   setShowInsufficientModal(false);
-                  if (onOpenNeonShop) {
-                    onOpenNeonShop();
-                  } else {
-                    alert("Neon Shop is not available yet.");
-                  }
+                  onOpenNeonShop?.();
                 }}
-                className="h-11 flex-1 rounded-xl bg-gradient-to-r from-[var(--pink)] to-[#3b82ff] text-[15px] font-semibold text-white shadow-[0_4px_14px_var(--pink-soft)]"
-                data-testid="buy-neon-btn"
+                className="h-11 flex-1 rounded-xl bg-gradient-to-r from-[var(--pink)] to-[#3b82ff] text-[15px] font-semibold text-white"
               >
-                ◆ Buy Neon
+                Coming soon
               </button>
             </div>
           </div>
