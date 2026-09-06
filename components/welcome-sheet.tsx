@@ -1,6 +1,6 @@
 "use client";
 
-const WELCOME_KEY = "youneon_welcome_v2";
+const WELCOME_KEY = "youneon_welcome_v3";
 
 export function hasSeenWelcome() {
   if (typeof window === "undefined") return true;
@@ -52,7 +52,7 @@ export function WelcomeSheet({ open, onClose }: WelcomeSheetProps) {
           <li className="rounded-2xl border border-white/10 bg-white/5 px-3.5 py-3">
             <span className="font-semibold text-white">Video Chat</span>
             <span className="mt-0.5 block text-[#c4b5d6]">
-              Start a random live call. Skip if it’s not a match. A safety filter can blur nudity, weapons, or drugs on your screen.
+              Start a free random live call. Skip if it’s not a match. After a call you can keep talking in Messages for 24 hours. A safety filter can blur nudity, weapons, or drugs on your screen.
             </span>
           </li>
           <li className="rounded-2xl border border-white/10 bg-white/5 px-3.5 py-3">
@@ -64,7 +64,7 @@ export function WelcomeSheet({ open, onClose }: WelcomeSheetProps) {
           <li className="rounded-2xl border border-white/10 bg-white/5 px-3.5 py-3">
             <span className="font-semibold text-white">Stay safe</span>
             <span className="mt-0.5 block text-[#c4b5d6]">
-              Fill in your profile (18+). Never send Pi or personal info to a stranger. Use Skip, Block, or the shield if something feels wrong.
+              Fill in your profile (18+). Never send Pi, a wallet passphrase, or personal info to a stranger. YouNeon will never ask for your passphrase. Use Skip, Block, or the shield if something feels wrong. Recording others is not allowed.
             </span>
           </li>
           <li className="rounded-2xl border border-white/10 bg-white/5 px-3.5 py-3">

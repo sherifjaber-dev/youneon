@@ -9,22 +9,22 @@ export const SUBSCRIPTION_PLAN = {
 
 export const PREMIUM_SUBSCRIBE_NEON = 2000;
 
-export const GENDER_FILTER_NEON = 25;
-export const COUNTRY_FILTER_NEON = 25;
+/** Early-network mode: fill the room before charging for access. */
+export const GROWTH_MODE = true;
+
+export const GENDER_FILTER_NEON = 0;
+export const COUNTRY_FILTER_NEON = 0;
 export const CHAT_UNLOCK_NEON = 50;
+export const MATCH_CHAT_FREE_HOURS = 24;
 
 export const PREMIUM_BENEFITS = [
   {
-    title: "Two chat unlocks a day",
-    detail: "Start two new conversations each day. They stay open.",
-  },
-  {
-    title: "Gender and country filters",
-    detail: "Match on your terms, included with membership.",
+    title: "Two extra chat unlocks a day",
+    detail: "Message people you have not video-matched with yet.",
   },
   {
     title: "Priority matching",
-    detail: "Skip ahead in the queue.",
+    detail: "Shorter queue when the room is busy.",
   },
   {
     title: "Ad-free",
@@ -36,7 +36,7 @@ export const PREMIUM_BENEFITS = [
   },
   {
     title: "2,000 Neon included",
-    detail: "Added to your balance on every subscribe or renew.",
+    detail: "For gifts and boosts — not a ticket to enter.",
   },
   {
     title: "Front and rear camera",
