@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { subscribeWithPi } from "@/lib/pi-sdk";
-import { PREMIUM_BENEFITS, PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
+import { GROWTH_MODE, PREMIUM_BENEFITS, PREMIUM_SUBSCRIBE_NEON, SUBSCRIPTION_PLAN } from "@/lib/product-config";
 import { emitPremiumGranted, isPremiumActive } from "@/lib/premium";
 import { hideStaticLoginOverlays } from "@/lib/pi-client-session";
 import { PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
+import { ComingSoonSheet } from "@/components/coming-soon-sheet";
 
 function formatUntil(iso: string): string {
   const date = new Date(iso);
@@ -42,6 +43,10 @@ export function SubscribeModal({
   isPremium = false,
   premiumUntil: premiumUntilProp = null,
 }: SubscribeModalProps) {
+  if (GROWTH_MODE) {
+    return <ComingSoonSheet open={open} onClose={onClose} />;
+  }
+
   const [status, setStatus] = React.useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = React.useState("");
   const [premiumUntil, setPremiumUntil] = React.useState<string | null>(premiumUntilProp);
