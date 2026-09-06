@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Phone, PhoneOff } from "lucide-react";
 import { NeonAvatar } from "@/components/neon-avatar";
+import { CallSafetyChip } from "@/components/call-safety-chip";
 import {
   startCallRingtone,
   stopCallRingtone,
@@ -38,6 +39,7 @@ export function IncomingCallScreen({
       />
       <h1 className="yn-incoming-name">{invite.callerName}</h1>
       <p className="yn-incoming-sub">is calling you</p>
+      <CallSafetyChip className="mx-auto mt-3" />
       <div className="yn-incoming-actions">
         <button type="button" className="yn-incoming-btn is-decline" onClick={onDecline} data-testid="incoming-decline">
           <PhoneOff size={26} strokeWidth={2.2} />
