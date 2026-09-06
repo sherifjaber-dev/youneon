@@ -199,18 +199,23 @@ export function DiscoverScreen({
         </div>
       </div>
 
-      <div className="flex-shrink-0">
-        <button
-          type="button"
-          onClick={handleStart}
-          className="yn-start-cta"
-          data-testid="start-random-chat-btn"
-          aria-label={`Start Random Chat ${startPriceLabel}`}
-        >
-          <Video className="yn-start-cta-icon" strokeWidth={2.15} aria-hidden />
-          Start Random Chat ·{" "}
-          <span className={totalCost > 0 ? "yn-start-cta-price" : undefined}>{startPriceLabel}</span>
-        </button>
+      <div className="yn-start-cta-block flex-shrink-0">
+        <div className="yn-start-cta-wrap">
+          <span className="yn-start-cta-halo" aria-hidden="true" />
+          <span className="yn-start-cta-orbit" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={handleStart}
+            className="yn-start-cta"
+            data-testid="start-random-chat-btn"
+            aria-label={`Start Random Chat ${startPriceLabel}`}
+          >
+            <span className="yn-start-cta-sheen" aria-hidden="true" />
+            <Video className="yn-start-cta-icon" strokeWidth={2.15} aria-hidden />
+            Start Random Chat ·{" "}
+            <span className={totalCost > 0 ? "yn-start-cta-price" : undefined}>{startPriceLabel}</span>
+          </button>
+        </div>
         <p className="yn-start-caption">
           <span aria-hidden>•</span>
           {totalCost === 0 ? (
