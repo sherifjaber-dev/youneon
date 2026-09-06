@@ -43,10 +43,6 @@ export function SubscribeModal({
   isPremium = false,
   premiumUntil: premiumUntilProp = null,
 }: SubscribeModalProps) {
-  if (GROWTH_MODE) {
-    return <ComingSoonSheet open={open} onClose={onClose} />;
-  }
-
   const [status, setStatus] = React.useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = React.useState("");
   const [premiumUntil, setPremiumUntil] = React.useState<string | null>(premiumUntilProp);
@@ -76,6 +72,10 @@ export function SubscribeModal({
     window.addEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
     return () => window.removeEventListener(PURCHASE_FEEDBACK_EVENT, onFeedback);
   }, []);
+
+  if (GROWTH_MODE) {
+    return <ComingSoonSheet open={open} onClose={onClose} />;
+  }
 
   const active = isPremium || isPremiumActive(premiumUntil);
   const busy = status === "loading";
