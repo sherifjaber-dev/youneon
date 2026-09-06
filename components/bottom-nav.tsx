@@ -43,6 +43,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               type="button"
               onClick={() => onTabChange(id)}
               className={cn("yn-nav-slot", active && "is-on")}
+              data-testid={`nav-tab-${id}`}
               aria-current={active ? "page" : undefined}
             >
               <span className="yn-nav-icon">
