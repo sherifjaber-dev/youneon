@@ -21,6 +21,7 @@ const WAIT_WINDOW_MS = 60_000;
 export type MatchFilters = {
   gender: "women" | "men" | "both";
   country: string;
+  language?: string;
 };
 
 export type QueueProfile = {
@@ -30,6 +31,7 @@ export type QueueProfile = {
   age?: number;
   country?: string;
   gender?: string;
+  languages?: string[];
   bio?: string;
   interests?: string[];
 };
@@ -62,6 +64,20 @@ function countryOk(filterCountry: string, peerCountry?: string): boolean {
   return peerCountry.trim().toLowerCase() === filterCountry.trim().toLowerCase();
 }
 
+function languageList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((item) => String(item || "").trim()).filter(Boolean);
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
+}
+
+function languageOk(filterLanguage: string | undefined, peerLanguages?: unknown): boolean {
+  if (!filterLanguage || filterLanguage === "All" || filterLanguage === "Any") return true;
+  const wanted = filterLanguage.trim().toLowerCase();
+  const list = languageList(peerLanguages).map((item) => item.toLowerCase());
+  if (!list.length) return true;
+  return list.includes(wanted);
+}
+
 function isRecent(createdAt: unknown): boolean {
   const ts = createdAt as { toMillis?: () => number; seconds?: number } | null;
   const ms = ts?.toMillis?.() ?? (ts?.seconds ? ts.seconds * 1000 : 0);
@@ -81,6 +97,7 @@ function profileFromQueue(data: Record<string, unknown>, fallbackId: string): Qu
       gender: partner.gender ? String(partner.gender) : undefined,
       bio: partner.bio ? String(partner.bio) : undefined,
       interests: Array.isArray(partner.interests) ? (partner.interests as string[]) : [],
+      languages: languageList(partner.languages),
     };
   }
   return {
@@ -92,6 +109,7 @@ function profileFromQueue(data: Record<string, unknown>, fallbackId: string): Qu
     gender: data.gender ? String(data.gender) : undefined,
     bio: data.bio ? String(data.bio) : undefined,
     interests: Array.isArray(data.interests) ? (data.interests as string[]) : [],
+    languages: languageList(data.languages),
   };
 }
 
@@ -151,9 +169,11 @@ export async function enqueueOrMatch(opts: {
     if (Number.isFinite(peerAge) && peerAge > 0 && peerAge < 18) return;
     if (!genderOk(filters.gender, data.gender as string | undefined)) return;
     if (!countryOk(filters.country, data.country as string | undefined)) return;
+    if (!languageOk(filters.language, data.languages)) return;
     const theirFilters = (data.filters as MatchFilters) || { gender: "both", country: "Worldwide" };
     if (!genderOk(theirFilters.gender || "both", profile.gender)) return;
     if (!countryOk(theirFilters.country || "Worldwide", profile.country)) return;
+    if (!languageOk(theirFilters.language, profile.languages)) return;
     if (!data.roomUrl) return;
     candidates.push({
       id: d.id,
@@ -187,6 +207,7 @@ export async function enqueueOrMatch(opts: {
           age: profile.age || 0,
           country: profile.country || "",
           gender: profile.gender || "",
+          languages: profile.languages || [],
           bio: profile.bio || "",
           interests: profile.interests || [],
         };
@@ -214,6 +235,7 @@ export async function enqueueOrMatch(opts: {
             age: peer.age || 0,
             country: peer.country || "",
             gender: peer.gender || "",
+            languages: languageList(peer.languages),
             bio: peer.bio || "",
             interests: peer.interests || [],
           },
@@ -249,6 +271,7 @@ export async function enqueueOrMatch(opts: {
     age: profile.age || 0,
     country: profile.country || "",
     gender: profile.gender || "",
+    languages: profile.languages || [],
     bio: profile.bio || "",
     interests: profile.interests || [],
     filters,
