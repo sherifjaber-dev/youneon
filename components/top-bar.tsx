@@ -9,6 +9,8 @@ import { YouNeonScriptLogo } from "@/components/youneon-script-logo";
 import { NeonAvatar } from "@/components/neon-avatar";
 import { useNotificationInbox } from "@/hooks/use-notification-inbox";
 import type { Announcement } from "@/lib/announcements";
+import { GROWTH_MODE } from "@/lib/product-config";
+import { ComingSoonSheet } from "@/components/coming-soon-sheet";
 
 interface TopBarProps {
   onProfileClick: () => void;
@@ -45,6 +47,21 @@ export function TopBar({
 }: TopBarProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [itemsOpen, setItemsOpen] = useState(false);
+  const [comingSoon, setComingSoon] = useState(false);
+  const tapPaywall = () => {
+    if (GROWTH_MODE) {
+      setComingSoon(true);
+      return;
+    }
+    onNeonClick?.();
+  };
+  const tapPremium = () => {
+    if (GROWTH_MODE) {
+      setComingSoon(true);
+      return;
+    }
+    onOpenSubscribe?.();
+  };
   const { items, unread, markAllRead } = useNotificationInbox(currentUserId, announcements);
   const bagActive = freeUnlocksRemaining > 0;
   const bagCount = Math.min(99, Math.max(0, Math.floor(freeUnlocksRemaining)));
@@ -124,7 +141,7 @@ export function TopBar({
 
             <button
               type="button"
-              onClick={onNeonClick}
+              onClick={tapPaywall}
               className="yn-topbar-neon-chip"
               aria-label={`Open Neon shop, balance ${neonBalance.toLocaleString()}`}
               data-testid="topbar-neon-balance"
@@ -146,8 +163,8 @@ export function TopBar({
         markAllRead={markAllRead}
         isPremium={isPremium}
         premiumUntil={premiumUntil}
-        onOpenShop={onNeonClick}
-        onOpenSubscribe={onOpenSubscribe}
+        onOpenShop={tapPaywall}
+        onOpenSubscribe={tapPremium}
         onOpenChat={onOpenChat}
         onOpenMessages={onOpenMessages}
       />
@@ -155,9 +172,10 @@ export function TopBar({
         open={itemsOpen}
         onClose={() => setItemsOpen(false)}
         freeUnlocksRemaining={freeUnlocksRemaining}
-        onEnterShop={onNeonClick}
+        onEnterShop={tapPaywall}
         username={currentUserId}
       />
+      <ComingSoonSheet open={comingSoon} onClose={() => setComingSoon(false)} />
     </>
   );
 }
