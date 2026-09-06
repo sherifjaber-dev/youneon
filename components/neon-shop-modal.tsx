@@ -7,12 +7,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { NEON_PACKAGES } from "@/lib/product-config";
+import { GROWTH_MODE, NEON_PACKAGES } from "@/lib/product-config";
 import { hideStaticLoginOverlays } from "@/lib/pi-client-session";
 import { emitPremiumGranted } from "@/lib/premium";
 import { purchaseNeonPackWithPi } from "@/lib/pi-sdk";
 import { PURCHASE_FEEDBACK_EVENT, type PurchaseFeedback } from "@/lib/purchase-feedback";
 import { X, Zap, Star } from "lucide-react";
+import { ComingSoonSheet } from "@/components/coming-soon-sheet";
 
 interface NeonShopModalProps {
   isOpen: boolean;
@@ -29,6 +30,10 @@ export function NeonShopModal({
   isOpen,
   onClose,
 }: NeonShopModalProps) {
+  if (GROWTH_MODE) {
+    return <ComingSoonSheet open={isOpen} onClose={onClose} />;
+  }
+
   const [purchasingId, setPurchasingId] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
@@ -142,7 +147,7 @@ export function NeonShopModal({
                 }`}
               >
                 {pkg.badge && (
-                  <div className="absolute -top-1.5 right-2 flex items-center gap-0.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-1.5 py-px text-[9px] font-semibold text-white">
+                  <div className="absolute -top-1.5 right-2 flex items-center gap-0.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-1.5 py-0.5 text-[9px] font-semibold text-white">
                     <Star size={8} /> {pkg.badge}
                   </div>
                 )}
