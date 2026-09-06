@@ -11,36 +11,72 @@
   content: "Report";
 }
 
+.yn-live-card {
+  position: relative;
+  border-radius: 24px;
+  padding: 1px;
+  background:
+    linear-gradient(135deg, rgba(240,171,252,.7), rgba(129,140,248,.35) 46%, rgba(236,72,153,.55));
+  box-shadow:
+    0 0 0 1px rgba(168,85,247,.18),
+    0 18px 40px rgba(88,28,135,.28),
+    0 0 48px rgba(168,85,247,.16);
+}
 .yn-live-banner-img {
   opacity: 0 !important;
-  height: 198px !important;
+  height: 214px !important;
   object-fit: cover !important;
 }
 .yn-live-banner-stage {
   position: relative;
-  min-height: 198px;
+  min-height: 214px;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 78% 12%, rgba(168, 85, 247, 0.42), transparent 52%),
-    radial-gradient(ellipse at 12% 88%, rgba(236, 72, 153, 0.32), transparent 50%),
-    #0a0514;
+  border-radius: 23px;
+  background-color: #070010;
+  background-image:
+    url("/youneon/live-room.svg"),
+    radial-gradient(ellipse at 78% 8%, rgba(168,85,247,.38), transparent 48%),
+    radial-gradient(ellipse at 12% 92%, rgba(236,72,153,.26), transparent 46%);
+  background-size: cover, auto, auto;
+  background-position: center 18%, center, center;
 }
 .yn-live-banner-stage::before {
-  content: "Start   →   Match   →   Talk";
+  content: "LIVE";
   position: absolute;
-  left: 16px;
-  top: 18px;
-  z-index: 2;
+  left: 14px;
+  top: 14px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   border-radius: 999px;
-  border: 1px solid rgba(240, 171, 252, 0.35);
-  background: rgba(12, 6, 22, 0.55);
-  padding: 6px 12px;
-  color: #f5e9ff;
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  border: 1px solid rgba(248,113,113,.45);
+  background: rgba(127,29,29,.28);
+  padding: 5px 10px 5px 8px;
+  color: #fecaca;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.yn-live-banner-stage::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 23px;
+  z-index: 4;
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #f87171;
+  box-shadow: 0 0 10px #f87171;
+  animation: youneonLivePulse 1.4s ease-in-out infinite;
+}
+.yn-live-banner-stage > div {
+  background: linear-gradient(to top, rgba(7,0,16,.92) 0%, rgba(7,0,16,.55) 58%, transparent 100%) !important;
+  padding-top: 56px !important;
+}
+.yn-live-banner-stage > div > p:nth-of-type(1) {
+  display: none !important;
 }
 .yn-live-banner-stage > div > p:nth-of-type(2) {
   font-size: 0 !important;
@@ -48,9 +84,15 @@
 }
 .yn-live-banner-stage > div > p:nth-of-type(2)::after {
   content: "Real people.";
-  font-size: 20px;
-  line-height: 1.15;
-  font-weight: 650;
-  letter-spacing: -0.03em;
+  font-size: 26px;
+  line-height: 1.05;
+  font-weight: 720;
+  letter-spacing: -.04em;
   color: #fff;
+  text-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+.yn-live-banner-stage > div > p:nth-of-type(3) {
+  margin-top: 6px !important;
+  color: #e9d5ff !important;
+  font-size: 13px !important;
 }
