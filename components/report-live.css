@@ -10,3 +10,16 @@
 [data-testid="report-user-btn"]::after {
   content: "Report";
 }
+
+.yn-live-banner-img {
+  opacity: 0 !important;
+  height: 172px !important;
+  object-fit: cover !important;
+}
+.yn-live-banner-stage {
+  min-height: 172px;
+  background:
+    radial-gradient(ellipse at 72% 18%, rgba(168, 85, 247, 0.38), transparent 55%),
+    radial-gradient(ellipse at 18% 90%, rgba(236, 72, 153, 0.3), transparent 52%),
+    #0a0514;
+}

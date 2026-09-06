@@ -1,5 +1,7 @@
 "use client";
 
+import "./report-live.css";
+
 export function CallSafetyChip({ className = "" }: { className?: string }) {
   return (
     <p
