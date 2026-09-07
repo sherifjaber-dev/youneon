@@ -15,26 +15,28 @@
   position: relative;
   border-radius: 24px;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(240,171,252,.7), rgba(129,140,248,.3) 50%, rgba(96,165,250,.45));
-  box-shadow:
-    0 0 0 1px rgba(168,85,247,.16),
-    0 16px 36px rgba(76,29,149,.26);
+  background: linear-gradient(135deg, rgba(240,171,252,.55), rgba(88,28,135,.4) 50%, rgba(96,165,250,.35));
+  box-shadow: 0 0 0 1px rgba(168,85,247,.16), 0 16px 36px rgba(7,0,16,.45);
 }
 .yn-live-banner-img {
   opacity: 0 !important;
-  height: 210px !important;
+  height: 214px !important;
   object-fit: cover !important;
 }
 .yn-live-banner-stage {
   position: relative;
-  min-height: 210px;
+  min-height: 214px;
   overflow: hidden;
   border-radius: 23px;
   background-color: #070010;
-  background-image: url("/youneon/live-room.svg");
+  background-image:
+    linear-gradient(180deg, rgba(12,6,28,.18) 0%, rgba(76,29,149,.28) 42%, rgba(7,0,16,.72) 100%),
+    url("/youneon/live-room.svg"),
+    url("https://eoimages.gsfc.nasa.gov/images/imagerecords/79000/79765/dnb_land_ocean_ice.2012.3600x1800.jpg");
   background-repeat: no-repeat;
-  background-size: 118% auto;
-  background-position: 50% 18%;
+  background-size: cover, 118% auto, 128% auto;
+  background-position: center, 50% 18%, 50% 42%;
+  background-blend-mode: normal, screen, multiply;
 }
 .yn-live-banner-stage::before {
   content: "LIVE";
@@ -65,8 +67,8 @@
   animation: youneonLivePulse 1.4s ease-in-out infinite;
 }
 .yn-live-banner-stage > div {
-  background: linear-gradient(to top, rgba(7,0,16,.92) 0%, rgba(7,0,16,.35) 42%, transparent 70%) !important;
-  padding-top: 78px !important;
+  background: linear-gradient(to top, rgba(7,0,16,.88) 0%, rgba(7,0,16,.28) 46%, transparent 72%) !important;
+  padding-top: 86px !important;
 }
 .yn-live-banner-stage > div > p:nth-of-type(1) {
   display: none !important;
@@ -82,7 +84,7 @@
   font-weight: 720;
   letter-spacing: -.04em;
   color: #fff;
-  text-shadow: 0 10px 24px rgba(0,0,0,.5);
+  text-shadow: 0 10px 24px rgba(0,0,0,.55);
 }
 .yn-live-banner-stage > div > p:nth-of-type(3) {
   margin-top: 6px !important;
