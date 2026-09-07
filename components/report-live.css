@@ -15,28 +15,27 @@
   position: relative;
   border-radius: 24px;
   padding: 1px;
-  background:
-    linear-gradient(135deg, rgba(240,171,252,.7), rgba(129,140,248,.35) 46%, rgba(236,72,153,.55));
+  background: linear-gradient(135deg, rgba(240,171,252,.75), rgba(129,140,248,.32) 48%, rgba(96,165,250,.5));
   box-shadow:
-    0 0 0 1px rgba(168,85,247,.18),
-    0 18px 40px rgba(88,28,135,.28),
-    0 0 48px rgba(168,85,247,.16);
+    0 0 0 1px rgba(168,85,247,.16),
+    0 16px 36px rgba(76,29,149,.26),
+    0 0 42px rgba(192,132,252,.14);
 }
 .yn-live-banner-img {
   opacity: 0 !important;
-  height: 220px !important;
+  height: 228px !important;
   object-fit: cover !important;
 }
 .yn-live-banner-stage {
   position: relative;
-  min-height: 220px;
+  min-height: 228px;
   overflow: hidden;
   border-radius: 23px;
   background-color: #070010;
   background-image: url("/youneon/live-room.svg");
-  background-size: 128% auto;
-  background-position: 62% 8%;
   background-repeat: no-repeat;
+  background-size: 150% auto;
+  background-position: 72% -6%;
 }
 .yn-live-banner-stage::before {
   content: "LIVE";
@@ -44,13 +43,10 @@
   left: 14px;
   top: 14px;
   z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
   border-radius: 999px;
   border: 1px solid rgba(248,113,113,.45);
-  background: rgba(127,29,29,.28);
-  padding: 5px 10px 5px 8px;
+  background: rgba(127,29,29,.3);
+  padding: 5px 10px 5px 22px;
   color: #fecaca;
   font-size: 10px;
   font-weight: 800;
@@ -70,8 +66,8 @@
   animation: youneonLivePulse 1.4s ease-in-out infinite;
 }
 .yn-live-banner-stage > div {
-  background: linear-gradient(to top, rgba(7,0,16,.94) 0%, rgba(7,0,16,.42) 42%, transparent 72%) !important;
-  padding-top: 72px !important;
+  background: linear-gradient(to top, rgba(7,0,16,.9) 0%, rgba(7,0,16,.28) 38%, transparent 64%) !important;
+  padding-top: 84px !important;
 }
 .yn-live-banner-stage > div > p:nth-of-type(1) {
   display: none !important;
@@ -87,7 +83,7 @@
   font-weight: 720;
   letter-spacing: -.04em;
   color: #fff;
-  text-shadow: 0 8px 24px rgba(0,0,0,.45);
+  text-shadow: 0 10px 24px rgba(0,0,0,.5);
 }
 .yn-live-banner-stage > div > p:nth-of-type(3) {
   margin-top: 6px !important;
