@@ -98,7 +98,7 @@ export function DiscoverScreen({
         <div className="yn-live-banner-stage relative w-full">
           <img
             src="/youneon/live-banner.png"
-            alt="Start Random Video Chat"
+            alt="YouNeon worldwide random video chat"
             draggable={false}
             className="yn-live-banner-img"
           />
