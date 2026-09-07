@@ -15,27 +15,26 @@
   position: relative;
   border-radius: 24px;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(240,171,252,.75), rgba(129,140,248,.32) 48%, rgba(96,165,250,.5));
+  background: linear-gradient(135deg, rgba(240,171,252,.7), rgba(129,140,248,.3) 50%, rgba(96,165,250,.45));
   box-shadow:
     0 0 0 1px rgba(168,85,247,.16),
-    0 16px 36px rgba(76,29,149,.26),
-    0 0 42px rgba(192,132,252,.14);
+    0 16px 36px rgba(76,29,149,.26);
 }
 .yn-live-banner-img {
   opacity: 0 !important;
-  height: 228px !important;
+  height: 210px !important;
   object-fit: cover !important;
 }
 .yn-live-banner-stage {
   position: relative;
-  min-height: 228px;
+  min-height: 210px;
   overflow: hidden;
   border-radius: 23px;
   background-color: #070010;
   background-image: url("/youneon/live-room.svg");
   background-repeat: no-repeat;
-  background-size: 150% auto;
-  background-position: 72% -6%;
+  background-size: 118% auto;
+  background-position: 50% 18%;
 }
 .yn-live-banner-stage::before {
   content: "LIVE";
@@ -66,8 +65,8 @@
   animation: youneonLivePulse 1.4s ease-in-out infinite;
 }
 .yn-live-banner-stage > div {
-  background: linear-gradient(to top, rgba(7,0,16,.9) 0%, rgba(7,0,16,.28) 38%, transparent 64%) !important;
-  padding-top: 84px !important;
+  background: linear-gradient(to top, rgba(7,0,16,.92) 0%, rgba(7,0,16,.35) 42%, transparent 70%) !important;
+  padding-top: 78px !important;
 }
 .yn-live-banner-stage > div > p:nth-of-type(1) {
   display: none !important;
