@@ -2792,17 +2792,49 @@ html.yn-profile-open {
 }
 
 .yn-live-banner-stage {
+  position: relative;
   width: 100%;
+  aspect-ratio: 16 / 10;
   line-height: 0;
+  overflow: hidden;
+  background: #070010;
 }
 
 .yn-live-banner-img {
   display: block;
   width: 100%;
-  height: auto;
-  object-fit: contain;
-  object-position: center center;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
   pointer-events: none;
+}
+
+.yn-live-dot {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: rgba(20, 6, 16, 0.55);
+  padding: 5px 10px 5px 10px;
+  color: #fecaca;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1;
+}
+.yn-live-dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 99px;
+  background: #f87171;
+  box-shadow: 0 0 10px #f87171;
+  animation: youneonLivePulse 1.4s ease-in-out infinite;
 }
 
 .yn-gender-pill {
